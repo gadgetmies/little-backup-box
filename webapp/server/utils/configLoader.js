@@ -42,6 +42,9 @@ function getDefaultConfig() {
     conf_SOCIAL_MATRIX_TOKEN: '',
     conf_SOCIAL_MATRIX_ROOM_IDENTIFIER: '',
     conf_SOCIAL_PUBLISH_DATE: 'true',
+    conf_VIEW_CONVERT_HEIC: 'false',
+    conf_VIEW_WRITE_RATING_EXIF: 'false',
+    conf_VIRTUAL_KEYBOARD_ENABLED: '0',
   };
 }
 
