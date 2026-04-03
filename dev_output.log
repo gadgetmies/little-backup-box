@@ -1,0 +1,5 @@
+
+> little-backup-box-webapp@1.0.0 dev:mock
+> USE_MOCKS=true concurrently "npm run dev:server" "npm run dev:client"
+
+sh: 1: concurrently: not found

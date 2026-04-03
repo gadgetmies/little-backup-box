@@ -50,7 +50,7 @@ Implement comprehensive image viewer functionality with filtering, rating, comme
 - [ ] Magnifying glass zoom feature
 - [ ] Maximize/fullscreen button
 - [ ] Download image link
-- [ ] Thumbnail display (from tims directory)
+- [x] Thumbnail display (from tims directory) (default setting)
 - [ ] Full-size image display
 - [ ] Video playback support
 - [ ] Audio playback support

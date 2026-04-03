@@ -17,12 +17,19 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import DisplayConfig from '../components/DisplayConfig';
+import BackupConfig from '../components/BackupConfig';
+import ImageViewerConfig from '../components/ImageViewerConfig';
 
 function UserInterface() {
   const { t } = useLanguage();
   const { config, updateConfig, constants } = useConfig();
   const [formData, setFormData] = useState({});
   const [message, setMessage] = useState('');
+
+  const handleConfigChange = (key, value) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
   const lastSavedConfig = useRef(null);
@@ -109,7 +116,7 @@ function UserInterface() {
                 <Select
                   value={formData.conf_LANGUAGE || 'en'}
                   onChange={(e) => {
-                    setFormData({ ...formData, conf_LANGUAGE: e.target.value });
+                    handleConfigChange('conf_LANGUAGE', e.target.value);
                   }}
                   label={t('config.lang_header') || 'Language'}
                 >
@@ -126,7 +133,7 @@ function UserInterface() {
                 <Select
                   value={formData.conf_THEME || 'system'}
                   onChange={(e) => {
-                    setFormData({ ...formData, conf_THEME: e.target.value });
+                    handleConfigChange('conf_THEME', e.target.value);
                   }}
                   label={t('config.view_theme_header') || 'Theme'}
                 >
@@ -148,12 +155,26 @@ function UserInterface() {
               <Checkbox
                 checked={formData.conf_VIRTUAL_KEYBOARD_ENABLED === '1' || formData.conf_VIRTUAL_KEYBOARD_ENABLED === true}
                 onChange={(e) => {
-                  setFormData({ ...formData, conf_VIRTUAL_KEYBOARD_ENABLED: e.target.checked ? '1' : '0' });
+                  handleConfigChange('conf_VIRTUAL_KEYBOARD_ENABLED', e.target.checked ? '1' : '0');
                 }}
               />
             }
             label={t('config.screen.virtual_keyboard_enable_label') || 'Enable virtual keyboard'}
           />
+        </Grid>
+
+        <Grid item xs={12}>
+          <Typography variant="h2" gutterBottom>
+            {t('config.backup.section') || 'Backup'}
+          </Typography>
+          <BackupConfig formData={formData} onChange={handleConfigChange} />
+        </Grid>
+
+        <Grid item xs={12}>
+          <Typography variant="h2" gutterBottom>
+            {t('config.imageviewer.section') || 'Image viewer View'}
+          </Typography>
+          <ImageViewerConfig formData={formData} onChange={handleConfigChange} />
         </Grid>
 
         <Grid item xs={12}>

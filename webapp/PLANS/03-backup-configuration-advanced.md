@@ -6,7 +6,7 @@ Implement advanced backup configuration options including checksum, target size 
 ## Missing Features
 
 ### General Backup Settings
-- [ ] Backup checksum toggle with warning message
+- [x] Backup checksum toggle with warning message
 - [ ] Target size minimum requirements selector (0, 100 MB, 512 MB, 1 GB, 512 GB, 1 TB)
 - [ ] Camera folder mask textarea (with virtual keyboard support)
 
@@ -17,8 +17,8 @@ Implement advanced backup configuration options including checksum, target size 
   - To Internal: anyusb→internal, usb→internal, nvme→internal, camera→internal, ftp→internal
   - To rsync: usb→cloud_rsync, nvme→cloud_rsync, internal→cloud_rsync
   - To Cloud: all source types → each configured cloud service
-- [ ] Default backup move files toggle
-- [ ] Default backup generate thumbnails toggle
+- [x] Default backup move files toggle
+- [x] Default backup generate thumbnails toggle
 
 ### Secondary Backup Mode Configuration
 - [ ] Secondary backup mode selector (source → target combinations, same as default)
