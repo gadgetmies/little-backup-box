@@ -32,6 +32,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import LogMonitor from '../components/LogMonitor';
+import StopBackupButton from '../components/StopBackupButton';
 
 function Backup() {
   const { t } = useLanguage();
@@ -787,7 +788,7 @@ function Backup() {
             </AccordionDetails>
           </Accordion>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
             <Button
               variant="contained"
               color="primary"
@@ -795,9 +796,13 @@ function Backup() {
               startIcon={<PlayArrowIcon />}
               onClick={handleStartBackup}
               disabled={!formData.sourceDevice || !formData.targetDevice || isBackupRunning()}
+              sx={{ px: 4, py: 1.5, fontWeight: 'bold' }}
             >
               {t('main.backup.start') || 'Start Backup'}
             </Button>
+            {runningBackups.length > 0 && (
+              <StopBackupButton onClick={() => handleStopBackup()} />
+            )}
           </Box>
 
           {backupHistory.length > 0 && (
