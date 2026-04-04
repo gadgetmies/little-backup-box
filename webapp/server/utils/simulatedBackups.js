@@ -11,7 +11,7 @@ function createSimulatedBackup(backupConfig) {
   const pid = generatePid();
   const startTime = Date.now();
   
-  const duration = 10000 + Math.random() * 20000;
+  const duration = 60000 + Math.random() * 60000;
   
   const backup = {
     pid,
