@@ -36,6 +36,21 @@ import api from '../utils/api';
 import SocialMediaConfig from '../components/SocialMediaConfig';
 import CloudConfig from '../components/CloudConfig';
 
+function TabPanel({ children, value, index, ...other }) {
+  const needsBottomPadding = value === index && (index === 0 || index === 1 || index === 2 || index === 3);
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`integrations-tabpanel-${index}`}
+      aria-labelledby={`integrations-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3, pb: needsBottomPadding ? 10 : 0 }}>{children}</Box>}
+    </div>
+  );
+}
+
 function ServiceConnections() {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
@@ -330,22 +345,6 @@ function ServiceConnections() {
     );
   }
 
-  function TabPanel({ children, value, index, ...other }) {
-    // Add bottom padding when save button is sticky (tabs 0, 1, 2, 3)
-    const needsBottomPadding = value === index && (index === 0 || index === 1 || index === 2 || index === 3);
-    return (
-      <div
-        role="tabpanel"
-        hidden={value !== index}
-        id={`integrations-tabpanel-${index}`}
-        aria-labelledby={`integrations-tab-${index}`}
-        {...other}
-      >
-        {value === index && <Box sx={{ pt: 3, pb: needsBottomPadding ? 10 : 0 }}>{children}</Box>}
-      </div>
-    );
-  }
-
   return (
     <Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -551,7 +550,7 @@ function ServiceConnections() {
                       ...(currentTab === 0 && {
                         position: 'fixed',
                         bottom: 0,
-                        left: { md: `${currentDrawerWidth}px` },
+                        left: { xs: 0, md: `${currentDrawerWidth}px` },
                         right: 0,
                         zIndex: 1000,
                         p: 2,
@@ -693,7 +692,7 @@ function ServiceConnections() {
                         ...(currentTab === 3 && {
                           position: 'fixed',
                           bottom: 0,
-                          left: { md: `${currentDrawerWidth}px` },
+                          left: { xs: 0, md: `${currentDrawerWidth}px` },
                           right: 0,
                           zIndex: 1000,
                           p: 2,

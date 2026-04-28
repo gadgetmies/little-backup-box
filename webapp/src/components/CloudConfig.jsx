@@ -301,7 +301,7 @@ function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) 
               ...(isSticky && {
                 position: 'fixed',
                 bottom: 0,
-                left: { md: `${drawerWidth}px` },
+                left: { xs: 0, md: `${drawerWidth}px` },
                 right: 0,
                 zIndex: 1000,
                 p: 2,

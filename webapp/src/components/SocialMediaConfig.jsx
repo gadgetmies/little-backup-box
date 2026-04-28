@@ -474,7 +474,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
             ...(isSticky && {
               position: 'fixed',
               bottom: 0,
-              left: { md: `${drawerWidth}px` },
+              left: { xs: 0, md: `${drawerWidth}px` },
               right: 0,
               zIndex: 1000,
               p: 2,
