@@ -1015,5 +1015,11 @@
       "confirm_remove": "Are you sure you want to remove the {type} config file?",
       "remove": "Remove"
     }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None"
   }
 }

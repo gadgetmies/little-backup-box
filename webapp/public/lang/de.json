@@ -1027,5 +1027,11 @@
       "confirm_remove": "Möchten Sie die {type} Konfigurationsdatei wirklich entfernen?",
       "remove": "Entfernen"
     }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None"
   }
 }

@@ -1027,5 +1027,11 @@
       "confirm_remove": "Êtes-vous sûr de vouloir supprimer le fichier de configuration {type}?",
       "remove": "Supprimer"
     }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None"
   }
 }

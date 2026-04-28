@@ -1014,6 +1014,12 @@
       "confirm_remove": "Haluatko varmasti poistaa {type} konfiguraatiotiedoston?",
       "remove": "Poista"
     }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None"
   }
 }
 
