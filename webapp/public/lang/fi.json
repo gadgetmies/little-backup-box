@@ -440,6 +440,14 @@
     "view_popup_header": "Ponnahdusviestit",
     "view_popup_label": "Salli ponnahdusviestit.",
     "popup_messages": "Show popup notifications",
+    "camera_folder_mask": "Camera folder mask",
+    "camera_folder_mask_help": "Folder name pattern to back up from cameras (e.g. DCIM)",
+    "camera_folder_mask_no_slash": "Folder mask must not contain /",
+    "target_size_minimum": "Target size minimum",
+    "target_size_minimum_help": "GB · 0 = disabled",
+    "idle_power_off": "Idle power-off",
+    "idle_power_off_help": "Minutes · 0 = disabled",
+    "write_rating_to_exif": "Write rating to EXIF",
     "general": {
       "default_settings_desc": "Nämä asetukset määrittelevät oletusarvot uusille käyttäjille ja istunnoille. Ne voidaan ohittaa navigointipalkin ohjaimilla."
     },

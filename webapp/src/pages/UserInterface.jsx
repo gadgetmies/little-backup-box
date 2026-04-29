@@ -13,6 +13,7 @@ import {
   Grid,
   Stack,
   Alert,
+  TextField,
 } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
@@ -23,6 +24,7 @@ function UserInterface() {
   const { config, updateConfig, constants } = useConfig();
   const [formData, setFormData] = useState({});
   const [message, setMessage] = useState('');
+  const [cameraFolderMaskError, setCameraFolderMaskError] = useState(false);
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
   const lastSavedConfig = useRef(null);
@@ -168,6 +170,81 @@ function UserInterface() {
               />
             }
             label={t('config.screen.virtual_keyboard_enable_label') || 'Enable virtual keyboard'}
+          />
+        </Grid>
+
+        <Grid item xs={12}>
+          <Typography variant="h2" gutterBottom>
+            {t('config.backup.section') || 'Backup'}
+          </Typography>
+          <Stack spacing={3}>
+            <Box>
+              <TextField
+                sx={{ maxWidth: 400 }}
+                fullWidth
+                label={t('config.camera_folder_mask')}
+                helperText={
+                  cameraFolderMaskError
+                    ? undefined
+                    : t('config.camera_folder_mask_help')
+                }
+                value={formData.conf_camera_folder_mask || 'DCIM'}
+                error={cameraFolderMaskError}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.includes('/')) {
+                    setCameraFolderMaskError(true);
+                  } else {
+                    setCameraFolderMaskError(false);
+                    setFormData({ ...formData, conf_camera_folder_mask: val });
+                  }
+                }}
+              />
+              {cameraFolderMaskError && (
+                <Alert severity="error" sx={{ mt: 1, maxWidth: 400 }}>
+                  {t('config.camera_folder_mask_no_slash') || 'Folder mask must not contain /'}
+                </Alert>
+              )}
+            </Box>
+            <TextField
+              sx={{ maxWidth: 400 }}
+              fullWidth
+              type="number"
+              label={t('config.target_size_minimum')}
+              helperText={t('config.target_size_minimum_help')}
+              value={formData.conf_target_size_minimum || '0'}
+              onChange={(e) => {
+                setFormData({ ...formData, conf_target_size_minimum: e.target.value });
+              }}
+            />
+            <TextField
+              sx={{ maxWidth: 400 }}
+              fullWidth
+              type="number"
+              label={t('config.idle_power_off')}
+              helperText={t('config.idle_power_off_help')}
+              value={formData.conf_idle_power_off || '0'}
+              onChange={(e) => {
+                setFormData({ ...formData, conf_idle_power_off: e.target.value });
+              }}
+            />
+          </Stack>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Typography variant="h2" gutterBottom>
+            {t('config.imageviewer.section') || 'Image viewer'}
+          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.conf_write_rating_to_exif === 'true'}
+                onChange={(e) => {
+                  setFormData({ ...formData, conf_write_rating_to_exif: e.target.checked ? 'true' : 'false' });
+                }}
+              />
+            }
+            label={t('config.write_rating_to_exif')}
           />
         </Grid>
 
