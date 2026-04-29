@@ -75,8 +75,8 @@ function Menu() {
   const [shutdownHasRunningBackups, setShutdownHasRunningBackups] = React.useState(false);
   const [currentTheme, setCurrentTheme] = React.useState(() => {
     const saved = localStorage.getItem('lbb-theme');
-    return saved && (saved === 'system' || saved === 'light' || saved === 'dark') 
-      ? saved 
+    return saved && (saved === 'system' || saved === 'light' || saved === 'dark' || saved === 'sepia')
+      ? saved
       : (config?.conf_THEME || 'system');
   });
   const [currentLanguage, setCurrentLanguage] = React.useState(() => {
@@ -329,7 +329,7 @@ function Menu() {
   React.useEffect(() => {
     const handleThemeChange = () => {
       const saved = localStorage.getItem('lbb-theme');
-      if (saved && (saved === 'system' || saved === 'light' || saved === 'dark')) {
+      if (saved && (saved === 'system' || saved === 'light' || saved === 'dark' || saved === 'sepia')) {
         setCurrentTheme(saved);
       }
     };
@@ -418,6 +418,9 @@ function Menu() {
   const getThemeIcon = () => {
     if (currentTheme === 'system') {
       return <SettingsBrightnessIcon />;
+    }
+    if (currentTheme === 'sepia') {
+      return <PaletteIcon />;
     }
     return currentTheme === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />;
   };
@@ -637,6 +640,12 @@ function Menu() {
                 selected={currentTheme === 'system'}
               >
                 {t('config.view_theme_system') || 'System'}
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleThemeChange('sepia')}
+                selected={currentTheme === 'sepia'}
+              >
+                {t('config.view_theme_sepia') || 'Sepia'}
               </MenuItem>
             </MuiMenu>
             <Tooltip title="Power">

@@ -133,6 +133,7 @@ function UserInterface() {
                   <MenuItem value="light">Light</MenuItem>
                   <MenuItem value="dark">Dark</MenuItem>
                   <MenuItem value="system">System</MenuItem>
+                  <MenuItem value="sepia">{t('config.view_theme_sepia')}</MenuItem>
                 </Select>
               </FormControl>
             </Stack>
