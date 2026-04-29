@@ -293,6 +293,11 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/update/install' && method === 'post') {
+      const body = config.data || {};
+      if (body.branch === 'development') {
+        await delay(2000);
+        return { data: { success: true, message: 'Development update installation started (mock)' } };
+      }
       return { data: { success: true, message: 'Update installation started (mock)' } };
     }
     

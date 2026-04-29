@@ -149,15 +149,15 @@ router.get('/update/status', async (req, res) => {
 
 router.post('/update/install', async (req, res) => {
   try {
-    const branch = req.constants?.const_SOFTWARE_BRANCH || 'main';
-    
+    const branch = req.body?.branch || req.constants?.const_SOFTWARE_BRANCH || 'main';
+
     let command = `sudo python3 ${req.WORKING_DIR}/lib_display.py ':Update' ':started...'`;
     command += `;sudo -u pi curl -sSL https://raw.githubusercontent.com/outdoorbits/little-backup-box/${branch}/install-little-backup-box.sh -o ~pi/install-little-backup-box.sh`;
     command += `;sudo -u pi bash ~pi/install-little-backup-box.sh ${branch}`;
     command += ' > /dev/null 2>&1 &';
-    
+
     await execCommand(command, { logger: req.logger });
-    
+
     req.logger.info(`Update installation started for branch: ${branch}`);
     res.json({ success: true, message: 'Update installation started' });
   } catch (error) {

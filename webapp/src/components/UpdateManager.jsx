@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Typography,
   Button,
@@ -12,6 +12,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import InstallIcon from '@mui/icons-material/Download';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
+import useAsyncAction from '../hooks/useAsyncAction';
 
 function UpdateManager() {
   const { t } = useLanguage();
@@ -20,6 +21,17 @@ function UpdateManager() {
   const [checking, setChecking] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [message, setMessage] = useState('');
+  const [devInstallSuccess, setDevInstallSuccess] = useState(false);
+
+  const installDevUpdateFn = useCallback(
+    () => api.post('/setup/update/install', { branch: 'development' }),
+    []
+  );
+  const {
+    execute: executeDevInstall,
+    loading: devInstalling,
+    error: devInstallError,
+  } = useAsyncAction(installDevUpdateFn);
 
   const handleCheckUpdate = async () => {
     setChecking(true);
@@ -141,10 +153,10 @@ function UpdateManager() {
           )}
         </Stack>
 
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ 
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
             mt: 2,
             '& ul': {
               marginLeft: 0,
@@ -157,6 +169,39 @@ function UpdateManager() {
           }}
           dangerouslySetInnerHTML={{ __html: t('config.update.text') }}
         />
+
+        {(!updateStatus || updateStatus.branch !== 'development') && (
+          <Box sx={{ mt: 3 }}>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('maintenance.dev_update_warning')}
+            </Alert>
+            {devInstallError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => {}}>
+                {t('maintenance.dev_update_error')}
+              </Alert>
+            )}
+            {devInstallSuccess && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {t('maintenance.update.install_started')}
+              </Alert>
+            )}
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={devInstalling ? <CircularProgress size={20} /> : <InstallIcon />}
+              onClick={() => {
+                executeDevInstall()
+                  .then(() => setDevInstallSuccess(true))
+                  .catch(() => {
+                    // error shown via devInstallError
+                  });
+              }}
+              disabled={devInstalling}
+            >
+              {t('maintenance.dev_update_button')}
+            </Button>
+          </Box>
+        )}
     </Box>
   );
 }
