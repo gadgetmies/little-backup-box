@@ -356,6 +356,11 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'LibRaw update completed (mock)' } };
     }
 
+    if (url === '/network/comitup/reset' && method === 'post') {
+      await delay(1000);
+      return { data: {} };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }

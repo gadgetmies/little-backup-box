@@ -283,7 +283,14 @@
     "ip_addresses": "IP-osoitteet",
     "refresh": "Päivitä",
     "no_ips": "IP-osoitteita ei löytynyt",
-    "qr_codes": "QR-koodit"
+    "qr_codes": "QR-koodit",
+    "wifi_reset_section": "Reset WiFi Credentials",
+    "wifi_reset_description": "This will erase stored WiFi credentials and reboot the device into access point mode.",
+    "wifi_reset_button": "Reset WiFi credentials",
+    "wifi_reset_confirm_title": "Reset WiFi Credentials?",
+    "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
+    "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
+    "wifi_reset_error": "Comitup is not installed on this device"
   },
   "scrape": {
     "title": "Arkistoidut sivut",
