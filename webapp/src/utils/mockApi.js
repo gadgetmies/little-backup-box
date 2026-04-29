@@ -312,11 +312,75 @@ export function createMockApiInterceptor() {
     if (url === '/view/init') {
       return { data: { success: true } };
     }
-    
-    if (url === '/view/images') {
-      return { data: mockData.viewImages };
+
+    if (url === '/view/media') {
+      const failureMode = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('lbb-mock-failure')
+        : null;
+      if (failureMode === 'not_mounted') {
+        return Promise.reject({
+          response: { status: 503, data: { error: 'not_mounted' } },
+        });
+      }
+      return {
+        data: {
+          media: ['usb', 'nvme', 'internal'],
+          available: { usb: true, nvme: false, internal: true },
+        },
+      };
     }
-    
+
+    if (url === '/view/images') {
+      const failureMode = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('lbb-mock-failure')
+        : null;
+
+      if (failureMode === 'not_mounted') {
+        return Promise.reject({
+          response: { status: 503, data: { error: 'not_mounted' } },
+        });
+      }
+
+      const params = config.params || {};
+      const medium = params.medium;
+
+      // Legacy storagePath-based mock
+      if (!medium) {
+        return { data: mockData.viewImages };
+      }
+
+      if (failureMode === 'no_results') {
+        return { data: { images: [], total: 0, dbExists: true } };
+      }
+      if (failureMode === 'db_not_initialised') {
+        return { data: { images: [], total: 0, dbExists: false } };
+      }
+
+      const TOTAL = 120;
+      const page = parseInt(params.page || '1', 10);
+      const perPage = parseInt(params.per_page || '25', 10);
+      const start = (page - 1) * perPage;
+      const end = Math.min(start + perPage, TOTAL);
+
+      const images = [];
+      for (let i = start; i < end; i++) {
+        const id = i + 1;
+        const filename = `IMG_${String(id).padStart(4, '0')}.jpg`;
+        images.push({
+          ID: id,
+          File_Name: filename,
+          Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+          thumbnail_path: `/thumbnails/${medium}/${filename}`,
+          rating: 0,
+          comment: '',
+          publish_telegram: false,
+          publish_mastodon: false,
+        });
+      }
+
+      return { data: { images, total: TOTAL, dbExists: true } };
+    }
+
     if (url === '/view/stats') {
       return { data: mockData.viewStats };
     }
