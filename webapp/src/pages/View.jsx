@@ -8,12 +8,16 @@ import {
   CircularProgress,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   Link,
   MenuItem,
+  Pagination,
   Select,
   Typography,
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
@@ -71,21 +75,18 @@ export default function View() {
   } = useAsyncAction(fetchMediaFn);
 
   // ---- fetch images ----
-  const fetchImagesFn = useCallback(
-    async (med, pg, pp, sf, sd) => {
-      const res = await api.get('/view/images', {
-        params: {
-          medium: med,
-          page: pg,
-          per_page: pp,
-          sort: sf,
-          dir: sd,
-        },
-      });
-      return res.data;
-    },
-    []
-  );
+  const fetchImagesFn = useCallback(async (med, pg, pp, sf, sd) => {
+    const res = await api.get('/view/images', {
+      params: {
+        medium: med,
+        page: pg,
+        per_page: pp,
+        sort: sf,
+        dir: sd,
+      },
+    });
+    return res.data;
+  }, []);
 
   const {
     execute: fetchImages,
@@ -138,11 +139,31 @@ export default function View() {
     setColumns(Number(e.target.value));
   };
 
+  const handleSortFieldChange = (e) => {
+    setSortField(e.target.value);
+    setPage(1);
+  };
+
+  const handleSortDirToggle = () => {
+    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    setPage(1);
+  };
+
+  const handlePerPageChange = (e) => {
+    setPerPage(Number(e.target.value));
+    setPage(1);
+  };
+
+  const handlePageChange = (_e, value) => {
+    setPage(value);
+  };
+
   // Compute xs grid size from column count
   const colSizes = { 1: 12, 2: 6, 3: 4, 4: 3, 6: 2 };
   const xs = colSizes[columns] || 4;
 
   const isLoading = isFetchingMedia || isFetchingImages;
+  const pageCount = Math.ceil(total / perPage) || 1;
 
   // Determine empty-state type
   const notMounted =
@@ -170,13 +191,37 @@ export default function View() {
           </Select>
         </FormControl>
 
+        <FormControl size="small" sx={{ minWidth: 130 }} disabled={isLoading}>
+          <InputLabel>{t('view.sort_by')}</InputLabel>
+          <Select value={sortField} label={t('view.sort_by')} onChange={handleSortFieldChange}>
+            <MenuItem value="date">{t('view.filter.date')}</MenuItem>
+            <MenuItem value="filename">{t('view.filter.order_by_filename')}</MenuItem>
+            <MenuItem value="id">{t('view.filter.order_by_id')}</MenuItem>
+          </Select>
+        </FormControl>
+
+        <IconButton
+          onClick={handleSortDirToggle}
+          disabled={isLoading}
+          aria-label={sortDir === 'asc' ? 'sort descending' : 'sort ascending'}
+        >
+          {sortDir === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
+        </IconButton>
+
+        <FormControl size="small" sx={{ minWidth: 110 }} disabled={isLoading}>
+          <InputLabel>{t('view.per_page')}</InputLabel>
+          <Select value={perPage} label={t('view.per_page')} onChange={handlePerPageChange}>
+            {[10, 25, 50, 100, 200].map((n) => (
+              <MenuItem key={n} value={n}>
+                {n}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <FormControl size="small" sx={{ minWidth: 120 }} disabled={isLoading}>
           <InputLabel>{t('view.columns')}</InputLabel>
-          <Select
-            value={columns}
-            label={t('view.columns')}
-            onChange={handleColumnChange}
-          >
+          <Select value={columns} label={t('view.columns')} onChange={handleColumnChange}>
             {[1, 2, 3, 4, 6].map((c) => (
               <MenuItem key={c} value={c}>
                 {c}
@@ -211,32 +256,46 @@ export default function View() {
 
       {/* Thumbnail grid */}
       {!isLoading && !notMounted && images.length > 0 && viewMode === 'grid' && (
-        <Grid container spacing={2}>
-          {images.map((image, idx) => (
-            <Grid item xs={xs} key={image.ID}>
-              <Card
-                sx={{ cursor: 'pointer' }}
-                onClick={() => {
-                  setSelectedIndex(idx);
-                  setViewMode('single');
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  height="150"
-                  image={`https://placehold.co/200x150?text=${encodeURIComponent(image.File_Name)}`}
-                  alt={image.File_Name}
-                  sx={{ objectFit: 'cover' }}
-                />
-                <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                  <Typography variant="caption" noWrap display="block">
-                    {image.File_Name}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <>
+          <Grid container spacing={2}>
+            {images.map((image, idx) => (
+              <Grid item xs={xs} key={image.ID}>
+                <Card
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setSelectedIndex(idx);
+                    setViewMode('single');
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    height="150"
+                    image={`https://placehold.co/200x150?text=${encodeURIComponent(image.File_Name)}`}
+                    alt={image.File_Name}
+                    sx={{ objectFit: 'cover' }}
+                  />
+                  <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                    <Typography variant="caption" noWrap display="block">
+                      {image.File_Name}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* Pagination */}
+          {pageCount > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              <Pagination
+                count={pageCount}
+                page={page}
+                onChange={handlePageChange}
+                disabled={isLoading}
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {/* Single image view — full implementation in Slice 5 */}
