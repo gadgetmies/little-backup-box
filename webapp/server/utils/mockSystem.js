@@ -328,6 +328,36 @@ Canon EOS Rebel T7i              usb:001,005`,
       stderr: '',
     };
   }
+
+  if (command.includes('lib_view.py --action list')) {
+    const pageMatch = command.match(/--page (\d+)/);
+    const perPageMatch = command.match(/--per-page (\d+)/);
+    const page = pageMatch ? parseInt(pageMatch[1], 10) : 1;
+    const perPage = perPageMatch ? parseInt(perPageMatch[1], 10) : 25;
+    const total = 120;
+    const start = (page - 1) * perPage;
+    const end = Math.min(start + perPage, total);
+    const images = [];
+    for (let i = start; i < end; i++) {
+      const id = i + 1;
+      const filename = `IMG_${String(id).padStart(4, '0')}.jpg`;
+      images.push({
+        ID: id,
+        File_Name: filename,
+        Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+        thumbnail_path: `/thumbnails/mock/${filename}`,
+        rating: 0,
+        comment: '',
+        publish_telegram: false,
+        publish_mastodon: false,
+      });
+    }
+    return {
+      success: true,
+      stdout: JSON.stringify({ images, total, dbExists: true }),
+      stderr: '',
+    };
+  }
   
   if (command.includes('lib_metadata.py')) {
     return {

@@ -101,7 +101,7 @@ function Menu() {
     { path: '/sysinfo', key: 'sysinfo', icon: <InfoIcon /> },
     { path: '/network', key: 'network', icon: <RouterIcon /> },
     { path: '/setup', key: 'config', icon: <PaletteIcon /> },
-    { path: '/view.php', key: 'gallery', icon: <PhotoLibraryIcon />, external: true },
+    { path: '/view', key: 'gallery', icon: <PhotoLibraryIcon /> },
     { path: '/files', key: 'filebrowser', icon: <FolderOpenIcon />, external: true },
     { path: '/frame.php?page=rclone_gui', key: 'rclone_gui', icon: <AppsIcon />, external: true, hasInfo: true },
     { path: '/scrape', key: 'scrape', icon: <PublicIcon />},
