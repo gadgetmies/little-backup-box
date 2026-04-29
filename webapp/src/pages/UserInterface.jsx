@@ -17,6 +17,11 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -277,6 +282,68 @@ function UserInterface() {
                 setFormData({ ...formData, conf_idle_power_off: e.target.value });
               }}
             />
+
+            <Accordion defaultExpanded={false}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>{t('config.default_backup_mode_section')}</Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ overflowX: 'auto' }}>
+                {(() => {
+                  const sources = ['camera', 'usb', 'internal', 'nvme'];
+                  const targets = ['usb', 'internal', 'nvme', 'cloud', 'rsync'];
+                  const validCombinations = new Set([
+                    'camera-usb', 'camera-internal', 'camera-nvme',
+                    'usb-internal', 'usb-nvme', 'usb-cloud', 'usb-rsync',
+                    'internal-usb', 'internal-nvme', 'internal-cloud',
+                    'nvme-usb', 'nvme-internal', 'nvme-cloud',
+                  ]);
+                  return (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell />
+                          {targets.map((target) => (
+                            <TableCell key={target} align="center">
+                              {t(`config.target_${target}`)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {sources.map((source) => (
+                          <TableRow key={source}>
+                            <TableCell>{t(`config.source_${source}`)}</TableCell>
+                            {targets.map((target) => {
+                              const key = `${source}-${target}`;
+                              const configKey = `conf_default_backup_${source}_${target}`;
+                              if (!validCombinations.has(key)) {
+                                return <TableCell key={target} />;
+                              }
+                              return (
+                                <TableCell key={target} align="center">
+                                  <FormControl size="small">
+                                    <Select
+                                      value={formData[configKey] || 'copy'}
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, [configKey]: e.target.value });
+                                      }}
+                                      sx={{ fontSize: '0.75rem' }}
+                                    >
+                                      <MenuItem value="copy">{t('config.backup_mode_copy')}</MenuItem>
+                                      <MenuItem value="move">{t('config.backup_mode_move')}</MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
+              </AccordionDetails>
+            </Accordion>
           </Stack>
         </Grid>
 

@@ -456,6 +456,18 @@
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
+    "default_backup_mode_section": "Default backup modes",
+    "backup_mode_copy": "Copy",
+    "backup_mode_move": "Move",
+    "source_camera": "Camera",
+    "source_usb": "USB",
+    "source_internal": "Internal",
+    "source_nvme": "NVMe",
+    "target_usb": "USB",
+    "target_internal": "Internal",
+    "target_nvme": "NVMe",
+    "target_cloud": "Cloud",
+    "target_rsync": "Rsync",
     "general": {
       "default_settings_desc": "These settings define the default values for new users and sessions. They can be overridden using the controls in the navigation bar."
     },
