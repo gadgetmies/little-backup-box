@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CardMedia,
@@ -18,12 +19,17 @@ import {
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
 import useAsyncAction from '../hooks/useAsyncAction';
 
 const PREFS_KEY = 'lbb-view-preferences';
+const SCROLL_KEY = 'lbb-view-scroll';
 
 function loadPreferences() {
   try {
@@ -61,6 +67,13 @@ export default function View() {
   const [sortField, setSortField] = useState(prefs.sortField || 'date');
   const [sortDir, setSortDir] = useState(prefs.sortDir || 'desc');
   const [columns, setColumns] = useState(prefs.columns || 3);
+
+  // Ref to track current images/page for keyboard handler without stale closures
+  const stateRef = useRef({ images, selectedIndex, page, perPage, total, medium, sortField, sortDir });
+
+  useEffect(() => {
+    stateRef.current = { images, selectedIndex, page, perPage, total, medium, sortField, sortDir };
+  });
 
   // ---- fetch available media ----
   const fetchMediaFn = useCallback(async () => {
@@ -130,6 +143,65 @@ export default function View() {
     savePreferences({ perPage, sortField, sortDir, columns });
   }, [perPage, sortField, sortDir, columns]);
 
+  // ---- Navigation helpers ----
+
+  // Navigate to a specific absolute index (0-based across all pages)
+  const navigateToAbsolute = useCallback(
+    (absIdx) => {
+      const { medium: med, perPage: pp, sortField: sf, sortDir: sd } = stateRef.current;
+      const targetPage = Math.floor(absIdx / pp) + 1;
+      const targetIdx = absIdx % pp;
+
+      if (targetPage !== stateRef.current.page) {
+        fetchImages(med, targetPage, pp, sf, sd)
+          .then((data) => {
+            setImages(data.images || []);
+            setTotal(data.total || 0);
+            setDbExists(data.dbExists !== false);
+            setPage(targetPage);
+            setSelectedIndex(targetIdx);
+          })
+          .catch(() => {});
+      } else {
+        setSelectedIndex(targetIdx);
+      }
+    },
+    [fetchImages]
+  );
+
+  const currentAbsoluteIndex = (page - 1) * perPage + selectedIndex;
+
+  const goFirst = useCallback(() => {
+    navigateToAbsolute(0);
+  }, [navigateToAbsolute]);
+
+  const goLast = useCallback(() => {
+    navigateToAbsolute(stateRef.current.total - 1);
+  }, [navigateToAbsolute]);
+
+  const goPrev = useCallback(() => {
+    const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
+    if (abs > 0) navigateToAbsolute(abs - 1);
+  }, [navigateToAbsolute]);
+
+  const goNext = useCallback(() => {
+    const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
+    if (abs < stateRef.current.total - 1) navigateToAbsolute(abs + 1);
+  }, [navigateToAbsolute]);
+
+  // Keyboard navigation in single-image mode
+  useEffect(() => {
+    const handler = (e) => {
+      if (viewMode !== 'single') return;
+      if (e.key === 'ArrowLeft') goPrev();
+      if (e.key === 'ArrowRight') goNext();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [viewMode, goPrev, goNext]);
+
+  // ---- Event handlers ----
+
   const handleMediumChange = (e) => {
     setMedium(e.target.value);
     setPage(1);
@@ -158,6 +230,28 @@ export default function View() {
     setPage(value);
   };
 
+  const handleOpenSingle = (idx) => {
+    try {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    } catch {
+      // ignore
+    }
+    setSelectedIndex(idx);
+    setViewMode('single');
+  };
+
+  const handleBackToGrid = () => {
+    setViewMode('grid');
+    try {
+      const saved = sessionStorage.getItem(SCROLL_KEY);
+      if (saved) {
+        requestAnimationFrame(() => window.scrollTo(0, parseInt(saved, 10)));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   // Compute xs grid size from column count
   const colSizes = { 1: 12, 2: 6, 3: 4, 4: 3, 6: 2 };
   const xs = colSizes[columns] || 4;
@@ -171,6 +265,8 @@ export default function View() {
     (imagesError && imagesError.includes('not_mounted'));
   const noImages = !notMounted && total === 0 && dbExists;
   const dbNotInitialised = !notMounted && total === 0 && !dbExists;
+
+  const currentImage = images[selectedIndex];
 
   return (
     <Box>
@@ -262,10 +358,7 @@ export default function View() {
               <Grid item xs={xs} key={image.ID}>
                 <Card
                   sx={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    setSelectedIndex(idx);
-                    setViewMode('single');
-                  }}
+                  onClick={() => handleOpenSingle(idx)}
                 >
                   <CardMedia
                     component="img"
@@ -298,22 +391,65 @@ export default function View() {
         </>
       )}
 
-      {/* Single image view — full implementation in Slice 5 */}
-      {!isLoading && viewMode === 'single' && images[selectedIndex] && (
+      {/* Single image view */}
+      {!isLoading && viewMode === 'single' && currentImage && (
         <Box>
-          <Box sx={{ textAlign: 'center' }}>
+          {/* Back to grid */}
+          <Box sx={{ mb: 2 }}>
+            <Button variant="outlined" onClick={handleBackToGrid}>
+              {t('view.images.back_to_grid')}
+            </Button>
+          </Box>
+
+          {/* Image */}
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
             <img
-              src={`https://placehold.co/800x600?text=${encodeURIComponent(images[selectedIndex].File_Name)}`}
-              alt={images[selectedIndex].File_Name}
+              src={`https://placehold.co/800x600?text=${encodeURIComponent(currentImage.File_Name)}`}
+              alt={currentImage.File_Name}
               style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
             />
           </Box>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            {images[selectedIndex].File_Name}
+
+          {/* Filename + date */}
+          <Typography variant="body2" sx={{ textAlign: 'center' }}>
+            {currentImage.File_Name}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {images[selectedIndex].Create_Date}
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ textAlign: 'center', mb: 2 }}>
+            {currentImage.Create_Date}
           </Typography>
+
+          {/* Navigation toolbar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            <IconButton onClick={goFirst} disabled={currentAbsoluteIndex === 0} aria-label="first">
+              <SkipPreviousIcon />
+            </IconButton>
+            <IconButton
+              onClick={goPrev}
+              disabled={currentAbsoluteIndex === 0}
+              aria-label="previous"
+            >
+              <NavigateBeforeIcon />
+            </IconButton>
+
+            <Typography variant="body2" sx={{ minWidth: 80, textAlign: 'center' }}>
+              {currentAbsoluteIndex + 1} / {total}
+            </Typography>
+
+            <IconButton
+              onClick={goNext}
+              disabled={currentAbsoluteIndex >= total - 1}
+              aria-label="next"
+            >
+              <NavigateNextIcon />
+            </IconButton>
+            <IconButton
+              onClick={goLast}
+              disabled={currentAbsoluteIndex >= total - 1}
+              aria-label="last"
+            >
+              <SkipNextIcon />
+            </IconButton>
+          </Box>
         </Box>
       )}
     </Box>
