@@ -342,6 +342,10 @@ export function createMockApiInterceptor() {
       return { data: { success: true } };
     }
     
+    if (url === '/cloud/remotes') {
+      return { data: { remotes: ['Dropbox', 'Google Drive'] } };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }

@@ -21,7 +21,11 @@ import {
   Tabs,
   Tab,
   Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EmailIcon from '@mui/icons-material/Email';
 import SaveIcon from '@mui/icons-material/Save';
 import ServerIcon from '@mui/icons-material/Dns';
@@ -60,6 +64,9 @@ function ServiceConnections() {
   const [socialGeneralFormData, setSocialGeneralFormData] = useState({});
   const socialGeneralLastSaved = useRef(null);
   const socialGeneralSaveTimeout = useRef(null);
+  const [cloudRemotes, setCloudRemotes] = useState([]);
+  const [cloudRemoteFormData, setCloudRemoteFormData] = useState({});
+  const cloudRemoteSaveTimeout = useRef(null);
 
   useEffect(() => {
     // Load selected tab from localStorage
@@ -213,6 +220,63 @@ function ServiceConnections() {
       }
     };
   }, [socialGeneralFormData, updateConfig, t]);
+
+  // Load cloud remotes on mount
+  useEffect(() => {
+    const loadCloudRemotes = async () => {
+      try {
+        const response = await api.get('/cloud/remotes');
+        const remotes = response.data.remotes || [];
+        setCloudRemotes(remotes);
+        if (config) {
+          const formData = {};
+          remotes.forEach((name) => {
+            const key = name.toLowerCase().replace(/\s+/g, '_');
+            formData[name] = {
+              target_dir: config[`conf_cloud_${key}_target_dir`] || '',
+              sync_method: config[`conf_cloud_${key}_sync_method`] || 'rclone',
+              files_stay: config[`conf_cloud_${key}_files_stay`] || 'false',
+            };
+          });
+          setCloudRemoteFormData(formData);
+        }
+      } catch (error) {
+        console.error('Failed to load cloud remotes:', error);
+      }
+    };
+    loadCloudRemotes();
+  }, [config]);
+
+  // Auto-save per-remote config
+  useEffect(() => {
+    if (Object.keys(cloudRemoteFormData).length === 0) {
+      return;
+    }
+    if (cloudRemoteSaveTimeout.current) {
+      clearTimeout(cloudRemoteSaveTimeout.current);
+    }
+    cloudRemoteSaveTimeout.current = setTimeout(async () => {
+      try {
+        const configToSave = {};
+        Object.entries(cloudRemoteFormData).forEach(([name, values]) => {
+          const key = name.toLowerCase().replace(/\s+/g, '_');
+          configToSave[`conf_cloud_${key}_target_dir`] = values.target_dir || '';
+          configToSave[`conf_cloud_${key}_sync_method`] = values.sync_method || 'rclone';
+          configToSave[`conf_cloud_${key}_files_stay`] = values.files_stay || 'false';
+        });
+        await updateConfig(configToSave);
+        setMessage(t('config.message_settings_saved') || 'Settings saved');
+      } catch (error) {
+        console.error('Failed to save cloud remote settings:', error);
+        setMessage('Error saving cloud remote settings');
+      }
+    }, 500);
+    return () => {
+      if (cloudRemoteSaveTimeout.current) {
+        clearTimeout(cloudRemoteSaveTimeout.current);
+      }
+    };
+  }, [cloudRemoteFormData, updateConfig, t]);
 
   const validatePassword = (password) => {
     if (!password) {
@@ -671,7 +735,67 @@ function ServiceConnections() {
       </TabPanel>
 
       <TabPanel value={currentTab} index={2}>
-              <CloudConfig 
+              {cloudRemotes.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  {cloudRemotes.map((remoteName) => (
+                    <Accordion key={remoteName}>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography>{remoteName}</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Stack spacing={2}>
+                          <TextField
+                            label={t('integrations.cloud_target_dir')}
+                            value={cloudRemoteFormData[remoteName]?.target_dir || ''}
+                            onChange={(e) =>
+                              setCloudRemoteFormData((prev) => ({
+                                ...prev,
+                                [remoteName]: { ...prev[remoteName], target_dir: e.target.value },
+                              }))
+                            }
+                            sx={{ maxWidth: 500 }}
+                          />
+                          <FormControl sx={{ maxWidth: 300 }}>
+                            <InputLabel>{t('integrations.cloud_sync_method')}</InputLabel>
+                            <Select
+                              value={cloudRemoteFormData[remoteName]?.sync_method || 'rclone'}
+                              onChange={(e) =>
+                                setCloudRemoteFormData((prev) => ({
+                                  ...prev,
+                                  [remoteName]: { ...prev[remoteName], sync_method: e.target.value },
+                                }))
+                              }
+                              label={t('integrations.cloud_sync_method')}
+                            >
+                              <MenuItem value="rclone">{t('integrations.cloud_sync_rclone')}</MenuItem>
+                              <MenuItem value="rsync">{t('integrations.cloud_sync_rsync')}</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={cloudRemoteFormData[remoteName]?.files_stay === 'true'}
+                                onChange={(e) =>
+                                  setCloudRemoteFormData((prev) => ({
+                                    ...prev,
+                                    [remoteName]: {
+                                      ...prev[remoteName],
+                                      files_stay: e.target.checked ? 'true' : 'false',
+                                    },
+                                  }))
+                                }
+                              />
+                            }
+                            label={t('integrations.cloud_files_stay')}
+                          />
+                        </Stack>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                  <Divider sx={{ mt: 3, mb: 3 }} />
+                </Box>
+              )}
+              <CloudConfig
                 onSavedStateChange={(isSaved, handleSave) => {
                   cloudConfigRef.current = { isSaved, handleSave };
                 }}

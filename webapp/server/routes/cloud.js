@@ -24,6 +24,27 @@ router.get('/config', async (req, res) => {
   }
 });
 
+router.get('/remotes', async (req, res) => {
+  try {
+    const rcloneConfigPath = path.join(
+      req.constants.const_MEDIA_DIR,
+      req.constants.const_RCLONE_CONFIG_FILE
+    );
+
+    const command = `sudo rclone config show --config "${rcloneConfigPath}" | grep '^\\[.*\\]$' | sed 's/^\\[//' | sed 's/\\]$//'`;
+    const result = await execCommand(command, { logger: req.logger });
+
+    const remotes = result.success && result.stdout.trim()
+      ? result.stdout.trim().split('\n').filter(s => s.trim()).map(s => s.replace(/^\[|\]$/g, ''))
+      : [];
+
+    res.json({ remotes });
+  } catch (error) {
+    req.logger.error('Failed to get cloud remotes', { error: error.message });
+    res.status(500).json({ error: 'Failed to get cloud remotes' });
+  }
+});
+
 router.get('/services', async (req, res) => {
   try {
     const rcloneConfigPath = path.join(
