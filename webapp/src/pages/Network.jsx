@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,14 +14,25 @@ import {
   Tabs,
   Tab,
   Link,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import VPNConfig from '../components/VPNConfig';
+import useAsyncAction from '../hooks/useAsyncAction';
 
 // Complete list of countries from ISO 3166 (matching original PHP implementation)
 const COMPLETE_COUNTRIES = [
@@ -290,6 +301,15 @@ function Network() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState(0);
+  const [comitupDialogOpen, setComitupDialogOpen] = useState(false);
+  const [comitupResetDone, setComitupResetDone] = useState(false);
+
+  const comitupResetFn = useCallback(() => api.post('/network/comitup/reset'), []);
+  const {
+    execute: executeComitupReset,
+    loading: comitupResetting,
+    error: comitupError,
+  } = useAsyncAction(comitupResetFn);
 
   useEffect(() => {
     // Load selected tab from localStorage
@@ -580,6 +600,75 @@ function Network() {
       <TabPanel value={currentTab} index={2}>
         <VPNConfig />
       </TabPanel>
+
+      <Accordion sx={{ mt: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <WarningAmberIcon color="warning" />
+            <Typography>{t('network.wifi_reset_section')}</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {t('network.wifi_reset_description')}
+          </Typography>
+          {comitupError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {t('network.wifi_reset_error') || 'Comitup is not installed on this device'}
+            </Alert>
+          )}
+          {comitupResetDone && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('network.wifi_reset_rebooting')}
+            </Alert>
+          )}
+          <Button
+            color="error"
+            variant="outlined"
+            onClick={() => setComitupDialogOpen(true)}
+            disabled={comitupResetDone}
+          >
+            {t('network.wifi_reset_button')}
+          </Button>
+        </AccordionDetails>
+      </Accordion>
+
+      <Dialog
+        open={comitupDialogOpen}
+        onClose={() => setComitupDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('network.wifi_reset_confirm_title')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('network.wifi_reset_confirm_body')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setComitupDialogOpen(false)}>
+            {t('main.cancel_button') || 'Cancel'}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              executeComitupReset()
+                .then(() => {
+                  setComitupResetDone(true);
+                  setComitupDialogOpen(false);
+                })
+                .catch(() => {
+                  setComitupDialogOpen(false);
+                });
+            }}
+            disabled={comitupResetting}
+            startIcon={comitupResetting ? <CircularProgress size={18} /> : null}
+          >
+            {t('network.wifi_reset_button')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={!!message}

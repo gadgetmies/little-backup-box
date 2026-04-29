@@ -37,7 +37,14 @@
     "ip_addresses": "Adresses IP",
     "refresh": "Actualiser",
     "no_ips": "Aucune adresse IP trouvée",
-    "qr_codes": "Codes QR"
+    "qr_codes": "Codes QR",
+    "wifi_reset_section": "Reset WiFi Credentials",
+    "wifi_reset_description": "This will erase stored WiFi credentials and reboot the device into access point mode.",
+    "wifi_reset_button": "Reset WiFi credentials",
+    "wifi_reset_confirm_title": "Reset WiFi Credentials?",
+    "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
+    "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
+    "wifi_reset_error": "Comitup is not installed on this device"
   },
   "scrape": {
     "title": "Pages archivées",
@@ -898,6 +905,15 @@
     }
   },
   "seconds_short": "s",
+  "system": {
+    "wifi_info": "WiFi Info",
+    "wifi_interface": "Interface",
+    "wifi_ssid": "SSID",
+    "wifi_signal": "Signal level",
+    "wifi_bitrate": "Bit rate",
+    "wifi_frequency": "Frequency",
+    "wifi_not_connected": "Not connected to WiFi"
+  },
   "sysconditions": {
     "arm_frq_capped_cur": "La fréquence ARM est actuellement plafonnée.",
     "arm_frq_capped_prev": "La fréquence ARM a déjà été plafonnée.",
@@ -1033,6 +1049,13 @@
       "installed_version": "Version installée",
       "available_version": "Version disponible"
     },
+    "dev_update_button": "Install development update",
+    "dev_update_warning": "Development branch may contain unstable changes.",
+    "dev_update_error": "Could not fetch from remote",
+    "libraw_title": "Update LibRaw",
+    "libraw_description": "Updates LibRaw for improved RAW image processing. This requires compiling from source and may take 5–15 minutes. RAW processing will be unavailable during the update.",
+    "libraw_button": "Update LibRaw",
+    "libraw_warning": "This process takes 5–15 minutes and will temporarily interrupt RAW processing.",
     "database": {
       "section": "Opérations de base de données",
       "target": "Stockage cible",
@@ -1058,10 +1081,19 @@
       "test_bluesky": "Tester la Connexion",
       "test_matrix": "Tester la Connexion"
     },
+    "social_general": "General",
+    "social_publish_date": "Publish date format",
+    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
+    "social_publish_filename": "Include filename in post",
     "cloud_services": {
       "title": "Services Cloud",
       "no_services": "Aucun service cloud configuré. Veuillez configurer rclone d'abord."
     },
+    "cloud_target_dir": "Target base directory",
+    "cloud_sync_method": "Sync method",
+    "cloud_sync_rclone": "rclone",
+    "cloud_sync_rsync": "rsync",
+    "cloud_files_stay": "Files stay in place",
     "vpn": {
       "title": "VPN",
       "file_uploaded": "Fichier de configuration VPN téléchargé",

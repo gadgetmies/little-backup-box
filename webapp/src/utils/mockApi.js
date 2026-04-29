@@ -325,6 +325,11 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/update/install' && method === 'post') {
+      const body = config.data || {};
+      if (body.branch === 'development') {
+        await delay(2000);
+        return { data: { success: true, message: 'Development update installation started (mock)' } };
+      }
       return { data: { success: true, message: 'Update installation started (mock)' } };
     }
     
@@ -438,6 +443,33 @@ export function createMockApiInterceptor() {
       return { data: { success: true } };
     }
     
+    if (url === '/cloud/remotes') {
+      return { data: { remotes: ['Dropbox', 'Google Drive'] } };
+    }
+
+    if (url === '/setup/update/libraw' && method === 'post') {
+      await delay(4000);
+      return { data: { success: true, message: 'LibRaw update completed (mock)' } };
+    }
+
+    if (url === '/network/comitup/reset' && method === 'post') {
+      await delay(1000);
+      return { data: {} };
+    }
+
+    if (url === '/network/wifi/info') {
+      return {
+        data: {
+          interface: 'wlan0',
+          ssid: 'HomeNetwork',
+          frequency: 5.18,
+          signal_level: -52,
+          bit_rate: 300,
+          connected: true,
+        },
+      };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }
