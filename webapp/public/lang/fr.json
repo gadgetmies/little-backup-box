@@ -979,7 +979,13 @@
       "single": "colonne unique"
     },
     "saved": "Modifications enregistrées",
-    "characters": "caractères"
+    "characters": "caractères",
+    "medium_selector": "Storage medium",
+    "columns": "Columns",
+    "not_mounted": "Storage medium is not mounted",
+    "no_images": "No images found on this medium",
+    "no_database": "No database found. Generate thumbnails from the Backup page first.",
+    "go_to_backup": "Go to Backup page"
   },
   "units": {
     "minutes_long": "minutes",
