@@ -9,6 +9,7 @@ import Maintenance from './pages/Maintenance';
 import ServiceConnections from './pages/ServiceConnections';
 import Network from './pages/Network';
 import ScrapedUI from './pages/ScrapedUI';
+import View from './pages/View';
 
 function RedirectHandler() {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ function App() {
         <Route path="/maintenance" element={<Maintenance />} />
         <Route path="/integrations" element={<ServiceConnections />} />
         <Route path="/scrape" element={<ScrapedUI />} />
+        <Route path="/view" element={<View />} />
       </Routes>
     </Layout>
   );
