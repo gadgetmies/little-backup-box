@@ -978,7 +978,13 @@
       "single": "single-column"
     },
     "saved": "Changes saved",
-    "characters": "characters"
+    "characters": "characters",
+    "slideshow_interval": "Interval (seconds)",
+    "slideshow_play": "Play slideshow",
+    "slideshow_stop": "Stop slideshow",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
+    "zoom_file_missing": "Original file not available"
   },
   "units": {
     "minutes_long": "minutes",

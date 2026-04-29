@@ -979,7 +979,13 @@
       "single": "colonne unique"
     },
     "saved": "Modifications enregistrées",
-    "characters": "caractères"
+    "characters": "caractères",
+    "slideshow_interval": "Intervalle (secondes)",
+    "slideshow_play": "Lancer le diaporama",
+    "slideshow_stop": "Arrêter le diaporama",
+    "zoom_in": "Zoom avant",
+    "zoom_out": "Zoom arrière",
+    "zoom_file_missing": "Fichier original non disponible"
   },
   "units": {
     "minutes_long": "minutes",

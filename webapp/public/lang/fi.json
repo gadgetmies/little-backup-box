@@ -977,7 +977,13 @@
       "single": "yksisarakkeinen"
     },
     "saved": "Muutokset tallennettu",
-    "characters": "merkkiä"
+    "characters": "merkkiä",
+    "slideshow_interval": "Väli (sekuntia)",
+    "slideshow_play": "Käynnistä diaesitys",
+    "slideshow_stop": "Pysäytä diaesitys",
+    "zoom_in": "Lähennä",
+    "zoom_out": "Loitonna",
+    "zoom_file_missing": "Alkuperäinen tiedosto ei saatavilla"
   },
   "units": {
     "minutes_long": "minuuttia",

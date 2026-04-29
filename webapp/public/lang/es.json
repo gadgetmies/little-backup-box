@@ -979,7 +979,13 @@
       "single": "una sola columna"
     },
     "saved": "Cambios guardados",
-    "characters": "caracteres"
+    "characters": "caracteres",
+    "slideshow_interval": "Intervalo (segundos)",
+    "slideshow_play": "Iniciar presentación",
+    "slideshow_stop": "Detener presentación",
+    "zoom_in": "Acercar",
+    "zoom_out": "Alejar",
+    "zoom_file_missing": "Archivo original no disponible"
   },
   "units": {
     "minutes_long": "minutos",

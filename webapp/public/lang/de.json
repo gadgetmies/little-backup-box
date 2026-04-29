@@ -979,7 +979,13 @@
       "single": "einspaltige Anzeige"
     },
     "saved": "Änderungen gespeichert",
-    "characters": "Zeichen"
+    "characters": "Zeichen",
+    "slideshow_interval": "Intervall (Sekunden)",
+    "slideshow_play": "Diashow starten",
+    "slideshow_stop": "Diashow stoppen",
+    "zoom_in": "Vergrößern",
+    "zoom_out": "Verkleinern",
+    "zoom_file_missing": "Originaldatei nicht verfügbar"
   },
   "units": {
     "minutes_long": "Minuten",
