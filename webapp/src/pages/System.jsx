@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,6 +14,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Card,
+  CardContent,
+  Alert,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -22,6 +25,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
+import useAsyncAction from '../hooks/useAsyncAction';
 
 function System() {
   const { t } = useLanguage();
@@ -29,32 +33,27 @@ function System() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [cameras, setCameras] = useState([]);
   const [copiedText, setCopiedText] = useState('');
-  const [expandedCameras, setExpandedCameras] = useState({});
+  const [expandedCameras, setExpandedCameras] = useState(() => {
+    try {
+      const saved = localStorage.getItem('accordion-sysinfo-cameras');
+      return saved !== null ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [wifiInfo, setWifiInfo] = useState(null);
   const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
 
-  useEffect(() => {
-    // Load accordion states from localStorage
-    const savedStates = localStorage.getItem('accordion-sysinfo-cameras');
-    if (savedStates !== null) {
-      try {
-        setExpandedCameras(JSON.parse(savedStates));
-      } catch (e) {
-        console.error('Failed to parse saved camera accordion states:', e);
-      }
-    }
-    
-    loadAll();
-  }, []);
+  const fetchWifiInfoFn = useCallback(() => api.get('/network/wifi/info'), []);
+  const {
+    execute: fetchWifiInfo,
+    loading: wifiLoading,
+  } = useAsyncAction(fetchWifiInfoFn);
 
   const handleCameraAccordionChange = (index, isExpanded) => {
     const newExpanded = { ...expandedCameras, [index]: isExpanded };
     setExpandedCameras(newExpanded);
     localStorage.setItem('accordion-sysinfo-cameras', JSON.stringify(newExpanded));
-  };
-
-  const loadAll = () => {
-    loadSystemInfo();
-    loadCameras();
   };
 
   const loadSystemInfo = async () => {
@@ -74,6 +73,27 @@ function System() {
       console.error('Failed to load cameras:', error);
     }
   };
+
+  const loadWifiInfo = useCallback(async () => {
+    try {
+      const response = await fetchWifiInfo();
+      setWifiInfo(response?.data || { connected: false });
+    } catch (error) {
+      console.error('Failed to load WiFi info:', error);
+      setWifiInfo({ connected: false });
+    }
+  }, [fetchWifiInfo]);
+
+  const loadAll = useCallback(() => {
+    loadSystemInfo();
+    loadCameras();
+    loadWifiInfo();
+  }, [loadWifiInfo]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAll();
+  }, [loadAll]);
 
   const handleCopyToClipboard = async (text) => {
     try {
@@ -154,6 +174,56 @@ function System() {
             </Box>
           </Grid>
         )}
+
+        <Grid item xs={12}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="h2">
+              {t('system.wifi_info')}
+            </Typography>
+            <IconButton onClick={loadWifiInfo} disabled={wifiLoading} size="small">
+              <RefreshIcon />
+            </IconButton>
+          </Box>
+          {wifiInfo && wifiInfo.connected === false && (
+            <Alert severity="info">{t('system.wifi_not_connected')}</Alert>
+          )}
+          {wifiInfo && wifiInfo.connected && (
+            <Card variant="outlined">
+              <CardContent>
+                <Table size="small">
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>{t('system.wifi_interface')}</TableCell>
+                      <TableCell>{wifiInfo.interface}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>{t('system.wifi_ssid')}</TableCell>
+                      <TableCell>{wifiInfo.ssid}</TableCell>
+                    </TableRow>
+                    {wifiInfo.signal_level !== null && (
+                      <TableRow>
+                        <TableCell>{t('system.wifi_signal')}</TableCell>
+                        <TableCell>{wifiInfo.signal_level} dBm</TableCell>
+                      </TableRow>
+                    )}
+                    {wifiInfo.bit_rate !== null && (
+                      <TableRow>
+                        <TableCell>{t('system.wifi_bitrate')}</TableCell>
+                        <TableCell>{wifiInfo.bit_rate} Mbps</TableCell>
+                      </TableRow>
+                    )}
+                    {wifiInfo.frequency !== null && (
+                      <TableRow>
+                        <TableCell>{t('system.wifi_frequency')}</TableCell>
+                        <TableCell>{wifiInfo.frequency} GHz</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </Grid>
 
         <Grid item xs={12}>
           <Typography variant="h2" gutterBottom>

@@ -876,6 +876,15 @@
     }
   },
   "seconds_short": "s",
+  "system": {
+    "wifi_info": "WiFi Info",
+    "wifi_interface": "Interface",
+    "wifi_ssid": "SSID",
+    "wifi_signal": "Signal level",
+    "wifi_bitrate": "Bit rate",
+    "wifi_frequency": "Frequency",
+    "wifi_not_connected": "Not connected to WiFi"
+  },
   "sysconditions": {
     "arm_frq_capped_cur": "La frecuencia de ARM está actualmente limitada.",
     "arm_frq_capped_prev": "La frecuencia ARM se ha limitado previamente.",

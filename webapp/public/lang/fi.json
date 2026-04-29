@@ -410,6 +410,15 @@
       "header": "WiFi"
     }
   },
+  "system": {
+    "wifi_info": "WiFi Info",
+    "wifi_interface": "Interface",
+    "wifi_ssid": "SSID",
+    "wifi_signal": "Signal level",
+    "wifi_bitrate": "Bit rate",
+    "wifi_frequency": "Frequency",
+    "wifi_not_connected": "Not connected to WiFi"
+  },
   "sysconditions": {
     "under_voltage_cur": "Jännite on tällä hetkellä liian alhainen.",
     "under_voltage_prev": "Virta on aiemmin ollut liian alhainen.",

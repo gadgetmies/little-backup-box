@@ -361,6 +361,19 @@ export function createMockApiInterceptor() {
       return { data: {} };
     }
 
+    if (url === '/network/wifi/info') {
+      return {
+        data: {
+          interface: 'wlan0',
+          ssid: 'HomeNetwork',
+          frequency: 5.18,
+          signal_level: -52,
+          bit_rate: 300,
+          connected: true,
+        },
+      };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }
