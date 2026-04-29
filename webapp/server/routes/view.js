@@ -235,9 +235,61 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+router.get('/image', async (req, res) => {
+  try {
+    const { medium, id } = req.query;
+
+    if (!medium || !id) {
+      return res.status(400).json({ error: 'medium and id are required' });
+    }
+
+    const dbPath = path.join(medium, req.constants.const_IMAGE_DATABASE_FILENAME);
+
+    if (!existsSync(dbPath)) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+    const dbGet = promisify(db.get.bind(db));
+
+    const image = await dbGet('SELECT * FROM EXIF_DATA WHERE ID = ?', [id]);
+    db.close();
+
+    if (!image) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const imagePath = path.join(medium, image.Directory, image.File_Name);
+
+    if (!existsSync(imagePath)) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const ext = path.extname(image.File_Name).toLowerCase();
+    const mimeTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.tiff': 'image/tiff',
+      '.tif': 'image/tiff',
+      '.bmp': 'image/bmp',
+      '.heic': 'image/heic',
+      '.heif': 'image/heif',
+      '.raw': 'image/raw',
+      '.cr2': 'image/x-canon-cr2',
+      '.nef': 'image/x-nikon-nef',
+    };
+
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.sendFile(imagePath);
+  } catch (error) {
+    req.logger.error('Failed to serve image', { error: error.message });
+    res.status(500).json({ error: 'Failed to serve image' });
+  }
+});
+
 export default router;
-
-
-
-
 
