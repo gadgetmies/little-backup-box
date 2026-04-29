@@ -334,9 +334,129 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+router.post('/rating', async (req, res) => {
+  try {
+    const { storagePath, imageId, rating, comment } = req.body;
+
+    if (!storagePath || imageId === undefined || imageId === null) {
+      return res.status(400).json({ error: 'Storage path and image ID required' });
+    }
+
+    const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
+
+    if (!existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Database not found' });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+    const dbGet = promisify(db.get.bind(db));
+    const dbRun = promisify(db.run.bind(db));
+
+    const image = await dbGet('SELECT * FROM EXIF_DATA WHERE ID = ?', [imageId]);
+
+    if (!image) {
+      db.close();
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const imagePath = path.join(storagePath, image.Directory, image.File_Name);
+
+    const args = [`'${imagePath}'`];
+    if (rating !== undefined) {
+      args.push(`--rating '${rating}'`);
+    }
+    if (comment !== undefined) {
+      args.push(`--comment '${comment.replace(/'/g, "'\\''")}'`);
+    }
+    if (req.config.conf_WRITE_EXIF_RATING === 'true') {
+      // lib_metadata.py doesn't have --write-exif flag; EXIF embedding is the default
+      // behaviour when not a RAW file; for RAW files it writes XMP sidecars automatically
+    }
+
+    const command = `sudo python3 ${req.WORKING_DIR}/lib_metadata.py ${args.join(' ')}`;
+    await execCommand(command, { logger: req.logger });
+
+    if (rating !== undefined && comment !== undefined) {
+      await dbRun(
+        'UPDATE EXIF_DATA SET LbbRating = ?, Comment = ? WHERE ID = ?',
+        [rating, comment, imageId]
+      );
+    } else if (rating !== undefined) {
+      await dbRun('UPDATE EXIF_DATA SET LbbRating = ? WHERE ID = ?', [rating, imageId]);
+    } else if (comment !== undefined) {
+      await dbRun('UPDATE EXIF_DATA SET Comment = ? WHERE ID = ?', [comment, imageId]);
+    }
+
+    db.close();
+
+    res.json({ success: true });
+  } catch (error) {
+    req.logger.error('Failed to set rating', { error: error.message });
+    res.status(500).json({ error: 'Failed to set rating' });
+  }
+});
+
+router.post('/delete-rejected', async (req, res) => {
+  try {
+    const { storagePath } = req.body;
+
+    if (!storagePath) {
+      return res.status(400).json({ error: 'Storage path required' });
+    }
+
+    const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
+
+    if (!existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Database not found' });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+    const dbAll = promisify(db.all.bind(db));
+    const dbRun = promisify(db.run.bind(db));
+
+    const rejectedImages = await dbAll(
+      'SELECT * FROM EXIF_DATA WHERE LbbRating = -1'
+    );
+
+    let deleted = 0;
+    const errors = [];
+
+    for (const image of rejectedImages) {
+      try {
+        const imagePath = path.join(storagePath, image.Directory, image.File_Name);
+        const baseName = path.basename(imagePath, path.extname(imagePath));
+        const dir = path.dirname(imagePath);
+        const timsPath = path.join(dir, 'tims', `${image.File_Name}.JPG`);
+        const xmpPath = path.join(dir, `${baseName}.xmp`);
+
+        await execCommand(`sudo rm -f '${imagePath}'`, { logger: req.logger });
+        await execCommand(`sudo rm -f '${timsPath}'`, { logger: req.logger });
+        await execCommand(`sudo rm -f '${xmpPath}'`, { logger: req.logger });
+
+        await dbRun('DELETE FROM EXIF_DATA WHERE ID = ? AND LbbRating = -1', [image.ID]);
+        deleted++;
+      } catch (err) {
+        errors.push(image.File_Name);
+        req.logger.error('Failed to delete image', { file: image.File_Name, error: err.message });
+      }
+    }
+
+    db.close();
+
+    if (errors.length > 0) {
+      return res.json({
+        success: false,
+        deleted,
+        error: `${errors.length} file(s) could not be deleted`,
+      });
+    }
+
+    res.json({ success: true, deleted });
+  } catch (error) {
+    req.logger.error('Failed to delete rejected images', { error: error.message });
+    res.status(500).json({ error: 'Failed to delete rejected images' });
+  }
+});
+
 export default router;
-
-
-
-
 

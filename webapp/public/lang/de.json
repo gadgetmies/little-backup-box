@@ -1045,14 +1045,21 @@
     },
     "saved": "Änderungen gespeichert",
     "characters": "Zeichen",
-    "medium_selector": "Storage medium",
+"medium_selector": "Storage medium",
     "columns": "Columns",
     "sort_by": "Sort by",
     "per_page": "Per page",
     "not_mounted": "Storage medium is not mounted",
     "no_images": "No images found on this medium",
     "no_database": "No database found. Generate thumbnails from the Backup page first.",
-    "go_to_backup": "Go to Backup page"
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Kommentar hinzufügen...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Bewertung konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "delete_rejected_button": "Abgelehnte löschen",
+    "delete_rejected_title": "Abgelehnte Bilder löschen",
+    "delete_rejected_confirm": "Alle {count} abgelehnten Bilder auf {medium} löschen? Dies kann nicht rückgängig gemacht werden.",
+    "delete_rejected_partial": "Einige Dateien konnten nicht gelöscht werden: {error}"
   },
   "units": {
     "minutes_long": "Minuten",

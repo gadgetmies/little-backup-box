@@ -7,6 +7,10 @@ import {
   CardContent,
   CardMedia,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   IconButton,
@@ -15,6 +19,7 @@ import {
   MenuItem,
   Pagination,
   Select,
+  TextField,
   Typography,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -27,6 +32,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
 import useAsyncAction from '../hooks/useAsyncAction';
+import RatingWidget from '../components/RatingWidget';
 
 const PREFS_KEY = 'lbb-view-preferences';
 const SCROLL_KEY = 'lbb-view-scroll';
@@ -68,6 +74,16 @@ export default function View() {
   const [sortDir, setSortDir] = useState(prefs.sortDir || 'desc');
   const [columns, setColumns] = useState(prefs.columns || 3);
 
+  // Rating / comment / delete-rejected state
+  const [comment, setComment] = useState('');
+  const [ratingError, setRatingError] = useState(null);
+  const [commentError, setCommentError] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogError, setDeleteDialogError] = useState(null);
+  const [deleteDialogWarning, setDeleteDialogWarning] = useState(null);
+  const ratingDebounceRef = useRef({});
+  const commentDebounceRef = useRef(null);
+
   // Ref to track current images/page for keyboard handler without stale closures
   const stateRef = useRef({ images, selectedIndex, page, perPage, total, medium, sortField, sortDir });
 
@@ -106,6 +122,21 @@ export default function View() {
     isExecuting: isFetchingImages,
     error: imagesError,
   } = useAsyncAction(fetchImagesFn);
+
+  // ---- rating / delete-rejected ----
+  const saveRatingFn = useCallback(
+    async ({ imageId, rating, comment: cmt }) => {
+      return api.post('/view/rating', { medium, imageId, rating, comment: cmt });
+    },
+    [medium]
+  );
+
+  const deleteRejectedFn = useCallback(async () => {
+    return api.post('/view/delete-rejected', { medium });
+  }, [medium]);
+
+  const { execute: executeDeleteRejected, isExecuting: isDeletingRejected } =
+    useAsyncAction(deleteRejectedFn);
 
   // Load media on mount
   useEffect(() => {
@@ -199,6 +230,110 @@ export default function View() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [viewMode, goPrev, goNext]);
+
+  // ---- Rating / comment handlers ----
+
+  const handleRatingChange = useCallback(
+    (imageId, newRating) => {
+      const prevRating = images.find((img) => img.ID === imageId)?.rating ?? 0;
+      setImages((prev) =>
+        prev.map((img) => (img.ID === imageId ? { ...img, rating: newRating } : img))
+      );
+      setRatingError(null);
+
+      if (ratingDebounceRef.current[imageId]) {
+        clearTimeout(ratingDebounceRef.current[imageId]);
+      }
+      ratingDebounceRef.current[imageId] = setTimeout(async () => {
+        try {
+          await saveRatingFn({ imageId, rating: newRating });
+        } catch (err) {
+          setRatingError(
+            err?.response?.data?.error || err?.message || t('view.rating_save_error')
+          );
+          setImages((prev) =>
+            prev.map((img) => (img.ID === imageId ? { ...img, rating: prevRating } : img))
+          );
+        }
+      }, 800);
+    },
+    [images, saveRatingFn, t]
+  );
+
+  const handleCommentChange = useCallback(
+    (e) => {
+      const val = e.target.value;
+      setComment(val);
+      setCommentError(null);
+
+      const currentImage = images[selectedIndex];
+      if (!currentImage) return;
+      const imageId = currentImage.ID;
+      const prevComment = currentImage.comment ?? '';
+
+      setImages((prev) =>
+        prev.map((img) => (img.ID === imageId ? { ...img, comment: val } : img))
+      );
+
+      if (commentDebounceRef.current) clearTimeout(commentDebounceRef.current);
+      commentDebounceRef.current = setTimeout(async () => {
+        try {
+          await saveRatingFn({ imageId, comment: val });
+        } catch (err) {
+          setCommentError(
+            err?.response?.data?.error || err?.message || t('view.rating_save_error')
+          );
+          setComment(prevComment);
+          setImages((prev) =>
+            prev.map((img) => (img.ID === imageId ? { ...img, comment: prevComment } : img))
+          );
+        }
+      }, 1200);
+    },
+    [images, selectedIndex, saveRatingFn, t]
+  );
+
+  const rejectedCount = images.filter((img) => img.rating === -1).length;
+
+  const handleDeleteRejectedConfirm = async () => {
+    setDeleteDialogError(null);
+    setDeleteDialogWarning(null);
+    try {
+      const response = await executeDeleteRejected();
+      const data = response?.data;
+      if (data && !data.success) {
+        setDeleteDialogWarning(data.error || t('view.delete_rejected_partial'));
+        fetchImages(medium, page, perPage, sortField, sortDir)
+          .then((d) => {
+            setImages(d.images || []);
+            setTotal(d.total || 0);
+          })
+          .catch(() => {});
+        setTimeout(() => setDeleteDialogOpen(false), 3000);
+      } else {
+        setDeleteDialogOpen(false);
+        fetchImages(medium, page, perPage, sortField, sortDir)
+          .then((d) => {
+            setImages(d.images || []);
+            setTotal(d.total || 0);
+          })
+          .catch(() => {});
+      }
+    } catch (err) {
+      setDeleteDialogError(
+        err?.response?.data?.error || err?.message || 'Failed to delete rejected images'
+      );
+    }
+  };
+
+  // When opening single-image, sync comment state
+  const handleOpenSingleWithComment = (idx) => {
+    const img = images[idx];
+    if (img) setComment(img.comment ?? '');
+    setRatingError(null);
+    setCommentError(null);
+    handleOpenSingle(idx);
+  };
 
   // ---- Event handlers ----
 
@@ -325,6 +460,21 @@ export default function View() {
             ))}
           </Select>
         </FormControl>
+
+        {viewMode === 'grid' && rejectedCount > 0 && (
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={isLoading}
+            onClick={() => {
+              setDeleteDialogError(null);
+              setDeleteDialogWarning(null);
+              setDeleteDialogOpen(true);
+            }}
+          >
+            {t('view.delete_rejected_button')}
+          </Button>
+        )}
       </Box>
 
       {/* Loading */}
@@ -357,8 +507,9 @@ export default function View() {
             {images.map((image, idx) => (
               <Grid item xs={xs} key={image.ID}>
                 <Card
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => handleOpenSingle(idx)}
+                  data-testid="image-card"
+                  sx={{ cursor: 'pointer', position: 'relative' }}
+                  onClick={() => handleOpenSingleWithComment(idx)}
                 >
                   <CardMedia
                     component="img"
@@ -367,6 +518,25 @@ export default function View() {
                     alt={image.File_Name}
                     sx={{ objectFit: 'cover' }}
                   />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 32,
+                      left: 0,
+                      right: 0,
+                      bgcolor: 'rgba(0,0,0,0.55)',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      p: 0.5,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <RatingWidget
+                      size="small"
+                      value={image.rating ?? 0}
+                      onChange={(r) => handleRatingChange(image.ID, r)}
+                    />
+                  </Box>
                   <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
                     <Typography variant="caption" noWrap display="block">
                       {image.File_Name}
@@ -450,8 +620,80 @@ export default function View() {
               <SkipNextIcon />
             </IconButton>
           </Box>
+
+          {/* Rating + comment */}
+          <Box sx={{ mt: 3, maxWidth: 600, mx: 'auto' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+              <RatingWidget
+                size="normal"
+                value={currentImage.rating ?? 0}
+                onChange={(r) => handleRatingChange(currentImage.ID, r)}
+              />
+            </Box>
+            {ratingError && (
+              <Alert severity="error" onClose={() => setRatingError(null)} sx={{ mb: 1 }}>
+                {ratingError}
+              </Alert>
+            )}
+            <TextField
+              multiline
+              fullWidth
+              minRows={2}
+              label={t('view.images.comment')}
+              placeholder={t('view.comment_placeholder')}
+              value={comment}
+              onChange={handleCommentChange}
+              inputProps={{ maxLength: 500 }}
+              helperText={`${comment.length} / 500`}
+            />
+            {commentError && (
+              <Alert severity="error" onClose={() => setCommentError(null)} sx={{ mt: 1 }}>
+                {commentError}
+              </Alert>
+            )}
+          </Box>
         </Box>
       )}
+
+      {/* Delete rejected dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !isDeletingRejected && setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('view.delete_rejected_title')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {(t('view.delete_rejected_confirm') || 'Delete {count} rejected images from {medium}? This cannot be undone.')
+              .replace('{count}', String(rejectedCount))
+              .replace('{medium}', medium || 'selected medium')}
+          </Typography>
+          {deleteDialogWarning && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              {deleteDialogWarning}
+            </Alert>
+          )}
+          {deleteDialogError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteDialogError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingRejected}>
+            {t('cancel') || 'Cancel'}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleDeleteRejectedConfirm}
+            disabled={isDeletingRejected}
+          >
+            {isDeletingRejected ? '…' : (t('view.delete_rejected_button') || 'Delete rejected')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

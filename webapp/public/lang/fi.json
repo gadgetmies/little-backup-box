@@ -1043,14 +1043,21 @@
     },
     "saved": "Muutokset tallennettu",
     "characters": "merkkiä",
-    "medium_selector": "Storage medium",
+"medium_selector": "Storage medium",
     "columns": "Columns",
     "sort_by": "Sort by",
     "per_page": "Per page",
     "not_mounted": "Storage medium is not mounted",
     "no_images": "No images found on this medium",
     "no_database": "No database found. Generate thumbnails from the Backup page first.",
-    "go_to_backup": "Go to Backup page"
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Lisää kommentti...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Arvosanan tallentaminen epäonnistui. Yritä uudelleen.",
+    "delete_rejected_button": "Poista hylätyt",
+    "delete_rejected_title": "Poista hylätyt kuvat",
+    "delete_rejected_confirm": "Poistetaanko kaikki {count} hylättyä kuvaa kohteesta {medium}? Tätä ei voi peruuttaa.",
+    "delete_rejected_partial": "Joitain tiedostoja ei voitu poistaa: {error}"
   },
   "units": {
     "minutes_long": "minuuttia",
@@ -1118,4 +1125,3 @@
     "failure_none": "None"
   }
 }
-

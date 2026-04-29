@@ -1045,14 +1045,21 @@
     },
     "saved": "Modifications enregistrées",
     "characters": "caractères",
-    "medium_selector": "Storage medium",
+"medium_selector": "Storage medium",
     "columns": "Columns",
     "sort_by": "Sort by",
     "per_page": "Per page",
     "not_mounted": "Storage medium is not mounted",
     "no_images": "No images found on this medium",
     "no_database": "No database found. Generate thumbnails from the Backup page first.",
-    "go_to_backup": "Go to Backup page"
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Ajouter un commentaire...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Impossible de sauvegarder la note. Veuillez réessayer.",
+    "delete_rejected_button": "Supprimer les refusées",
+    "delete_rejected_title": "Supprimer les images refusées",
+    "delete_rejected_confirm": "Supprimer les {count} images refusées sur {medium} ? Cette action est irréversible.",
+    "delete_rejected_partial": "Certains fichiers n'ont pas pu être supprimés : {error}"
   },
   "units": {
     "minutes_long": "minutes",

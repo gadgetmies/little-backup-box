@@ -1045,14 +1045,21 @@
     },
     "saved": "Cambios guardados",
     "characters": "caracteres",
-    "medium_selector": "Storage medium",
+"medium_selector": "Storage medium",
     "columns": "Columns",
     "sort_by": "Sort by",
     "per_page": "Per page",
     "not_mounted": "Storage medium is not mounted",
     "no_images": "No images found on this medium",
     "no_database": "No database found. Generate thumbnails from the Backup page first.",
-    "go_to_backup": "Go to Backup page"
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Añadir un comentario...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "No se pudo guardar la valoración. Por favor, inténtelo de nuevo.",
+    "delete_rejected_button": "Eliminar rechazadas",
+    "delete_rejected_title": "Eliminar imágenes rechazadas",
+    "delete_rejected_confirm": "¿Eliminar todas las {count} imágenes rechazadas en {medium}? Esto no se puede deshacer.",
+    "delete_rejected_partial": "Algunos archivos no pudieron eliminarse: {error}"
   },
   "units": {
     "minutes_long": "minutos",
