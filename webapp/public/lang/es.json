@@ -945,7 +945,15 @@
       "medium_source_nvme": "Origen NVMe local",
       "medium_target_nvme": "Destino NVMe local",
       "social_publish": "marcado para publicación",
-      "social_published": "publicado"
+      "social_published": "publicado",
+      "rating_all": "Todos",
+      "rejected": "Rechazado (−1)",
+      "unrated": "Sin calificar (0)",
+      "date_from": "Fecha desde",
+      "date_to": "Fecha hasta",
+      "filename": "Nombre de archivo",
+      "camera": "Cámara",
+      "reset": "Restablecer filtros"
     },
     "images": {
       "download": "Descargar originales",
@@ -972,7 +980,14 @@
     "social": {
       "publish_on": "publicar en",
       "published_on": "publicado en",
-      "mark_for_publish_on": "marcar para publicación en"
+      "mark_for_publish_on": "marcar para publicación en",
+      "publish": "Publicar",
+      "published": "Publicado",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Error al publicar",
+      "auth_failed": "Autenticación fallida",
+      "rate_limit": "Límite de velocidad alcanzado"
     },
     "grid": {
       "multi": "multicolumna",

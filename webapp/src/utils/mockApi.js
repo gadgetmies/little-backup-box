@@ -39,6 +39,9 @@ const mockData = {
     conf_POWER_OFF: 'false',
     conf_TIME_ZONE: 'UTC',
     conf_WIFI_COUNTRY: 'US',
+    conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
+    conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
+    conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
   },
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
@@ -100,17 +103,67 @@ const mockData = {
   },
   log: '',
   viewImages: {
-    images: [],
-    count: 0,
+    images: [
+      {
+        ID: 1,
+        File_Name: 'IMG_0001.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-15',
+        LbbRating: 3,
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: '0',
+        publish_mastodon: '0',
+      },
+      {
+        ID: 2,
+        File_Name: 'IMG_0002.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-16',
+        LbbRating: -1,
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: '0',
+        publish_mastodon: '0',
+      },
+      {
+        ID: 3,
+        File_Name: 'IMG_0003.RAF',
+        Directory: '2024/02',
+        Create_Date: '2024-02-10',
+        LbbRating: 0,
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'RAF',
+        publish_telegram: '1',
+        publish_mastodon: '0',
+      },
+      {
+        ID: 4,
+        File_Name: 'IMG_0004.jpg',
+        Directory: '2024/02',
+        Create_Date: '2024-02-11',
+        LbbRating: 5,
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'JPEG',
+        publish_telegram: '0',
+        publish_mastodon: '1',
+      },
+    ],
+    count: 4,
   },
   viewStats: {
-    imagesAll: 0,
-    directories: [],
-    ratings: [],
-    dates: [],
-    fileTypes: [],
-    fileTypeExtensions: [],
-    cameraModelNames: [],
+    imagesAll: 4,
+    directories: ['2024/01', '2024/02'],
+    ratings: [
+      { LbbRating: -1, count: 1 },
+      { LbbRating: 0, count: 1 },
+      { LbbRating: 3, count: 1 },
+      { LbbRating: 5, count: 1 },
+    ],
+    dates: ['2024-01-15', '2024-01-16', '2024-02-10', '2024-02-11'],
+    fileTypes: ['JPEG', 'RAF'],
+    fileTypeExtensions: ['jpg', 'RAF'],
+    cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5'],
   },
 };
 
@@ -314,11 +367,64 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/view/images') {
-      return { data: mockData.viewImages };
+      const params = config.params || {};
+      let images = [...mockData.viewImages.images];
+
+      // Apply rating filter
+      if (params.rating) {
+        const ratingValues = params.rating.split(',').map((r) => parseInt(r, 10));
+        images = images.filter((img) => ratingValues.includes(img.LbbRating));
+      }
+
+      // Apply date_from filter
+      if (params.date_from) {
+        images = images.filter((img) => img.Create_Date >= params.date_from);
+      }
+
+      // Apply date_to filter
+      if (params.date_to) {
+        images = images.filter((img) => img.Create_Date <= params.date_to);
+      }
+
+      // Apply filename filter
+      if (params.filename) {
+        const fn = params.filename.toLowerCase();
+        images = images.filter((img) => img.File_Name.toLowerCase().includes(fn));
+      }
+
+      // Apply camera filter
+      if (params.camera) {
+        images = images.filter((img) => img.Camera_Model_Name === params.camera);
+      }
+
+      // Apply file_type filter
+      if (params.file_type) {
+        const ftValues = params.file_type.split(',').map((f) => f.trim());
+        images = images.filter((img) => ftValues.includes(img.File_Type));
+      }
+
+      // Pagination
+      const offset = parseInt(params.selectOffset || 0, 10);
+      const perPage = parseInt(params.filterImagesPerPage || 50, 10);
+      const count = images.length;
+      const paged = images.slice(offset, offset + perPage);
+
+      return { data: { images: paged, count } };
     }
-    
+
     if (url === '/view/stats') {
       return { data: mockData.viewStats };
+    }
+
+    if (url === '/social/publish' && method === 'post') {
+      const { platforms } = config.data || {};
+      const results = {};
+      if (Array.isArray(platforms)) {
+        platforms.forEach((p) => {
+          results[p] = true;
+        });
+      }
+      return { data: { success: true, results } };
     }
     
     if (url === '/view/update-metadata' && method === 'post') {

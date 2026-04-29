@@ -943,7 +943,15 @@
       "medium_source_nvme": "Paikallinen NVMe-lähde",
       "medium_target_nvme": "Paikallinen NVMe-kohde",
       "social_publish": "varattu julkaisua varten",
-      "social_published": "julkaistu"
+      "social_published": "julkaistu",
+      "rating_all": "Kaikki",
+      "rejected": "Hylätty (−1)",
+      "unrated": "Arvioimaton (0)",
+      "date_from": "Päivämäärästä",
+      "date_to": "Päivämäärään",
+      "filename": "Tiedostonimi",
+      "camera": "Kamera",
+      "reset": "Nollaa suodattimet"
     },
     "images": {
       "download": "Lataa alkuperäinen",
@@ -970,7 +978,14 @@
     "social": {
       "publish_on": "julkaise",
       "published_on": "julkaistu",
-      "mark_for_publish_on": "merkitse julkaisua varten"
+      "mark_for_publish_on": "merkitse julkaisua varten",
+      "publish": "Julkaise",
+      "published": "Julkaistu",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Julkaisu epäonnistui",
+      "auth_failed": "Todennus epäonnistui",
+      "rate_limit": "Nopeusrajoitus saavutettu"
     },
     "grid": {
       "multi": "monisarakkeinen",

@@ -40,39 +40,86 @@ router.get('/images', async (req, res) => {
       orderBy = 'ID',
       orderDir = 'ASC',
       gridColumns = 3,
+      // New filter params
+      rating,
+      date_from,
+      date_to,
+      filename,
+      camera,
+      file_type,
     } = req.query;
-    
+
     if (!storagePath) {
       return res.status(400).json({ error: 'Storage path required' });
     }
-    
+
     const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
-    
+
     if (!existsSync(dbPath)) {
       return res.json({ images: [], count: 0 });
     }
-    
+
     const db = new sqlite3.Database(dbPath);
     const dbAll = promisify(db.all.bind(db));
-    const dbGet = promisify(db.get.bind(db));
-    
+
     let query = 'SELECT * FROM EXIF_DATA WHERE 1=1';
     const params = [];
-    
-    if (filterRating !== '-1' && filterRating !== -1) {
+
+    // Support new multi-rating filter (comma-separated list) or legacy single filterRating
+    if (rating) {
+      const ratingValues = rating.split(',').map((r) => parseInt(r, 10)).filter((r) => !isNaN(r));
+      if (ratingValues.length === 1) {
+        query += ' AND LbbRating = ?';
+        params.push(ratingValues[0]);
+      } else if (ratingValues.length > 1) {
+        query += ` AND LbbRating IN (${ratingValues.map(() => '?').join(',')})`;
+        params.push(...ratingValues);
+      }
+    } else if (filterRating !== '-1' && filterRating !== -1) {
       query += ' AND LbbRating = ?';
       params.push(filterRating);
     }
-    
+
+    if (date_from) {
+      query += ' AND Create_Date >= ?';
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      query += ' AND Create_Date <= ?';
+      params.push(date_to);
+    }
+
+    if (filename) {
+      query += ' AND File_Name LIKE ?';
+      params.push(`%${filename}%`);
+    }
+
+    if (camera) {
+      query += ' AND Camera_Model_Name = ?';
+      params.push(camera);
+    }
+
+    if (file_type) {
+      const ftValues = file_type.split(',').map((f) => f.trim()).filter(Boolean);
+      if (ftValues.length === 1) {
+        query += ' AND File_Type = ?';
+        params.push(ftValues[0]);
+      } else if (ftValues.length > 1) {
+        query += ` AND File_Type IN (${ftValues.map(() => '?').join(',')})`;
+        params.push(...ftValues);
+      }
+    }
+
     query += ` ORDER BY ${orderBy} ${orderDir}`;
-    
+
     const allImages = await dbAll(query, params);
     const count = allImages.length;
-    
+
     const images = allImages.slice(selectOffset, parseInt(selectOffset) + parseInt(filterImagesPerPage));
-    
+
     db.close();
-    
+
     res.json({ images, count });
   } catch (error) {
     req.logger.error('Failed to get images', { error: error.message });
@@ -187,8 +234,9 @@ router.post('/delete-image', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
-    const { storagePath } = req.query;
-    
+    // Accept either storagePath (legacy) or medium (new param name)
+    const storagePath = req.query.storagePath || req.query.medium;
+
     if (!storagePath) {
       return res.status(400).json({ error: 'Storage path required' });
     }
