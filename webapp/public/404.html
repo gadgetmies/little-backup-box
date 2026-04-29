@@ -5,19 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Little Backup Box</title>
   <script>
+    // __BASE_PATH__ is replaced at build time with VITE_BASE_PATH (e.g. "/little-backup-box/pr-144/").
+    // When unreplaced (dev/local 404), fall back to "/" which works for `npm run dev` and root-served builds.
+    var basePath = '__BASE_PATH__';
+    if (basePath === '__' + 'BASE_PATH__' || !basePath) {
+      basePath = '/';
+    }
+    if (basePath.charAt(basePath.length - 1) !== '/') {
+      basePath = basePath + '/';
+    }
+
     var path = window.location.pathname;
     var search = window.location.search;
     var hash = window.location.hash;
-    
-    var segments = path.split('/').filter(function(p) { return p && p !== 'index.html'; });
-    var basePath = segments.length > 0 ? '/' + segments[0] + '/' : '/';
-    
+
     var redirectPath = path;
-    if (segments.length > 1) {
-      redirectPath = '/' + segments.join('/');
+    if (path.indexOf(basePath) === 0) {
+      var subPath = path.slice(basePath.length);
+      redirectPath = subPath ? '/' + subPath.replace(/^\/+/, '') : '/';
     }
-    
-    var newPath = basePath + 'index.html' + (redirectPath !== basePath && redirectPath !== basePath + 'index.html' ? '?redirect=' + encodeURIComponent(redirectPath) : '') + search + hash;
+
+    var redirectQuery = '';
+    if (redirectPath && redirectPath !== '/' && redirectPath !== '/index.html') {
+      redirectQuery = '?redirect=' + encodeURIComponent(redirectPath);
+    }
+
+    var newPath = basePath + 'index.html' + redirectQuery + (search ? (redirectQuery ? '&' + search.slice(1) : search) : '') + hash;
     window.location.replace(newPath);
   </script>
 </head>
@@ -25,4 +38,3 @@
   <p>Redirecting...</p>
 </body>
 </html>
-

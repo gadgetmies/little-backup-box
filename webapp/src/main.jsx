@@ -101,7 +101,10 @@ function ThemeSync({ setThemeMode }) {
   return null;
 }
 
-const basename = import.meta.env.BASE_URL || '/';
+// React Router expects basename without a trailing slash. Vite's BASE_URL
+// always ends in '/', so strip it (but keep '/' for root-served deploys).
+const rawBase = import.meta.env.BASE_URL || '/';
+const basename = rawBase.length > 1 && rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
