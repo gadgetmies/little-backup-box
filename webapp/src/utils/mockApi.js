@@ -236,20 +236,35 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'Backup function initiated (mock)' } };
     }
     
+    if (url === '/config/button-actions') {
+      return {
+        data: {
+          actions: ['backup_start', 'backup_stop', 'view_next', 'view_prev', 'shutdown', 'reboot'],
+        },
+      };
+    }
+
     if (url === '/config' || url === '/config/') {
       return { data: { config: mockData.config, constants: mockData.constants } };
     }
     
     if (url === '/config/save' && method === 'post') {
-      if (config.data?.failureMode === 'invalid_timezone' && config.data?.conf_timezone !== undefined) {
+      const saveData = config.data || {};
+      const saveFailureMode = mockSettings.failureMode;
+      if (saveFailureMode === 'invalid_timezone' && saveData.conf_timezone !== undefined) {
         return Promise.reject({
-          response: {
-            status: 400,
-            data: { error: 'Unknown timezone identifier' },
-          },
+          response: { status: 400, data: { error: 'Unknown timezone identifier' } },
         });
       }
-      Object.assign(mockData.config, config.data);
+      if (
+        saveFailureMode === 'gpio_conflict' &&
+        ('conf_MENU_BUTTON_COMBINATION' in saveData || 'conf_FAN_GPIO_PIN' in saveData)
+      ) {
+        return Promise.reject({
+          response: { status: 422, data: { error: 'GPIO pin already in use' } },
+        });
+      }
+      Object.assign(mockData.config, saveData);
       return { data: { success: true } };
     }
     

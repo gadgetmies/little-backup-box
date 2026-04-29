@@ -15,6 +15,12 @@ router.get('/', (req, res) => {
   }
 });
 
+router.get('/button-actions', (req, res) => {
+  res.json({
+    actions: ['backup_start', 'backup_stop', 'view_next', 'view_prev', 'shutdown', 'reboot'],
+  });
+});
+
 router.post('/save', async (req, res) => {
   try {
     const configPath = path.join(req.WORKING_DIR, 'config.cfg');
