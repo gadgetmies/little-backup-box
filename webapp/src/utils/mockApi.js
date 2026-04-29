@@ -212,12 +212,33 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'Backup function initiated (mock)' } };
     }
     
+    if (url === '/config/button-actions') {
+      return {
+        data: {
+          actions: ['backup_start', 'backup_stop', 'view_next', 'view_prev', 'shutdown', 'reboot'],
+        },
+      };
+    }
+
     if (url === '/config' || url === '/config/') {
       return { data: { config: mockData.config, constants: mockData.constants } };
     }
     
     if (url === '/config/save' && method === 'post') {
-      Object.assign(mockData.config, config.data);
+      const saveData = config.data || {};
+      const failureMode = mockData.config._failureMode;
+      if (
+        failureMode === 'gpio_conflict' &&
+        ('conf_MENU_BUTTON_COMBINATION' in saveData || 'conf_FAN_GPIO_PIN' in saveData)
+      ) {
+        return Promise.reject({
+          response: {
+            status: 422,
+            data: { error: 'GPIO pin already in use' },
+          },
+        });
+      }
+      Object.assign(mockData.config, saveData);
       return { data: { success: true } };
     }
     

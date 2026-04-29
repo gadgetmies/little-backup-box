@@ -13,10 +13,15 @@ import {
   Grid,
   Stack,
   Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import DisplayConfig from '../components/DisplayConfig';
+import ButtonHardwareConfig from '../components/ButtonHardwareConfig';
 
 function UserInterface() {
   const { t } = useLanguage();
@@ -161,6 +166,17 @@ function UserInterface() {
             {t('config.display.section') || 'Display'}
           </Typography>
           <DisplayConfig />
+        </Grid>
+
+        <Grid item xs={12}>
+          <Accordion defaultExpanded={false}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h2">{t('hardware.button_section')}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <ButtonHardwareConfig />
+            </AccordionDetails>
+          </Accordion>
         </Grid>
       </Grid>
 
