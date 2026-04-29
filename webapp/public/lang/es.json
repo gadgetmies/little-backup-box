@@ -1059,7 +1059,13 @@
     "delete_rejected_button": "Eliminar rechazadas",
     "delete_rejected_title": "Eliminar imágenes rechazadas",
     "delete_rejected_confirm": "¿Eliminar todas las {count} imágenes rechazadas en {medium}? Esto no se puede deshacer.",
-    "delete_rejected_partial": "Algunos archivos no pudieron eliminarse: {error}"
+    "delete_rejected_partial": "Algunos archivos no pudieron eliminarse: {error}",
+    "slideshow_interval": "Intervalo (segundos)",
+    "slideshow_play": "Iniciar presentación",
+    "slideshow_stop": "Detener presentación",
+    "zoom_in": "Acercar",
+    "zoom_out": "Alejar",
+    "zoom_file_missing": "Archivo original no disponible"
   },
   "units": {
     "minutes_long": "minutos",

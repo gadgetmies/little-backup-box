@@ -336,7 +336,8 @@ router.get('/stats', async (req, res) => {
 
 router.post('/rating', async (req, res) => {
   try {
-    const { storagePath, imageId, rating, comment } = req.body;
+    const { medium, storagePath: storagePathParam, imageId, rating, comment } = req.body;
+    const storagePath = storagePathParam || (medium ? path.join(req.constants.const_MEDIA_DIR || '/media', medium) : null);
 
     if (!storagePath || imageId === undefined || imageId === null) {
       return res.status(400).json({ error: 'Storage path and image ID required' });
@@ -398,7 +399,8 @@ router.post('/rating', async (req, res) => {
 
 router.post('/delete-rejected', async (req, res) => {
   try {
-    const { storagePath } = req.body;
+    const { medium, storagePath: storagePathParam } = req.body;
+    const storagePath = storagePathParam || (medium ? path.join(req.constants.const_MEDIA_DIR || '/media', medium) : null);
 
     if (!storagePath) {
       return res.status(400).json({ error: 'Storage path required' });
@@ -455,6 +457,53 @@ router.post('/delete-rejected', async (req, res) => {
   } catch (error) {
     req.logger.error('Failed to delete rejected images', { error: error.message });
     res.status(500).json({ error: 'Failed to delete rejected images' });
+  }
+});
+
+router.get('/image', async (req, res) => {
+  try {
+    const { medium, id } = req.query;
+
+    if (!medium || !id) {
+      return res.status(400).json({ error: 'medium and id are required' });
+    }
+
+    const storagePath = path.join(req.constants.const_MEDIA_DIR || '/media', medium);
+    const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
+
+    if (!existsSync(dbPath)) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+    const dbGet = promisify(db.get.bind(db));
+    const image = await dbGet('SELECT * FROM EXIF_DATA WHERE ID = ?', [id]);
+    db.close();
+
+    if (!image) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const imagePath = path.join(storagePath, image.Directory, image.File_Name);
+
+    if (!existsSync(imagePath)) {
+      return res.status(404).json({ error: 'file_missing' });
+    }
+
+    const ext = path.extname(image.File_Name).toLowerCase();
+    const mimeTypes = {
+      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+      '.gif': 'image/gif', '.webp': 'image/webp', '.tiff': 'image/tiff',
+      '.tif': 'image/tiff', '.bmp': 'image/bmp', '.heic': 'image/heic',
+      '.heif': 'image/heif', '.raw': 'image/raw',
+      '.cr2': 'image/x-canon-cr2', '.nef': 'image/x-nikon-nef',
+    };
+
+    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+    res.sendFile(imagePath);
+  } catch (error) {
+    req.logger.error('Failed to serve image', { error: error.message });
+    res.status(500).json({ error: 'Failed to serve image' });
   }
 });
 

@@ -416,6 +416,21 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'Settings uploaded (mock)' } };
     }
     
+    if (url === '/view/image') {
+      const params = config.params || {};
+      if (params.id === 'missing') {
+        return Promise.reject({
+          response: {
+            status: 404,
+            data: { error: 'file_missing' },
+          },
+        });
+      }
+      return {
+        data: { url: `https://placehold.co/800x600/333/fff?text=Full+Resolution+${params.id || ''}` },
+      };
+    }
+
     if (url === '/view/init') {
       return { data: { success: true } };
     }

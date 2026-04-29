@@ -1057,7 +1057,13 @@
     "delete_rejected_button": "Poista hylätyt",
     "delete_rejected_title": "Poista hylätyt kuvat",
     "delete_rejected_confirm": "Poistetaanko kaikki {count} hylättyä kuvaa kohteesta {medium}? Tätä ei voi peruuttaa.",
-    "delete_rejected_partial": "Joitain tiedostoja ei voitu poistaa: {error}"
+    "delete_rejected_partial": "Joitain tiedostoja ei voitu poistaa: {error}",
+    "slideshow_interval": "Väli (sekuntia)",
+    "slideshow_play": "Käynnistä diaesitys",
+    "slideshow_stop": "Pysäytä diaesitys",
+    "zoom_in": "Lähennä",
+    "zoom_out": "Loitonna",
+    "zoom_file_missing": "Alkuperäinen tiedosto ei saatavilla"
   },
   "units": {
     "minutes_long": "minuuttia",

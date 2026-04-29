@@ -20,6 +20,7 @@ import {
   Pagination,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -28,6 +29,10 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
@@ -83,6 +88,23 @@ export default function View() {
   const [deleteDialogWarning, setDeleteDialogWarning] = useState(null);
   const ratingDebounceRef = useRef({});
   const commentDebounceRef = useRef(null);
+
+  // Slideshow state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [intervalSeconds, setIntervalSeconds] = useState(5);
+
+  // Zoom state
+  const [zoomMode, setZoomMode] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [fullResUrl, setFullResUrl] = useState(null);
+  const [fullResFailed, setFullResFailed] = useState(false);
+  const [fullResLoading, setFullResLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [lastPinchDistance, setLastPinchDistance] = useState(null);
 
   // Ref to track current images/page for keyboard handler without stale closures
   const stateRef = useRef({ images, selectedIndex, page, perPage, total, medium, sortField, sortDir });
@@ -174,6 +196,18 @@ export default function View() {
     savePreferences({ perPage, sortField, sortDir, columns });
   }, [perPage, sortField, sortDir, columns]);
 
+  // ---- Zoom helpers ----
+
+  const resetZoomState = useCallback(() => {
+    setZoomMode(false);
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setZoomOrigin({ x: 0, y: 0 });
+    setFullResUrl(null);
+    setFullResFailed(false);
+    setFullResLoading(false);
+  }, []);
+
   // ---- Navigation helpers ----
 
   // Navigate to a specific absolute index (0-based across all pages)
@@ -203,22 +237,45 @@ export default function View() {
   const currentAbsoluteIndex = (page - 1) * perPage + selectedIndex;
 
   const goFirst = useCallback(() => {
+    setIsPlaying(false);
+    resetZoomState();
     navigateToAbsolute(0);
-  }, [navigateToAbsolute]);
+  }, [navigateToAbsolute, resetZoomState]);
 
   const goLast = useCallback(() => {
+    setIsPlaying(false);
+    resetZoomState();
     navigateToAbsolute(stateRef.current.total - 1);
-  }, [navigateToAbsolute]);
+  }, [navigateToAbsolute, resetZoomState]);
 
   const goPrev = useCallback(() => {
+    setIsPlaying(false);
+    resetZoomState();
     const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
     if (abs > 0) navigateToAbsolute(abs - 1);
-  }, [navigateToAbsolute]);
+  }, [navigateToAbsolute, resetZoomState]);
 
   const goNext = useCallback(() => {
+    setIsPlaying(false);
+    resetZoomState();
     const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
     if (abs < stateRef.current.total - 1) navigateToAbsolute(abs + 1);
+  }, [navigateToAbsolute, resetZoomState]);
+
+  // Slideshow auto-advance (doesn't stop slideshow, wraps around)
+  const slideshowAdvance = useCallback(() => {
+    const { page: pg, perPage: pp, selectedIndex: idx, total: tot } = stateRef.current;
+    const abs = (pg - 1) * pp + idx;
+    const nextAbs = abs < tot - 1 ? abs + 1 : 0;
+    navigateToAbsolute(nextAbs);
   }, [navigateToAbsolute]);
+
+  // Slideshow effect
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(slideshowAdvance, intervalSeconds * 1000);
+    return () => clearInterval(timer);
+  }, [isPlaying, intervalSeconds, slideshowAdvance]);
 
   // Keyboard navigation in single-image mode
   useEffect(() => {
@@ -226,10 +283,100 @@ export default function View() {
       if (viewMode !== 'single') return;
       if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'Escape' && zoomMode) {
+        setZoomMode(false);
+        setZoomLevel(1);
+        setPanOffset({ x: 0, y: 0 });
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [viewMode, goPrev, goNext]);
+  }, [viewMode, goPrev, goNext, zoomMode]);
+
+  // ---- Zoom handlers ----
+
+  const clampZoom = (level) => Math.max(1, Math.min(8, level));
+
+  const handleZoomClick = async () => {
+    if (zoomMode) {
+      setZoomMode(false);
+      setZoomLevel(1);
+      setPanOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    if (!currentImage) return;
+
+    if (fullResUrl) {
+      setZoomMode(true);
+      return;
+    }
+
+    setFullResLoading(true);
+    try {
+      const response = await api.get('/view/image', {
+        params: { medium, id: currentImage.ID },
+      });
+      const url = response.data?.url || `/api/view/image?medium=${encodeURIComponent(medium)}&id=${currentImage.ID}`;
+      setFullResUrl(url);
+      setZoomMode(true);
+    } catch (err) {
+      if (err.response?.data?.error === 'file_missing') {
+        setFullResFailed(true);
+      }
+    } finally {
+      setFullResLoading(false);
+    }
+  };
+
+  const handleWheel = (e) => {
+    if (!zoomMode) return;
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setZoomOrigin({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    const delta = e.deltaY < 0 ? 0.25 : -0.25;
+    setZoomLevel((prev) => clampZoom(prev + delta));
+  };
+
+  const handleMouseDown = (e) => {
+    if (!zoomMode) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+    setPanStart({ ...panOffset });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !zoomMode) return;
+    setPanOffset({ x: panStart.x + (e.clientX - dragStart.x), y: panStart.y + (e.clientY - dragStart.y) });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const getPinchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e) => {
+    if (!zoomMode || e.touches.length !== 2) return;
+    setLastPinchDistance(getPinchDistance(e.touches));
+  };
+
+  const handleTouchMove = (e) => {
+    if (!zoomMode || e.touches.length !== 2 || lastPinchDistance === null) return;
+    e.preventDefault();
+    const distance = getPinchDistance(e.touches);
+    setZoomLevel((prev) => clampZoom(prev * (distance / lastPinchDistance)));
+    setLastPinchDistance(distance);
+  };
+
+  const handleTouchEnd = () => {
+    setLastPinchDistance(null);
+  };
 
   // ---- Rating / comment handlers ----
 
@@ -266,10 +413,10 @@ export default function View() {
       setComment(val);
       setCommentError(null);
 
-      const currentImage = images[selectedIndex];
-      if (!currentImage) return;
-      const imageId = currentImage.ID;
-      const prevComment = currentImage.comment ?? '';
+      const currentImg = images[selectedIndex];
+      if (!currentImg) return;
+      const imageId = currentImg.ID;
+      const prevComment = currentImg.comment ?? '';
 
       setImages((prev) =>
         prev.map((img) => (img.ID === imageId ? { ...img, comment: val } : img))
@@ -332,6 +479,7 @@ export default function View() {
     if (img) setComment(img.comment ?? '');
     setRatingError(null);
     setCommentError(null);
+    resetZoomState();
     handleOpenSingle(idx);
   };
 
@@ -376,6 +524,8 @@ export default function View() {
   };
 
   const handleBackToGrid = () => {
+    setIsPlaying(false);
+    resetZoomState();
     setViewMode('grid');
     try {
       const saved = sessionStorage.getItem(SCROLL_KEY);
@@ -571,14 +721,53 @@ export default function View() {
             </Button>
           </Box>
 
-          {/* Image */}
-          <Box sx={{ textAlign: 'center', mb: 2 }}>
+          {/* Image with zoom */}
+          <Box
+            sx={{
+              textAlign: 'center',
+              mb: 2,
+              overflow: 'hidden',
+              cursor: zoomMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
+              userSelect: 'none',
+            }}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
-              src={`https://placehold.co/800x600?text=${encodeURIComponent(currentImage.File_Name)}`}
+              src={
+                zoomMode && fullResUrl
+                  ? fullResUrl
+                  : `https://placehold.co/800x600?text=${encodeURIComponent(currentImage.File_Name)}`
+              }
               alt={currentImage.File_Name}
-              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+              style={{
+                maxWidth: zoomMode ? 'none' : '100%',
+                maxHeight: zoomMode ? 'none' : '80vh',
+                objectFit: zoomMode ? undefined : 'contain',
+                transform: zoomMode
+                  ? `scale(${zoomLevel}) translate(${panOffset.x / zoomLevel}px, ${panOffset.y / zoomLevel}px)`
+                  : 'none',
+                transformOrigin: `${zoomOrigin.x}px ${zoomOrigin.y}px`,
+                transition: isDragging ? 'none' : 'transform 0.1s ease',
+                display: 'block',
+                margin: '0 auto',
+                pointerEvents: 'none',
+              }}
+              draggable={false}
             />
           </Box>
+
+          {fullResFailed && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('view.zoom_file_missing')}
+            </Alert>
+          )}
 
           {/* Filename + date */}
           <Typography variant="body2" sx={{ textAlign: 'center' }}>
@@ -589,7 +778,7 @@ export default function View() {
           </Typography>
 
           {/* Navigation toolbar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
             <IconButton onClick={goFirst} disabled={currentAbsoluteIndex === 0} aria-label="first">
               <SkipPreviousIcon />
             </IconButton>
@@ -619,6 +808,82 @@ export default function View() {
             >
               <SkipNextIcon />
             </IconButton>
+
+            {/* Slideshow controls */}
+            <Tooltip title={t('view.slideshow_interval')}>
+              <TextField
+                type="number"
+                value={intervalSeconds}
+                onChange={(e) =>
+                  setIntervalSeconds(Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 5)))
+                }
+                inputProps={{ min: 1, max: 60 }}
+                sx={{ width: 70 }}
+                size="small"
+                disabled={isPlaying}
+                aria-label={t('view.slideshow_interval')}
+              />
+            </Tooltip>
+            <Tooltip title={isPlaying ? t('view.slideshow_stop') : t('view.slideshow_play')}>
+              <IconButton
+                onClick={() => setIsPlaying((p) => !p)}
+                color={isPlaying ? 'error' : 'primary'}
+                aria-label={isPlaying ? t('view.slideshow_stop') : t('view.slideshow_play')}
+              >
+                {isPlaying ? <StopIcon /> : <PlayArrowIcon />}
+              </IconButton>
+            </Tooltip>
+
+            {/* Zoom controls */}
+            {zoomMode && (
+              <>
+                <Tooltip title={t('view.zoom_out')}>
+                  <IconButton
+                    onClick={() => setZoomLevel((z) => clampZoom(z - 0.5))}
+                    size="small"
+                    aria-label={t('view.zoom_out')}
+                    data-testid="zoom-out-button"
+                  >
+                    <ZoomOutIcon />
+                  </IconButton>
+                </Tooltip>
+                <Typography variant="caption" sx={{ minWidth: 40, textAlign: 'center' }} data-testid="zoom-level-indicator">
+                  {zoomLevel.toFixed(1)}x
+                </Typography>
+                <Tooltip title={t('view.zoom_in')}>
+                  <IconButton
+                    onClick={() => setZoomLevel((z) => clampZoom(z + 0.5))}
+                    size="small"
+                    aria-label={t('view.zoom_in')}
+                    data-testid="zoom-in-button"
+                  >
+                    <ZoomInIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+
+            <Tooltip
+              title={
+                fullResFailed
+                  ? t('view.zoom_file_missing')
+                  : zoomMode
+                    ? t('view.zoom_out')
+                    : t('view.zoom_in')
+              }
+            >
+              <span>
+                <IconButton
+                  onClick={handleZoomClick}
+                  disabled={fullResFailed || fullResLoading}
+                  color={zoomMode ? 'primary' : 'default'}
+                  aria-label={t('view.zoom_in')}
+                  data-testid="zoom-button"
+                >
+                  {fullResLoading ? <CircularProgress size={20} /> : <ZoomInIcon />}
+                </IconButton>
+              </span>
+            </Tooltip>
           </Box>
 
           {/* Rating + comment */}

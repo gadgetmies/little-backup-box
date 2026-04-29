@@ -1059,7 +1059,13 @@
     "delete_rejected_button": "Abgelehnte löschen",
     "delete_rejected_title": "Abgelehnte Bilder löschen",
     "delete_rejected_confirm": "Alle {count} abgelehnten Bilder auf {medium} löschen? Dies kann nicht rückgängig gemacht werden.",
-    "delete_rejected_partial": "Einige Dateien konnten nicht gelöscht werden: {error}"
+    "delete_rejected_partial": "Einige Dateien konnten nicht gelöscht werden: {error}",
+    "slideshow_interval": "Intervall (Sekunden)",
+    "slideshow_play": "Diashow starten",
+    "slideshow_stop": "Diashow stoppen",
+    "zoom_in": "Vergrößern",
+    "zoom_out": "Verkleinern",
+    "zoom_file_missing": "Originaldatei nicht verfügbar"
   },
   "units": {
     "minutes_long": "Minuten",
