@@ -1000,7 +1000,12 @@
       "section": "Datenbankoperationen",
       "target": "Zielspeicher",
       "operation_started": "Operation gestartet",
-      "operation_error": "Operation konnte nicht gestartet werden"
+      "operation_error": "Operation konnte nicht gestartet werden",
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings"
     },
     "file": {
       "target": "Zielspeicher",

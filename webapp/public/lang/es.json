@@ -1000,7 +1000,12 @@
       "section": "Operaciones de base de datos",
       "target": "Almacenamiento objetivo",
       "operation_started": "Operación iniciada",
-      "operation_error": "Error al iniciar operación"
+      "operation_error": "Error al iniciar operación",
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings"
     },
     "file": {
       "target": "Almacenamiento objetivo",

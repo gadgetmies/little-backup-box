@@ -994,6 +994,13 @@
       "branch": "Branch",
       "installed_version": "Installed version",
       "available_version": "Available version"
+    },
+    "database": {
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings"
     }
   },
   "integrations": {
