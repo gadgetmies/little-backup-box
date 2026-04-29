@@ -1016,10 +1016,19 @@
       "test_bluesky": "Probar Conexión",
       "test_matrix": "Probar Conexión"
     },
+    "social_general": "General",
+    "social_publish_date": "Publish date format",
+    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
+    "social_publish_filename": "Include filename in post",
     "cloud_services": {
       "title": "Servicios en la Nube",
       "no_services": "No hay servicios en la nube configurados. Por favor configure rclone primero."
     },
+    "cloud_target_dir": "Target base directory",
+    "cloud_sync_method": "Sync method",
+    "cloud_sync_rclone": "rclone",
+    "cloud_sync_rsync": "rsync",
+    "cloud_files_stay": "Files stay in place",
     "vpn": {
       "title": "VPN",
       "file_uploaded": "Archivo de configuración VPN subido",

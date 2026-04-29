@@ -20,6 +20,7 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Divider,
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import SaveIcon from '@mui/icons-material/Save';
@@ -56,6 +57,9 @@ function ServiceConnections() {
   const [rsyncIsSaved, setRsyncIsSaved] = useState(true);
   const socialMediaConfigRef = useRef({ isSaved: true, handleSave: null });
   const cloudConfigRef = useRef({ isSaved: true, handleSave: null });
+  const [socialGeneralFormData, setSocialGeneralFormData] = useState({});
+  const socialGeneralLastSaved = useRef(null);
+  const socialGeneralSaveTimeout = useRef(null);
 
   useEffect(() => {
     // Load selected tab from localStorage
@@ -109,6 +113,13 @@ function ServiceConnections() {
       setRsyncFormData(rsyncConfig);
       rsyncLastSavedConfig.current = JSON.stringify(rsyncConfig);
       setRsyncIsSaved(true);
+
+      const socialGeneralConfig = {
+        conf_social_publish_date: config.conf_social_publish_date || '',
+        conf_social_publish_filename: config.conf_social_publish_filename || 'false',
+      };
+      setSocialGeneralFormData(socialGeneralConfig);
+      socialGeneralLastSaved.current = JSON.stringify(socialGeneralConfig);
     }
   }, [config]);
 
@@ -173,6 +184,35 @@ function ServiceConnections() {
     const isSaved = mailLastSavedConfig.current === formDataString;
     setMailIsSaved(isSaved);
   }, [mailFormData]);
+
+  // Auto-save social general settings
+  useEffect(() => {
+    if (Object.keys(socialGeneralFormData).length === 0) {
+      return;
+    }
+    const formDataString = JSON.stringify(socialGeneralFormData);
+    if (socialGeneralLastSaved.current === formDataString) {
+      return;
+    }
+    if (socialGeneralSaveTimeout.current) {
+      clearTimeout(socialGeneralSaveTimeout.current);
+    }
+    socialGeneralSaveTimeout.current = setTimeout(async () => {
+      try {
+        await updateConfig(socialGeneralFormData);
+        socialGeneralLastSaved.current = JSON.stringify(socialGeneralFormData);
+        setMessage(t('config.message_settings_saved') || 'Settings saved');
+      } catch (error) {
+        console.error('Failed to save social general settings:', error);
+        setMessage('Error saving social general settings');
+      }
+    }, 500);
+    return () => {
+      if (socialGeneralSaveTimeout.current) {
+        clearTimeout(socialGeneralSaveTimeout.current);
+      }
+    };
+  }, [socialGeneralFormData, updateConfig, t]);
 
   const validatePassword = (password) => {
     if (!password) {
@@ -589,7 +629,39 @@ function ServiceConnections() {
       </TabPanel>
 
       <TabPanel value={currentTab} index={1}>
-              <SocialMediaConfig 
+              <Typography variant="h2" gutterBottom>
+                {t('integrations.social_general')}
+              </Typography>
+              <Stack spacing={2} sx={{ mb: 3 }}>
+                <TextField
+                  label={t('integrations.social_publish_date')}
+                  helperText={t('integrations.social_publish_date_help')}
+                  value={socialGeneralFormData.conf_social_publish_date || ''}
+                  onChange={(e) =>
+                    setSocialGeneralFormData({
+                      ...socialGeneralFormData,
+                      conf_social_publish_date: e.target.value,
+                    })
+                  }
+                  sx={{ maxWidth: 400 }}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={socialGeneralFormData.conf_social_publish_filename === 'true'}
+                      onChange={(e) =>
+                        setSocialGeneralFormData({
+                          ...socialGeneralFormData,
+                          conf_social_publish_filename: e.target.checked ? 'true' : 'false',
+                        })
+                      }
+                    />
+                  }
+                  label={t('integrations.social_publish_filename')}
+                />
+              </Stack>
+              <Divider sx={{ mb: 3 }} />
+              <SocialMediaConfig
                 onSavedStateChange={(isSaved, handleSave) => {
                   socialMediaConfigRef.current = { isSaved, handleSave };
                 }}

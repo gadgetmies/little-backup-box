@@ -1003,10 +1003,19 @@
       "test_bluesky": "Testaa Yhteys",
       "test_matrix": "Testaa Yhteys"
     },
+    "social_general": "General",
+    "social_publish_date": "Publish date format",
+    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
+    "social_publish_filename": "Include filename in post",
     "cloud_services": {
       "title": "Pilvipalvelut",
       "no_services": "Pilvipalveluja ei ole määritelty. Määritä ensin rclone."
     },
+    "cloud_target_dir": "Target base directory",
+    "cloud_sync_method": "Sync method",
+    "cloud_sync_rclone": "rclone",
+    "cloud_sync_rsync": "rsync",
+    "cloud_files_stay": "Files stay in place",
     "vpn": {
       "title": "VPN",
       "file_uploaded": "VPN-konfiguraatiotiedosto ladattu",
