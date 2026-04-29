@@ -448,15 +448,24 @@ function View() {
                       onClick={() => setZoomLevel((z) => clampZoom(z - 0.5))}
                       size="small"
                       aria-label={t('view.zoom_out') || 'Zoom out'}
+                      data-testid="zoom-out-button"
                     >
                       <ZoomOutIcon />
                     </IconButton>
                   </Tooltip>
+                  <Typography
+                    variant="caption"
+                    sx={{ minWidth: 40, textAlign: 'center' }}
+                    data-testid="zoom-level-indicator"
+                  >
+                    {zoomLevel.toFixed(1)}x
+                  </Typography>
                   <Tooltip title={t('view.zoom_in') || 'Zoom in'}>
                     <IconButton
                       onClick={() => setZoomLevel((z) => clampZoom(z + 0.5))}
                       size="small"
                       aria-label={t('view.zoom_in') || 'Zoom in'}
+                      data-testid="zoom-in-button"
                     >
                       <ZoomInIcon />
                     </IconButton>
