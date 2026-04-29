@@ -32,6 +32,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import LogMonitor from '../components/LogMonitor';
+import DatabaseOperations from '../components/DatabaseOperations';
+import FileOperations from '../components/FileOperations';
 
 function Backup() {
   const { t } = useLanguage();
@@ -950,6 +952,12 @@ function Backup() {
           </Box>
         </Box>
       )}
+      <Box sx={{ mt: 4 }}>
+        <DatabaseOperations />
+      </Box>
+      <Box sx={{ mt: 2 }}>
+        <FileOperations />
+      </Box>
       <LogMonitor />
 
       <Snackbar

@@ -9,6 +9,7 @@ import Maintenance from './pages/Maintenance';
 import ServiceConnections from './pages/ServiceConnections';
 import Network from './pages/Network';
 import ScrapedUI from './pages/ScrapedUI';
+import MockControls from './components/MockControls';
 
 function RedirectHandler() {
   const navigate = useNavigate();
@@ -29,19 +30,22 @@ function RedirectHandler() {
 
 function App() {
   return (
-    <Layout>
-      <RedirectHandler />
-      <Routes>
-        <Route path="/" element={<Backup />} />
-        <Route path="/setup" element={<UserInterface />} />
-        <Route path="/tools" element={<Filesystem />} />
-        <Route path="/sysinfo" element={<System />} />
-        <Route path="/network" element={<Network />} />
-        <Route path="/maintenance" element={<Maintenance />} />
-        <Route path="/integrations" element={<ServiceConnections />} />
-        <Route path="/scrape" element={<ScrapedUI />} />
-      </Routes>
-    </Layout>
+    <>
+      <Layout>
+        <RedirectHandler />
+        <Routes>
+          <Route path="/" element={<Backup />} />
+          <Route path="/setup" element={<UserInterface />} />
+          <Route path="/tools" element={<Filesystem />} />
+          <Route path="/sysinfo" element={<System />} />
+          <Route path="/network" element={<Network />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/integrations" element={<ServiceConnections />} />
+          <Route path="/scrape" element={<ScrapedUI />} />
+        </Routes>
+      </Layout>
+      <MockControls />
+    </>
   );
 }
 

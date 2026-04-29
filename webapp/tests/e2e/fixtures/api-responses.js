@@ -89,9 +89,6 @@ export const mockLog = {
   content: '2024-01-01 12:00:00 - Backup started\n2024-01-01 12:05:00 - Files copied: 100',
 };
 
-
-
-
-
-
-
+export function withMockDelay(response, ms) {
+  return new Promise((resolve) => setTimeout(() => resolve(response), ms));
+}

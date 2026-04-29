@@ -1,3 +1,5 @@
+import { getActiveMockSettings } from './mockFailures.js';
+
 let runningBackups = [];
 let backupHistory = [];
 
@@ -126,8 +128,11 @@ export function createMockApiInterceptor() {
   return async (config) => {
     const url = config.url || '';
     const method = config.method?.toLowerCase() || 'get';
-    
-    await delay(50);
+
+    // Apply configurable delay and failure mode from MockControls
+    const mockSettings = getActiveMockSettings();
+    const totalDelay = 50 + (mockSettings.delay || 0);
+    await delay(totalDelay);
     
     if (url === '/backup/services') {
       return { data: mockData.services };
@@ -209,6 +214,25 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/backup/function' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'disk_full') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Not enough disk space' } },
+        });
+      }
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Database is locked' } },
+        });
+      }
+      if (failureMode === 'permission_denied') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Permission denied' } },
+        });
+      }
+      if (failureMode === 'partial_failure') {
+        return { data: { success: true, warnings: ['Some files could not be processed'] } };
+      }
       return { data: { success: true, message: 'Backup function initiated (mock)' } };
     }
     

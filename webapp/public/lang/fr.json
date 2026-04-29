@@ -1000,7 +1000,12 @@
       "section": "Opérations de base de données",
       "target": "Stockage cible",
       "operation_started": "Opération démarrée",
-      "operation_error": "Échec du démarrage de l'opération"
+      "operation_error": "Échec du démarrage de l'opération",
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings"
     },
     "file": {
       "target": "Stockage cible",
@@ -1027,5 +1032,11 @@
       "confirm_remove": "Êtes-vous sûr de vouloir supprimer le fichier de configuration {type}?",
       "remove": "Supprimer"
     }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None"
   }
 }
