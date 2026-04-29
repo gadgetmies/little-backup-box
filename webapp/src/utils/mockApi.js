@@ -41,6 +41,9 @@ const mockData = {
     conf_POWER_OFF: 'false',
     conf_TIME_ZONE: 'UTC',
     conf_WIFI_COUNTRY: 'US',
+    conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
+    conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
+    conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
   },
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
@@ -107,67 +110,96 @@ const mockData = {
         ID: 1,
         File_Name: 'IMG_001.jpg',
         Directory: '2024/01',
-        Create_Date: '2024-01-01 12:00:00',
+        Create_Date: '2024-01-01',
         thumbnail_path: '/img/unknown.JPG',
         rating: -1,
         comment: 'Blurry shot',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
       },
       {
         ID: 2,
         File_Name: 'IMG_002.jpg',
         Directory: '2024/01',
-        Create_Date: '2024-01-01 12:05:00',
+        Create_Date: '2024-01-05',
         thumbnail_path: '/img/unknown.JPG',
         rating: 0,
         comment: '',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
       },
       {
         ID: 3,
         File_Name: 'IMG_003.jpg',
         Directory: '2024/01',
-        Create_Date: '2024-01-01 12:10:00',
+        Create_Date: '2024-01-10',
         thumbnail_path: '/img/unknown.JPG',
         rating: 3,
         comment: 'Nice composition',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'JPEG',
+        publish_telegram: true,
+        publish_mastodon: false,
       },
       {
         ID: 4,
-        File_Name: 'IMG_004.jpg',
+        File_Name: 'IMG_004.RAF',
         Directory: '2024/01',
-        Create_Date: '2024-01-01 12:15:00',
+        Create_Date: '2024-01-15',
         thumbnail_path: '/img/unknown.JPG',
         rating: 5,
         comment: 'Best shot of the day',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'RAF',
+        publish_telegram: false,
+        publish_mastodon: true,
       },
       {
         ID: 5,
         File_Name: 'IMG_005.jpg',
-        Directory: '2024/01',
-        Create_Date: '2024-01-01 12:20:00',
+        Directory: '2024/02',
+        Create_Date: '2024-02-01',
         thumbnail_path: '/img/unknown.JPG',
         rating: 1,
         comment: '',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
       },
       {
         ID: 6,
         File_Name: 'IMG_006.jpg',
-        Directory: '2024/01',
-        Create_Date: '2024-01-01 12:25:00',
+        Directory: '2024/02',
+        Create_Date: '2024-02-05',
         thumbnail_path: '/img/unknown.JPG',
         rating: -1,
         comment: 'Out of focus',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
       },
     ],
     count: 6,
   },
   viewStats: {
-    imagesAll: 0,
-    directories: [],
-    ratings: [],
-    dates: [],
-    fileTypes: [],
-    fileTypeExtensions: [],
-    cameraModelNames: [],
+    imagesAll: 4,
+    directories: ['2024/01', '2024/02'],
+    ratings: [
+      { LbbRating: -1, count: 1 },
+      { LbbRating: 0, count: 1 },
+      { LbbRating: 3, count: 1 },
+      { LbbRating: 5, count: 1 },
+    ],
+    dates: ['2024-01-15', '2024-01-16', '2024-02-10', '2024-02-11'],
+    fileTypes: ['JPEG', 'RAF'],
+    fileTypeExtensions: ['jpg', 'RAF'],
+    cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5'],
   },
 };
 
@@ -436,10 +468,7 @@ export function createMockApiInterceptor() {
     }
 
     if (url === '/view/media') {
-      const failureMode = typeof localStorage !== 'undefined'
-        ? localStorage.getItem('lbb-mock-failure')
-        : null;
-      if (failureMode === 'not_mounted') {
+      if (mockSettings.failureMode === 'not_mounted') {
         return Promise.reject({
           response: { status: 503, data: { error: 'not_mounted' } },
         });
@@ -453,11 +482,7 @@ export function createMockApiInterceptor() {
     }
 
     if (url === '/view/images') {
-      const failureMode = typeof localStorage !== 'undefined'
-        ? localStorage.getItem('lbb-mock-failure')
-        : null;
-
-      if (failureMode === 'not_mounted') {
+      if (mockSettings.failureMode === 'not_mounted') {
         return Promise.reject({
           response: { status: 503, data: { error: 'not_mounted' } },
         });
@@ -471,40 +496,75 @@ export function createMockApiInterceptor() {
         return { data: mockData.viewImages };
       }
 
-      if (failureMode === 'no_results') {
+      if (mockSettings.failureMode === 'no_results') {
         return { data: { images: [], total: 0, dbExists: true } };
       }
-      if (failureMode === 'db_not_initialised') {
+      if (mockSettings.failureMode === 'db_not_initialised') {
         return { data: { images: [], total: 0, dbExists: false } };
       }
 
       const TOTAL = 120;
       const page = parseInt(params.page || '1', 10);
       const perPage = parseInt(params.per_page || '25', 10);
-      const start = (page - 1) * perPage;
-      const end = Math.min(start + perPage, TOTAL);
+      const cameras = ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'];
+      const fileTypes = ['JPEG', 'RAF', 'NEF'];
 
-      const images = [];
-      for (let i = start; i < end; i++) {
+      let allImages = [];
+      for (let i = 0; i < TOTAL; i++) {
         const id = i + 1;
         const filename = `IMG_${String(id).padStart(4, '0')}.jpg`;
-        images.push({
+        allImages.push({
           ID: id,
           File_Name: filename,
           Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
           thumbnail_path: `/thumbnails/${medium}/${filename}`,
-          rating: 0,
+          rating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
           comment: '',
+          Camera_Model_Name: cameras[i % cameras.length],
+          File_Type: fileTypes[i % fileTypes.length],
           publish_telegram: false,
           publish_mastodon: false,
         });
       }
 
-      return { data: { images, total: TOTAL, dbExists: true } };
+      // Apply filters
+      if (params.rating) {
+        const ratingValues = params.rating.split(',').map((r) => parseInt(r, 10));
+        allImages = allImages.filter((img) => ratingValues.includes(img.rating));
+      }
+      if (params.date_from) allImages = allImages.filter((img) => img.Create_Date >= params.date_from);
+      if (params.date_to) allImages = allImages.filter((img) => img.Create_Date <= params.date_to);
+      if (params.filename) {
+        const fn = params.filename.toLowerCase();
+        allImages = allImages.filter((img) => img.File_Name.toLowerCase().includes(fn));
+      }
+      if (params.camera) allImages = allImages.filter((img) => img.Camera_Model_Name === params.camera);
+      if (params.file_type) {
+        const ftValues = params.file_type.split(',').map((f) => f.trim());
+        allImages = allImages.filter((img) => ftValues.includes(img.File_Type));
+      }
+
+      const total = allImages.length;
+      const start = (page - 1) * perPage;
+      const images = allImages.slice(start, start + perPage);
+
+      return { data: { images, total, dbExists: true } };
     }
+
 
     if (url === '/view/stats') {
       return { data: mockData.viewStats };
+    }
+
+    if (url === '/social/publish' && method === 'post') {
+      const { platforms } = config.data || {};
+      const results = {};
+      if (Array.isArray(platforms)) {
+        platforms.forEach((p) => {
+          results[p] = true;
+        });
+      }
+      return { data: { success: true, results } };
     }
     
     if (url === '/view/update-metadata' && method === 'post') {

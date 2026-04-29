@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -38,6 +39,30 @@ import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
 import useAsyncAction from '../hooks/useAsyncAction';
 import RatingWidget from '../components/RatingWidget';
+import FilterBar, { DEFAULT_FILTERS } from '../components/FilterBar';
+import SocialPublishPanel from '../components/SocialPublishPanel';
+
+function filtersToParams(filters) {
+  const params = {};
+  if (filters.ratings && filters.ratings.length > 0) params.rating = filters.ratings.join(',');
+  if (filters.dateFrom) params.date_from = filters.dateFrom;
+  if (filters.dateTo) params.date_to = filters.dateTo;
+  if (filters.filename) params.filename = filters.filename;
+  if (filters.camera) params.camera = filters.camera;
+  if (filters.fileType) params.file_type = filters.fileType;
+  return params;
+}
+
+function searchToFilters(searchParams) {
+  return {
+    ratings: searchParams.get('ratings') ? searchParams.get('ratings').split(',') : [],
+    dateFrom: searchParams.get('dateFrom') || '',
+    dateTo: searchParams.get('dateTo') || '',
+    filename: searchParams.get('filename') || '',
+    camera: searchParams.get('camera') || '',
+    fileType: searchParams.get('fileType') || '',
+  };
+}
 
 const PREFS_KEY = 'lbb-view-preferences';
 const SCROLL_KEY = 'lbb-view-scroll';
@@ -62,6 +87,7 @@ function savePreferences(prefs) {
 
 export default function View() {
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Load persisted preferences
   const prefs = loadPreferences();
@@ -78,6 +104,8 @@ export default function View() {
   const [sortField, setSortField] = useState(prefs.sortField || 'date');
   const [sortDir, setSortDir] = useState(prefs.sortDir || 'desc');
   const [columns, setColumns] = useState(prefs.columns || 3);
+  const [filters, setFilters] = useState(() => searchToFilters(searchParams));
+  const [viewStats, setViewStats] = useState(null);
 
   // Rating / comment / delete-rejected state
   const [comment, setComment] = useState('');
@@ -126,7 +154,7 @@ export default function View() {
   } = useAsyncAction(fetchMediaFn);
 
   // ---- fetch images ----
-  const fetchImagesFn = useCallback(async (med, pg, pp, sf, sd) => {
+  const fetchImagesFn = useCallback(async (med, pg, pp, sf, sd, filterParams = {}) => {
     const res = await api.get('/view/images', {
       params: {
         medium: med,
@@ -134,8 +162,15 @@ export default function View() {
         per_page: pp,
         sort: sf,
         dir: sd,
+        ...filterParams,
       },
     });
+    return res.data;
+  }, []);
+
+  // ---- fetch stats (for FilterBar dropdowns) ----
+  const fetchStatsFn = useCallback(async (med) => {
+    const res = await api.get('/view/stats', { params: { medium: med } });
     return res.data;
   }, []);
 
@@ -176,10 +211,10 @@ export default function View() {
       });
   }, [fetchMedia]);
 
-  // Load images when medium / page / sort / perPage changes
+  // Load images when medium / page / sort / perPage / filters change
   useEffect(() => {
     if (!medium) return;
-    fetchImages(medium, page, perPage, sortField, sortDir)
+    fetchImages(medium, page, perPage, sortField, sortDir, filtersToParams(filters))
       .then((data) => {
         setImages(data.images || []);
         setTotal(data.total || 0);
@@ -189,7 +224,13 @@ export default function View() {
         setImages([]);
         setTotal(0);
       });
-  }, [medium, page, perPage, sortField, sortDir, fetchImages]);
+  }, [medium, page, perPage, sortField, sortDir, filters, fetchImages]);
+
+  // Load stats when medium changes (for FilterBar camera/file-type dropdowns)
+  useEffect(() => {
+    if (!medium) return;
+    fetchStatsFn(medium).then(setViewStats).catch(() => {});
+  }, [medium, fetchStatsFn]);
 
   // Persist preferences
   useEffect(() => {
@@ -377,6 +418,21 @@ export default function View() {
   const handleTouchEnd = () => {
     setLastPinchDistance(null);
   };
+
+  // ---- Filter handler ----
+
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+    const urlParams = {};
+    if (newFilters.ratings && newFilters.ratings.length > 0) urlParams.ratings = newFilters.ratings.join(',');
+    if (newFilters.dateFrom) urlParams.dateFrom = newFilters.dateFrom;
+    if (newFilters.dateTo) urlParams.dateTo = newFilters.dateTo;
+    if (newFilters.filename) urlParams.filename = newFilters.filename;
+    if (newFilters.camera) urlParams.camera = newFilters.camera;
+    if (newFilters.fileType) urlParams.fileType = newFilters.fileType;
+    setSearchParams(urlParams);
+  }, [setSearchParams]);
 
   // ---- Rating / comment handlers ----
 
@@ -650,6 +706,11 @@ export default function View() {
         </Alert>
       )}
 
+      {/* Filter bar */}
+      {viewMode === 'grid' && (
+        <FilterBar filters={filters} onFiltersChange={handleFiltersChange} stats={viewStats} />
+      )}
+
       {/* Thumbnail grid */}
       {!isLoading && !notMounted && images.length > 0 && viewMode === 'grid' && (
         <>
@@ -916,6 +977,11 @@ export default function View() {
                 {commentError}
               </Alert>
             )}
+            <SocialPublishPanel
+              medium={medium}
+              imageId={currentImage?.ID}
+              image={currentImage}
+            />
           </Box>
         </Box>
       )}

@@ -1009,7 +1009,15 @@
       "medium_source_nvme": "Local NVMe source",
       "medium_target_nvme": "Local NVMe target",
       "social_publish": "reserved for publication",
-      "social_published": "published"
+      "social_published": "published",
+      "rating_all": "All",
+      "rejected": "Rejected (−1)",
+      "unrated": "Unrated (0)",
+      "date_from": "Date from",
+      "date_to": "Date to",
+      "filename": "Filename",
+      "camera": "Camera",
+      "reset": "Reset filters"
     },
     "images": {
       "download": "Download original",
@@ -1036,7 +1044,14 @@
     "social": {
       "publish_on": "publish on",
       "published_on": "published on",
-      "mark_for_publish_on": "mark for publication on"
+      "mark_for_publish_on": "mark for publication on",
+      "publish": "Publish",
+      "published": "Published",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Publish failed",
+      "auth_failed": "Authentication failed",
+      "rate_limit": "Rate limit reached"
     },
     "grid": {
       "multi": "multi-column",

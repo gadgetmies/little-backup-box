@@ -7,6 +7,35 @@ import axios from 'axios';
 
 const router = express.Router();
 
+router.post('/publish', async (req, res) => {
+  try {
+    const { medium, imageId, platforms } = req.body;
+
+    if (!medium || !imageId || !Array.isArray(platforms) || platforms.length === 0) {
+      return res.status(400).json({ error: 'medium, imageId and platforms are required' });
+    }
+
+    const results = {};
+
+    for (const platform of platforms) {
+      if (platform === 'telegram') {
+        const command = `python3 ${req.WORKING_DIR}/lib_socialmedia_telegram.py --action publish --medium "${medium}" --image-id "${imageId}"`;
+        const result = await execCommand(command, { logger: req.logger });
+        results.telegram = result.success;
+      } else if (platform === 'mastodon') {
+        const command = `python3 ${req.WORKING_DIR}/lib_socialmedia_mastodon.py --action publish --medium "${medium}" --image-id "${imageId}"`;
+        const result = await execCommand(command, { logger: req.logger });
+        results.mastodon = result.success;
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    req.logger.error('Failed to publish to social media', { error: error.message });
+    res.status(500).json({ error: 'Failed to publish to social media' });
+  }
+});
+
 router.get('/config', async (req, res) => {
   try {
     const configPath = path.join(req.WORKING_DIR, 'config.cfg');

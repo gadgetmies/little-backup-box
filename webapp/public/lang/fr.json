@@ -1010,7 +1010,15 @@
       "medium_source_nvme": "Origine NVMe locale",
       "medium_target_nvme": "Cible NVMe locale",
       "social_publish": "marqué pour publication",
-      "social_published": "publié"
+      "social_published": "publié",
+      "rating_all": "Tous",
+      "rejected": "Rejeté (−1)",
+      "unrated": "Non noté (0)",
+      "date_from": "Date de",
+      "date_to": "Date jusqu'à",
+      "filename": "Nom de fichier",
+      "camera": "Appareil photo",
+      "reset": "Réinitialiser les filtres"
     },
     "images": {
       "download": "Télécharger l'original",
@@ -1037,7 +1045,14 @@
     "social": {
       "publish_on": "publier sur",
       "published_on": "publié sur",
-      "mark_for_publish_on": "marquer pour publication sur"
+      "mark_for_publish_on": "marquer pour publication sur",
+      "publish": "Publier",
+      "published": "Publié",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Échec de la publication",
+      "auth_failed": "Échec de l'authentification",
+      "rate_limit": "Limite de débit atteinte"
     },
     "grid": {
       "multi": "multi-colonnes",

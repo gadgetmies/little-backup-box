@@ -65,6 +65,12 @@ router.get('/images', async (req, res) => {
       per_page = 25,
       sort = 'date',
       dir = 'desc',
+      rating,
+      date_from,
+      date_to,
+      filename,
+      camera,
+      file_type,
     } = req.query;
 
     if (!medium) {
@@ -95,16 +101,30 @@ router.get('/images', async (req, res) => {
       const dbAll = promisify(db.all.bind(db));
 
       let query = 'SELECT * FROM EXIF_DATA WHERE 1=1';
-      const params = [];
+      const sqlParams = [];
 
-      if (filterRating !== '-1' && filterRating !== -1) {
+      if (rating) {
+        const ratingVals = rating.split(',').map((r) => parseInt(r, 10)).filter((r) => !isNaN(r));
+        if (ratingVals.length === 1) { query += ' AND LbbRating = ?'; sqlParams.push(ratingVals[0]); }
+        else if (ratingVals.length > 1) { query += ` AND LbbRating IN (${ratingVals.map(() => '?').join(',')})`; sqlParams.push(...ratingVals); }
+      } else if (filterRating !== '-1' && filterRating !== -1) {
         query += ' AND LbbRating = ?';
-        params.push(filterRating);
+        sqlParams.push(filterRating);
+      }
+
+      if (date_from) { query += ' AND Create_Date >= ?'; sqlParams.push(date_from); }
+      if (date_to) { query += ' AND Create_Date <= ?'; sqlParams.push(date_to); }
+      if (filename) { query += ' AND File_Name LIKE ?'; sqlParams.push(`%${filename}%`); }
+      if (camera) { query += ' AND Camera_Model_Name = ?'; sqlParams.push(camera); }
+      if (file_type) {
+        const ftVals = file_type.split(',').map((f) => f.trim()).filter(Boolean);
+        if (ftVals.length === 1) { query += ' AND File_Type = ?'; sqlParams.push(ftVals[0]); }
+        else if (ftVals.length > 1) { query += ` AND File_Type IN (${ftVals.map(() => '?').join(',')})`; sqlParams.push(...ftVals); }
       }
 
       query += ` ORDER BY ${orderBy} ${orderDir}`;
 
-      const allImages = await dbAll(query, params);
+      const allImages = await dbAll(query, sqlParams);
       const count = allImages.length;
       const images = allImages.slice(
         selectOffset,
@@ -117,6 +137,14 @@ router.get('/images', async (req, res) => {
     }
 
     // New medium-based query using lib_view.py
+    const filterArgs = [];
+    if (rating) filterArgs.push(`--rating '${rating}'`);
+    if (date_from) filterArgs.push(`--date-from '${date_from}'`);
+    if (date_to) filterArgs.push(`--date-to '${date_to}'`);
+    if (filename) filterArgs.push(`--filename '${filename.replace(/'/g, "'\\''")}'`);
+    if (camera) filterArgs.push(`--camera '${camera.replace(/'/g, "'\\''")}'`);
+    if (file_type) filterArgs.push(`--file-type '${file_type}'`);
+
     const command = [
       `sudo python3 ${req.WORKING_DIR}/lib_view.py`,
       `--action list`,
@@ -125,6 +153,7 @@ router.get('/images', async (req, res) => {
       `--per-page ${per_page}`,
       `--sort ${sort}`,
       `--dir ${dir}`,
+      ...filterArgs,
     ].join(' ');
 
     const result = await execCommand(command, { logger: req.logger });
@@ -286,8 +315,9 @@ router.post('/delete-image', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
-    const { storagePath } = req.query;
-    
+    const { medium, storagePath: storagePathParam } = req.query;
+    const storagePath = storagePathParam || (medium ? path.join(req.constants.const_MEDIA_DIR || '/media', medium) : null);
+
     if (!storagePath) {
       return res.status(400).json({ error: 'Storage path required' });
     }
