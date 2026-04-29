@@ -979,7 +979,14 @@
       "single": "una sola columna"
     },
     "saved": "Cambios guardados",
-    "characters": "caracteres"
+    "characters": "caracteres",
+    "comment_placeholder": "Añadir un comentario...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "No se pudo guardar la valoración. Por favor, inténtelo de nuevo.",
+    "delete_rejected_button": "Eliminar rechazadas",
+    "delete_rejected_title": "Eliminar imágenes rechazadas",
+    "delete_rejected_confirm": "¿Eliminar todas las {count} imágenes rechazadas en {medium}? Esto no se puede deshacer.",
+    "delete_rejected_partial": "Algunos archivos no pudieron eliminarse: {error}"
   },
   "units": {
     "minutes_long": "minutos",

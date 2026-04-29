@@ -977,7 +977,14 @@
       "single": "yksisarakkeinen"
     },
     "saved": "Muutokset tallennettu",
-    "characters": "merkkiä"
+    "characters": "merkkiä",
+    "comment_placeholder": "Lisää kommentti...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Arvosanan tallentaminen epäonnistui. Yritä uudelleen.",
+    "delete_rejected_button": "Poista hylätyt",
+    "delete_rejected_title": "Poista hylätyt kuvat",
+    "delete_rejected_confirm": "Poistetaanko kaikki {count} hylättyä kuvaa kohteesta {medium}? Tätä ei voi peruuttaa.",
+    "delete_rejected_partial": "Joitain tiedostoja ei voitu poistaa: {error}"
   },
   "units": {
     "minutes_long": "minuuttia",
@@ -1016,4 +1023,3 @@
     }
   }
 }
-

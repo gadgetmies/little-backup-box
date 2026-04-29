@@ -979,7 +979,14 @@
       "single": "einspaltige Anzeige"
     },
     "saved": "Änderungen gespeichert",
-    "characters": "Zeichen"
+    "characters": "Zeichen",
+    "comment_placeholder": "Kommentar hinzufügen...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Bewertung konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "delete_rejected_button": "Abgelehnte löschen",
+    "delete_rejected_title": "Abgelehnte Bilder löschen",
+    "delete_rejected_confirm": "Alle {count} abgelehnten Bilder auf {medium} löschen? Dies kann nicht rückgängig gemacht werden.",
+    "delete_rejected_partial": "Einige Dateien konnten nicht gelöscht werden: {error}"
   },
   "units": {
     "minutes_long": "Minuten",

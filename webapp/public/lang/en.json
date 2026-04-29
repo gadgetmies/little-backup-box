@@ -978,7 +978,14 @@
       "single": "single-column"
     },
     "saved": "Changes saved",
-    "characters": "characters"
+    "characters": "characters",
+    "comment_placeholder": "Add a comment...",
+    "comment_char_count": "{count} / 500",
+    "rating_save_error": "Failed to save rating. Please try again.",
+    "delete_rejected_button": "Delete rejected",
+    "delete_rejected_title": "Delete rejected images",
+    "delete_rejected_confirm": "Delete all {count} rejected images on {medium}? This cannot be undone.",
+    "delete_rejected_partial": "Some files could not be deleted: {error}"
   },
   "units": {
     "minutes_long": "minutes",

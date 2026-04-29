@@ -1,3 +1,5 @@
+import { getActiveMockSettings } from './mockFailures.js';
+
 let runningBackups = [];
 let backupHistory = [];
 
@@ -100,8 +102,63 @@ const mockData = {
   },
   log: '',
   viewImages: {
-    images: [],
-    count: 0,
+    images: [
+      {
+        ID: 1,
+        File_Name: 'IMG_001.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:00:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: -1,
+        comment: 'Blurry shot',
+      },
+      {
+        ID: 2,
+        File_Name: 'IMG_002.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:05:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 0,
+        comment: '',
+      },
+      {
+        ID: 3,
+        File_Name: 'IMG_003.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:10:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 3,
+        comment: 'Nice composition',
+      },
+      {
+        ID: 4,
+        File_Name: 'IMG_004.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:15:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 5,
+        comment: 'Best shot of the day',
+      },
+      {
+        ID: 5,
+        File_Name: 'IMG_005.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:20:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 1,
+        comment: '',
+      },
+      {
+        ID: 6,
+        File_Name: 'IMG_006.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01 12:25:00',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: -1,
+        comment: 'Out of focus',
+      },
+    ],
+    count: 6,
   },
   viewStats: {
     imagesAll: 0,
@@ -126,8 +183,10 @@ export function createMockApiInterceptor() {
   return async (config) => {
     const url = config.url || '';
     const method = config.method?.toLowerCase() || 'get';
-    
-    await delay(50);
+
+    const mockSettings = getActiveMockSettings();
+    const totalDelay = 50 + (mockSettings.delay || 0);
+    await delay(totalDelay);
     
     if (url === '/backup/services') {
       return { data: mockData.services };
@@ -324,9 +383,63 @@ export function createMockApiInterceptor() {
     if (url === '/view/update-metadata' && method === 'post') {
       return { data: { success: true } };
     }
-    
+
     if (url === '/view/delete-image' && method === 'post') {
       return { data: { success: true } };
+    }
+
+    if (url === '/view/rating' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'DB locked by another process' },
+          },
+        });
+      }
+      if (failureMode === 'permission_denied') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'EXIF write failed: file is read-only' },
+          },
+        });
+      }
+      const { imageId, rating, comment } = config.data || {};
+      const img = mockData.viewImages.images.find(i => i.ID === imageId);
+      if (img) {
+        if (rating !== undefined) img.rating = rating;
+        if (comment !== undefined) img.comment = comment;
+      }
+      return { data: { success: true } };
+    }
+
+    if (url === '/view/delete-rejected' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'DB locked' },
+          },
+        });
+      }
+      if (failureMode === 'partial_failure') {
+        mockData.viewImages.images = mockData.viewImages.images.filter(
+          i => i.rating !== -1
+        );
+        mockData.viewImages.count = mockData.viewImages.images.length;
+        return {
+          data: { success: false, deleted: 2, error: '1 file could not be deleted' },
+        };
+      }
+      const rejectedCount = mockData.viewImages.images.filter(i => i.rating === -1).length;
+      mockData.viewImages.images = mockData.viewImages.images.filter(
+        i => i.rating !== -1
+      );
+      mockData.viewImages.count = mockData.viewImages.images.length;
+      return { data: { success: true, deleted: rejectedCount } };
     }
     
     if (url === '/display/status') {
