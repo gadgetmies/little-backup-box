@@ -14,8 +14,12 @@ import {
   Stack,
   Alert,
   TextField,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import DisplayConfig from '../components/DisplayConfig';
@@ -26,6 +30,7 @@ function UserInterface() {
   const [formData, setFormData] = useState({});
   const [message, setMessage] = useState('');
   const [cameraFolderMaskError, setCameraFolderMaskError] = useState(false);
+  const [backgroundImageError, setBackgroundImageError] = useState(false);
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
   const lastSavedConfig = useRef(null);
@@ -153,6 +158,35 @@ function UserInterface() {
                   <TextField {...params} label={t('config.timezone')} />
                 )}
               />
+
+              <Box>
+                <TextField
+                  sx={{ maxWidth: 400 }}
+                  fullWidth
+                  label={t('config.background_image')}
+                  helperText={
+                    backgroundImageError
+                      ? undefined
+                      : t('config.background_image_help')
+                  }
+                  value={formData.conf_background_image || ''}
+                  error={backgroundImageError}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.includes('..')) {
+                      setBackgroundImageError(true);
+                    } else {
+                      setBackgroundImageError(false);
+                      setFormData({ ...formData, conf_background_image: val });
+                    }
+                  }}
+                />
+                {backgroundImageError && (
+                  <Alert severity="error" sx={{ mt: 1, maxWidth: 400 }}>
+                    {t('config.background_image_path_traversal') || 'Path traversal not allowed'}
+                  </Alert>
+                )}
+              </Box>
             </Stack>
           </Box>
         </Grid>
@@ -270,6 +304,55 @@ function UserInterface() {
           <DisplayConfig />
         </Grid>
       </Grid>
+
+      <Box sx={{ mt: 3 }}>
+        <Accordion defaultExpanded={false}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography>{t('config.debug_section')}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={3}>
+              <FormControl sx={{ maxWidth: 400 }}>
+                <InputLabel>{t('config.log_level')}</InputLabel>
+                <Select
+                  value={formData.conf_log_level || 'ERROR'}
+                  onChange={(e) => {
+                    setFormData({ ...formData, conf_log_level: e.target.value });
+                  }}
+                  label={t('config.log_level')}
+                >
+                  <MenuItem value="ERROR">ERROR</MenuItem>
+                  <MenuItem value="WARNING">WARNING</MenuItem>
+                  <MenuItem value="INFO">INFO</MenuItem>
+                  <MenuItem value="DEBUG">DEBUG</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.conf_log_sync === 'true'}
+                    onChange={(e) => {
+                      setFormData({ ...formData, conf_log_sync: e.target.checked ? 'true' : 'false' });
+                    }}
+                  />
+                }
+                label={t('config.log_sync')}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.conf_display_images_keep === 'true'}
+                    onChange={(e) => {
+                      setFormData({ ...formData, conf_display_images_keep: e.target.checked ? 'true' : 'false' });
+                    }}
+                  />
+                }
+                label={t('config.display_images_keep')}
+              />
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      </Box>
 
       <Snackbar
         open={!!message}

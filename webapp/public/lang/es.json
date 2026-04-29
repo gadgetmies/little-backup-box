@@ -182,6 +182,13 @@
     "idle_power_off_help": "Minutes · 0 = disabled",
     "write_rating_to_exif": "Write rating to EXIF",
     "timezone": "Timezone",
+    "background_image": "Background image",
+    "background_image_help": "Path to an image file on the device",
+    "background_image_path_traversal": "Path traversal not allowed",
+    "debug_section": "Developer / Debug",
+    "log_level": "Log level",
+    "log_sync": "Log sync protocol",
+    "display_images_keep": "Keep display images",
     "general": {
       "default_settings_desc": "Estos ajustes definen los valores predeterminados para nuevos usuarios y sesiones. Se pueden anular usando los controles en la barra de navegación."
     },
