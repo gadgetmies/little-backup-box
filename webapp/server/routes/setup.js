@@ -147,6 +147,25 @@ router.get('/update/status', async (req, res) => {
   }
 });
 
+router.post('/update/libraw', async (req, res) => {
+  try {
+    const command = `sudo bash ${req.WORKING_DIR}/mods/update_libraw.sh`;
+    const result = await execCommand(command, { logger: req.logger });
+
+    if (result.success) {
+      req.logger.info('LibRaw update completed');
+      res.json({ success: true, message: 'LibRaw update completed' });
+    } else {
+      const errorMessage = result.stderr || result.error || 'LibRaw compilation failed';
+      req.logger.error('LibRaw update failed', { error: errorMessage });
+      res.status(500).json({ error: errorMessage });
+    }
+  } catch (error) {
+    req.logger.error('Failed to update LibRaw', { error: error.message });
+    res.status(500).json({ error: 'Failed to update LibRaw' });
+  }
+});
+
 router.post('/update/install', async (req, res) => {
   try {
     const branch = req.body?.branch || req.constants?.const_SOFTWARE_BRANCH || 'main';

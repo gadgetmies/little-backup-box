@@ -351,6 +351,11 @@ export function createMockApiInterceptor() {
       return { data: { remotes: ['Dropbox', 'Google Drive'] } };
     }
 
+    if (url === '/setup/update/libraw' && method === 'post') {
+      await delay(4000);
+      return { data: { success: true, message: 'LibRaw update completed (mock)' } };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }
