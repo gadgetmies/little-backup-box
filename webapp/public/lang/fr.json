@@ -172,6 +172,7 @@
     "view_bg_image_label": "Vous pouvez sélectionner une image pour votre arrière-plan. Veuillez stocker vos propres images dans",
     "view_popup_header": "Messages contextuels",
     "view_popup_label": "Autoriser les messages contextuels.",
+    "popup_messages": "Show popup notifications",
     "general": {
       "default_settings_desc": "Ces paramètres définissent les valeurs par défaut pour les nouveaux utilisateurs et les sessions. Ils peuvent être remplacés à l'aide des contrôles de la barre de navigation."
     },

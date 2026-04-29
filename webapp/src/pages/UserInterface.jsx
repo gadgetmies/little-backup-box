@@ -141,6 +141,20 @@ function UserInterface() {
         </Grid>
 
         <Grid item xs={12}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.conf_popup_messages !== 'false'}
+                onChange={(e) => {
+                  setFormData({ ...formData, conf_popup_messages: e.target.checked ? 'true' : 'false' });
+                }}
+              />
+            }
+            label={t('config.popup_messages')}
+          />
+        </Grid>
+
+        <Grid item xs={12}>
           <Typography variant="h2" gutterBottom>
             {t('config.screen.virtual_keyboard_enable_header') || 'Virtual keyboard'}
           </Typography>

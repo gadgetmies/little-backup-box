@@ -439,6 +439,7 @@
     "view_bg_image_label": "Voit valita kuvan taustakuvaksi. Tallenna omat kuvat kansioon",
     "view_popup_header": "Ponnahdusviestit",
     "view_popup_label": "Salli ponnahdusviestit.",
+    "popup_messages": "Show popup notifications",
     "general": {
       "default_settings_desc": "Nämä asetukset määrittelevät oletusarvot uusille käyttäjille ja istunnoille. Ne voidaan ohittaa navigointipalkin ohjaimilla."
     },

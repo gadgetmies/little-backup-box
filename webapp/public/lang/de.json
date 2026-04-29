@@ -172,6 +172,7 @@
     "view_bg_image_label": "Sie können ein Bild für Ihren Hintergrund auswählen. Bitte eigene Bilder speichern in",
     "view_popup_header": "Popup-Nachrichten",
     "view_popup_label": "Popup-Meldungen zulassen.",
+    "popup_messages": "Show popup notifications",
     "general": {
       "default_settings_desc": "Diese Einstellungen definieren die Standardwerte für neue Benutzer und Sitzungen. Sie können mit den Steuerelementen in der Navigationsleiste überschrieben werden."
     },

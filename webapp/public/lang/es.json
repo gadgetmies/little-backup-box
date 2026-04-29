@@ -172,6 +172,7 @@
     "view_bg_image_label": "Puede seleccionar una imagen para su fondo. Guarde sus propias imágenes en",
     "view_popup_header": "Mensajes emergentes",
     "view_popup_label": "Permitir mensajes emergentes.",
+    "popup_messages": "Show popup notifications",
     "general": {
       "default_settings_desc": "Estos ajustes definen los valores predeterminados para nuevos usuarios y sesiones. Se pueden anular usando los controles en la barra de navegación."
     },

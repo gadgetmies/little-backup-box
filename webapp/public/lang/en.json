@@ -439,6 +439,7 @@
     "view_bg_image_label": "You can select an image for your background. Please store own images in",
     "view_popup_header": "Popup-messages",
     "view_popup_label": "Allow popup-messages.",
+    "popup_messages": "Show popup notifications",
     "general": {
       "default_settings_desc": "These settings define the default values for new users and sessions. They can be overridden using the controls in the navigation bar."
     },
