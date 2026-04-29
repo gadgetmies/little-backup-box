@@ -15,6 +15,7 @@ import {
   Alert,
   TextField,
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import DisplayConfig from '../components/DisplayConfig';
@@ -138,6 +139,20 @@ function UserInterface() {
                   <MenuItem value="sepia">{t('config.view_theme_sepia')}</MenuItem>
                 </Select>
               </FormControl>
+
+              <Autocomplete
+                sx={{ maxWidth: 400 }}
+                options={Intl.supportedValuesOf('timeZone')}
+                value={formData.conf_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+                onChange={(_e, newValue) => {
+                  if (newValue) {
+                    setFormData({ ...formData, conf_timezone: newValue });
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label={t('config.timezone')} />
+                )}
+              />
             </Stack>
           </Box>
         </Grid>

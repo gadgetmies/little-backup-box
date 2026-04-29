@@ -448,6 +448,7 @@
     "idle_power_off": "Idle power-off",
     "idle_power_off_help": "Minutes · 0 = disabled",
     "write_rating_to_exif": "Write rating to EXIF",
+    "timezone": "Timezone",
     "general": {
       "default_settings_desc": "Nämä asetukset määrittelevät oletusarvot uusille käyttäjille ja istunnoille. Ne voidaan ohittaa navigointipalkin ohjaimilla."
     },

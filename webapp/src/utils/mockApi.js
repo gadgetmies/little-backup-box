@@ -217,6 +217,14 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/config/save' && method === 'post') {
+      if (config.data?.failureMode === 'invalid_timezone' && config.data?.conf_timezone !== undefined) {
+        return Promise.reject({
+          response: {
+            status: 400,
+            data: { error: 'Unknown timezone identifier' },
+          },
+        });
+      }
       Object.assign(mockData.config, config.data);
       return { data: { success: true } };
     }

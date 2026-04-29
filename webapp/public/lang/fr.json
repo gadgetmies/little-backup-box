@@ -181,6 +181,7 @@
     "idle_power_off": "Idle power-off",
     "idle_power_off_help": "Minutes · 0 = disabled",
     "write_rating_to_exif": "Write rating to EXIF",
+    "timezone": "Timezone",
     "general": {
       "default_settings_desc": "Ces paramètres définissent les valeurs par défaut pour les nouveaux utilisateurs et les sessions. Ils peuvent être remplacés à l'aide des contrôles de la barre de navigation."
     },
