@@ -474,7 +474,11 @@
       "date_to": "Date to",
       "filename": "Filename",
       "camera": "Camera",
-      "reset": "Reset filters"
+      "reset": "Reset filters",
+      "directory": "Directory",
+      "extension": "File extension",
+      "social_publish": "Marked for publish",
+      "social_published": "Already published"
     },
     "images": {
       "back_to_grid": "Back to overview",

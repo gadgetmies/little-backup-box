@@ -108,4 +108,15 @@ test.describe('View page — foundation', () => {
     // Should be back to grid
     await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
   });
+
+  test('Grid thumbnails request /api/view/image with variant=thumb', async ({ page }) => {
+    await page.goto('/view');
+    const firstImg = page.locator('[data-testid="image-card"] img').first();
+    await expect(firstImg).toBeVisible({ timeout: 10000 });
+    const src = await firstImg.getAttribute('src');
+    expect(src).toBeTruthy();
+    expect(src).toContain('/api/view/image');
+    expect(src).toContain('variant=thumb');
+    expect(src).not.toContain('placehold.co');
+  });
 });

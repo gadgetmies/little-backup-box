@@ -474,7 +474,11 @@
       "date_to": "Date jusqu'à",
       "filename": "Nom de fichier",
       "camera": "Appareil photo",
-      "reset": "Réinitialiser les filtres"
+      "reset": "Réinitialiser les filtres",
+      "directory": "Répertoire",
+      "extension": "Extension de fichier",
+      "social_publish": "Marqué pour publication",
+      "social_published": "Déjà publié"
     },
     "images": {
       "back_to_grid": "Retour à l'aperçu",

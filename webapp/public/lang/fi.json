@@ -474,7 +474,11 @@
       "date_to": "Päivämäärään",
       "filename": "Tiedostonimi",
       "camera": "Kamera",
-      "reset": "Nollaa suodattimet"
+      "reset": "Nollaa suodattimet",
+      "directory": "Hakemisto",
+      "extension": "Tiedostopääte",
+      "social_publish": "Merkitty julkaistavaksi",
+      "social_published": "Jo julkaistu"
     },
     "images": {
       "back_to_grid": "Takaisin yleisnäkymään",

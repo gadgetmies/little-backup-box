@@ -41,6 +41,66 @@ test.describe('View page – FilterBar', () => {
     // URL should no longer contain ratings
     await expect(page).not.toHaveURL(/ratings=/, { timeout: 3000 });
   });
+
+  // MUI's Select doesn't expose its InputLabel via getByLabel reliably in this
+  // app, so locate by FormControl whose <label> text matches.
+  function selectByLabel(page, labelText) {
+    return page
+      .locator('.MuiFormControl-root', { has: page.locator('label', { hasText: labelText }) })
+      .locator('[role="combobox"]')
+      .first();
+  }
+
+  test('selecting a directory updates URL and triggers /view/images request', async ({ page }) => {
+    // Wait for the grid to load so stats (and the directory dropdown) are populated
+    await expect(page.locator('[data-testid="image-card"]').first()).toBeVisible({ timeout: 10000 });
+
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.url().includes('/view/images') && r.url().includes('directory='), { timeout: 10000 }),
+      (async () => {
+        await selectByLabel(page, 'Directory').click();
+        // The first option is the empty "All" choice — pick a named one
+        // (the mock fixture always has DCIM/100EOS5D).
+        await page.getByRole('option', { name: 'DCIM/100EOS5D' }).click();
+      })(),
+    ]);
+
+    expect(req.url()).toMatch(/directory=/);
+    await expect(page).toHaveURL(/directory=/);
+  });
+
+  test('selecting an extension forwards extension= and updates URL', async ({ page }) => {
+    await expect(page.locator('[data-testid="image-card"]').first()).toBeVisible({ timeout: 10000 });
+
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.url().includes('/view/images') && r.url().includes('extension='), { timeout: 10000 }),
+      (async () => {
+        await selectByLabel(page, 'File extension').click();
+        await page.getByRole('option', { name: 'JPG', exact: true }).click();
+        await page.keyboard.press('Escape');
+      })(),
+    ]);
+
+    expect(req.url()).toContain('extension=JPG');
+    await expect(page).toHaveURL(/extension=JPG/);
+  });
+
+  test('selecting a service in "Marked for publish" forwards social_publish= and updates URL', async ({ page }) => {
+    await expect(page.locator('[data-testid="image-card"]').first()).toBeVisible({ timeout: 10000 });
+
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.url().includes('/view/images') && r.url().includes('social_publish='), { timeout: 10000 }),
+      (async () => {
+        await selectByLabel(page, 'Marked for publish').click();
+        // Telegram has count > 0 in the fixture, so its option is enabled.
+        await page.getByRole('option', { name: /^telegram/i }).click();
+        await page.keyboard.press('Escape');
+      })(),
+    ]);
+
+    expect(req.url()).toMatch(/social_publish=telegram/);
+    await expect(page).toHaveURL(/socialPublish=telegram/);
+  });
 });
 
 test.describe('View page – SocialPublishPanel', () => {

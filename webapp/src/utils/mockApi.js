@@ -507,30 +507,43 @@ export function createMockApiInterceptor() {
       const page = parseInt(params.page || '1', 10);
       const perPage = parseInt(params.per_page || '25', 10);
       const cameras = ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'];
-      const fileTypes = ['JPEG', 'RAF', 'NEF'];
+      const fileTypes = ['JPEG', 'RAF', 'NEF', 'MP4'];
+      const fileExtensions = ['JPG', 'RAF', 'NEF', 'MP4'];
+      const directories = ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'];
+      // Mirrors webapp/server/utils/socialServiceBits.js. Keep in sync.
+      const SOCIAL_BITS = { telegram: 0, mastodon: 1, bluesky: 2, matrix: 3 };
+      const SERVICE_NAMES = Object.keys(SOCIAL_BITS);
 
       let allImages = [];
       for (let i = 0; i < TOTAL; i++) {
         const id = i + 1;
-        const filename = `IMG_${String(id).padStart(4, '0')}.jpg`;
+        const ftIdx = i % fileTypes.length;
+        const ext = fileExtensions[ftIdx];
+        const filename = `IMG_${String(id).padStart(4, '0')}.${ext}`;
+        const dir = directories[i % directories.length];
+        const publishService = i % 3 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
+        const publishedService = i % 7 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
         allImages.push({
           ID: id,
           File_Name: filename,
+          Directory: dir,
           Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
           thumbnail_path: `/thumbnails/${medium}/${filename}`,
           rating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
+          LbbRating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
           comment: '',
           Camera_Model_Name: cameras[i % cameras.length],
-          File_Type: fileTypes[i % fileTypes.length],
-          publish_telegram: false,
-          publish_mastodon: false,
+          File_Type: fileTypes[ftIdx],
+          File_Type_Extension: ext,
+          social_publish: publishService ? 1 << SOCIAL_BITS[publishService] : 0,
+          social_published: publishedService ? 1 << SOCIAL_BITS[publishedService] : 0,
         });
       }
 
-      // Apply filters
+      // Apply filters — mirrors the SQL builder in webapp/server/routes/view.js.
       if (params.rating) {
         const ratingValues = params.rating.split(',').map((r) => parseInt(r, 10));
-        allImages = allImages.filter((img) => ratingValues.includes(img.rating));
+        allImages = allImages.filter((img) => ratingValues.includes(img.LbbRating));
       }
       if (params.date_from) allImages = allImages.filter((img) => img.Create_Date >= params.date_from);
       if (params.date_to) allImages = allImages.filter((img) => img.Create_Date <= params.date_to);
@@ -543,6 +556,21 @@ export function createMockApiInterceptor() {
         const ftValues = params.file_type.split(',').map((f) => f.trim());
         allImages = allImages.filter((img) => ftValues.includes(img.File_Type));
       }
+      if (params.directory) {
+        allImages = allImages.filter((img) => img.Directory === params.directory);
+      }
+      if (params.extension) {
+        const extValues = params.extension.split(',').map((e) => e.trim());
+        allImages = allImages.filter((img) => extValues.includes(img.File_Type_Extension));
+      }
+      if (params.social_publish) {
+        const masks = params.social_publish.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
+        allImages = allImages.filter((img) => masks.some((m) => (img.social_publish & m) !== 0));
+      }
+      if (params.social_published) {
+        const masks = params.social_published.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
+        allImages = allImages.filter((img) => masks.some((m) => (img.social_published & m) !== 0));
+      }
 
       const total = allImages.length;
       const start = (page - 1) * perPage;
@@ -553,7 +581,33 @@ export function createMockApiInterceptor() {
 
 
     if (url === '/view/stats') {
-      return { data: mockData.viewStats };
+      const params = config.params || {};
+      const medium = params.medium;
+      // Legacy storagePath-based callers get the static fixture.
+      if (!medium) {
+        return { data: mockData.viewStats };
+      }
+      // Counts that mirror the medium-based generator above (TOTAL=120, every
+      // 3rd marked-for-publish, every 7th already-published, rotating service).
+      const SERVICE_NAMES = ['telegram', 'mastodon', 'bluesky', 'matrix'];
+      const buildCounts = (modulo) => {
+        const counts = Object.fromEntries(SERVICE_NAMES.map((s) => [s, 0]));
+        for (let i = 0; i < 120; i++) {
+          if (i % modulo === 0) counts[SERVICE_NAMES[i % SERVICE_NAMES.length]] += 1;
+        }
+        return SERVICE_NAMES.map((service) => ({ service, count: counts[service] }));
+      };
+      return {
+        data: {
+          ...mockData.viewStats,
+          directories: ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'],
+          fileTypes: ['JPEG', 'RAF', 'NEF', 'MP4'],
+          fileTypeExtensions: ['JPG', 'RAF', 'NEF', 'MP4'],
+          cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'],
+          socialPublishPending: buildCounts(3),
+          socialPublished: buildCounts(7),
+        },
+      };
     }
 
     if (url === '/social/publish' && method === 'post') {

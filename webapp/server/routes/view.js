@@ -3,9 +3,131 @@ import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 import path from 'path';
 import { execCommand } from '../utils/execCommand.js';
-import { existsSync } from 'fs';
+import { existsSync, statSync } from 'fs';
+import { shouldUseMocks } from '../utils/systemDetector.js';
+import { SOCIAL_SERVICES, maskFor } from '../utils/socialServiceBits.js';
+import { getMockViewDb } from '../utils/viewMockDb.js';
+
+// 1×1 transparent PNG. Used for mock-mode thumbnail and image responses so
+// e2e tests have a deterministic, dependency-free image payload.
+const MOCK_TRANSPARENT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=',
+  'base64'
+);
 
 const router = express.Router();
+
+// Resolve a request to a sqlite handle. Real mode uses the per-medium
+// database file under MEDIA_DIR; mock mode uses an in-memory fixture so
+// e2e tests and the static GitHub Pages build behave identically.
+async function openImageDb(req, { medium, storagePath: storagePathParam }) {
+  if (shouldUseMocks()) {
+    return { db: await getMockViewDb(), exists: true, mock: true };
+  }
+  const storagePath = storagePathParam || (medium ? path.join(req.constants.const_MEDIA_DIR || '/media', medium) : null);
+  if (!storagePath) return { db: null, exists: false, mock: false };
+  const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
+  if (!existsSync(dbPath)) return { db: null, exists: false, mock: false, storagePath };
+  return { db: new sqlite3.Database(dbPath), exists: true, mock: false, storagePath };
+}
+
+const SORT_COLUMNS = {
+  date: 'Create_Date',
+  filename: 'File_Name',
+  id: 'ID',
+};
+
+// Build WHERE clauses + bind values for the /images and /stats handlers.
+// Mirrors the PHP form in scripts/view.php:595-611. Returns { sql, params }.
+function buildImageFilters(query) {
+  const where = [];
+  const params = [];
+
+  const { rating, date_from, date_to, filename, camera, file_type, directory, extension, social_publish, social_published } = query;
+
+  if (rating) {
+    const ratingVals = String(rating)
+      .split(',')
+      .map((r) => parseInt(r, 10))
+      .filter((r) => !Number.isNaN(r));
+    if (ratingVals.length === 1) {
+      where.push('LbbRating = ?');
+      params.push(ratingVals[0]);
+    } else if (ratingVals.length > 1) {
+      where.push(`LbbRating IN (${ratingVals.map(() => '?').join(',')})`);
+      params.push(...ratingVals);
+    }
+  }
+  if (date_from) {
+    where.push('Create_Date >= ?');
+    params.push(date_from);
+  }
+  if (date_to) {
+    where.push('Create_Date <= ?');
+    params.push(date_to);
+  }
+  if (filename) {
+    where.push('File_Name LIKE ?');
+    params.push(`%${filename}%`);
+  }
+  if (camera) {
+    where.push('Camera_Model_Name = ?');
+    params.push(camera);
+  }
+  if (file_type) {
+    const ftVals = String(file_type)
+      .split(',')
+      .map((f) => f.trim())
+      .filter(Boolean);
+    if (ftVals.length === 1) {
+      where.push('File_Type = ?');
+      params.push(ftVals[0]);
+    } else if (ftVals.length > 1) {
+      where.push(`File_Type IN (${ftVals.map(() => '?').join(',')})`);
+      params.push(...ftVals);
+    }
+  }
+  if (directory) {
+    where.push('Directory = ?');
+    params.push(directory);
+  }
+  if (extension) {
+    const extVals = String(extension)
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
+    if (extVals.length === 1) {
+      where.push('File_Type_Extension = ?');
+      params.push(extVals[0]);
+    } else if (extVals.length > 1) {
+      where.push(`File_Type_Extension IN (${extVals.map(() => '?').join(',')})`);
+      params.push(...extVals);
+    }
+  }
+  if (social_publish) {
+    const masks = String(social_publish)
+      .split(',')
+      .map((s) => maskFor(s.trim()))
+      .filter((m) => m !== null);
+    if (masks.length > 0) {
+      where.push(`(${masks.map(() => '(social_publish & ?) != 0').join(' OR ')})`);
+      params.push(...masks);
+    }
+  }
+  if (social_published) {
+    const masks = String(social_published)
+      .split(',')
+      .map((s) => maskFor(s.trim()))
+      .filter((m) => m !== null);
+    if (masks.length > 0) {
+      where.push(`(${masks.map(() => '(social_published & ?) != 0').join(' OR ')})`);
+      params.push(...masks);
+    }
+  }
+
+  const sql = where.length > 0 ? ` WHERE ${where.join(' AND ')}` : '';
+  return { sql, params };
+}
 
 router.get('/media', async (req, res) => {
   try {
@@ -61,125 +183,44 @@ router.get('/images', async (req, res) => {
   try {
     const {
       medium,
+      storagePath,
       page = 1,
       per_page = 25,
       sort = 'date',
       dir = 'desc',
-      rating,
-      date_from,
-      date_to,
-      filename,
-      camera,
-      file_type,
     } = req.query;
 
-    if (!medium) {
-      // Legacy path: support old storagePath-based query
-      const {
-        storagePath,
-        filterRating = -1,
-        filterImagesPerPage = 50,
-        selectOffset = 0,
-        orderBy = 'ID',
-        orderDir = 'ASC',
-      } = req.query;
-
-      if (!storagePath) {
-        return res.status(400).json({ error: 'medium or storagePath required' });
-      }
-
-      const dbPath = path.join(
-        storagePath,
-        req.constants.const_IMAGE_DATABASE_FILENAME
-      );
-
-      if (!existsSync(dbPath)) {
-        return res.json({ images: [], count: 0, total: 0, dbExists: false });
-      }
-
-      const db = new sqlite3.Database(dbPath);
-      const dbAll = promisify(db.all.bind(db));
-
-      let query = 'SELECT * FROM EXIF_DATA WHERE 1=1';
-      const sqlParams = [];
-
-      if (rating) {
-        const ratingVals = rating.split(',').map((r) => parseInt(r, 10)).filter((r) => !isNaN(r));
-        if (ratingVals.length === 1) { query += ' AND LbbRating = ?'; sqlParams.push(ratingVals[0]); }
-        else if (ratingVals.length > 1) { query += ` AND LbbRating IN (${ratingVals.map(() => '?').join(',')})`; sqlParams.push(...ratingVals); }
-      } else if (filterRating !== '-1' && filterRating !== -1) {
-        query += ' AND LbbRating = ?';
-        sqlParams.push(filterRating);
-      }
-
-      if (date_from) { query += ' AND Create_Date >= ?'; sqlParams.push(date_from); }
-      if (date_to) { query += ' AND Create_Date <= ?'; sqlParams.push(date_to); }
-      if (filename) { query += ' AND File_Name LIKE ?'; sqlParams.push(`%${filename}%`); }
-      if (camera) { query += ' AND Camera_Model_Name = ?'; sqlParams.push(camera); }
-      if (file_type) {
-        const ftVals = file_type.split(',').map((f) => f.trim()).filter(Boolean);
-        if (ftVals.length === 1) { query += ' AND File_Type = ?'; sqlParams.push(ftVals[0]); }
-        else if (ftVals.length > 1) { query += ` AND File_Type IN (${ftVals.map(() => '?').join(',')})`; sqlParams.push(...ftVals); }
-      }
-
-      query += ` ORDER BY ${orderBy} ${orderDir}`;
-
-      const allImages = await dbAll(query, sqlParams);
-      const count = allImages.length;
-      const images = allImages.slice(
-        selectOffset,
-        parseInt(selectOffset) + parseInt(filterImagesPerPage)
-      );
-
-      db.close();
-
-      return res.json({ images, count, total: count, dbExists: true });
+    if (!medium && !storagePath) {
+      return res.status(400).json({ error: 'medium or storagePath required' });
     }
 
-    // New medium-based query using lib_view.py
-    const filterArgs = [];
-    if (rating) filterArgs.push(`--rating '${rating}'`);
-    if (date_from) filterArgs.push(`--date-from '${date_from}'`);
-    if (date_to) filterArgs.push(`--date-to '${date_to}'`);
-    if (filename) filterArgs.push(`--filename '${filename.replace(/'/g, "'\\''")}'`);
-    if (camera) filterArgs.push(`--camera '${camera.replace(/'/g, "'\\''")}'`);
-    if (file_type) filterArgs.push(`--file-type '${file_type}'`);
-
-    const command = [
-      `sudo python3 ${req.WORKING_DIR}/lib_view.py`,
-      `--action list`,
-      `--medium ${medium}`,
-      `--page ${page}`,
-      `--per-page ${per_page}`,
-      `--sort ${sort}`,
-      `--dir ${dir}`,
-      ...filterArgs,
-    ].join(' ');
-
-    const result = await execCommand(command, { logger: req.logger });
-
-    if (!result.success) {
-      if (
-        result.stderr?.includes('not mounted') ||
-        result.stdout?.includes('not mounted')
-      ) {
-        return res.status(503).json({ error: 'not_mounted' });
-      }
-      return res.status(500).json({ error: 'Failed to list images' });
+    const handle = await openImageDb(req, { medium, storagePath });
+    if (!handle.db) {
+      return res.json({ images: [], count: 0, total: 0, dbExists: false });
     }
+    const db = handle.db;
+    const dbAll = promisify(db.all.bind(db));
 
-    let parsed;
-    try {
-      parsed = JSON.parse(result.stdout.trim());
-    } catch {
-      return res.status(500).json({ error: 'Failed to parse image list' });
-    }
+    const { sql: whereSql, params: whereParams } = buildImageFilters(req.query);
 
-    res.json({
-      images: parsed.images || [],
-      total: parsed.total || 0,
-      dbExists: parsed.dbExists !== false,
-    });
+    const sortColumn = SORT_COLUMNS[String(sort).toLowerCase()] || SORT_COLUMNS.date;
+    const sortDir = String(dir).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const perPageNum = Math.max(1, parseInt(per_page, 10) || 25);
+    const offset = (pageNum - 1) * perPageNum;
+
+    const totalRow = await dbAll(`SELECT COUNT(*) AS total FROM EXIF_DATA${whereSql}`, whereParams);
+    const total = totalRow[0]?.total || 0;
+
+    const images = await dbAll(
+      `SELECT * FROM EXIF_DATA${whereSql} ORDER BY ${sortColumn} ${sortDir}, ID ${sortDir} LIMIT ? OFFSET ?`,
+      [...whereParams, perPageNum, offset]
+    );
+
+    if (!handle.mock) db.close();
+
+    res.json({ images, count: images.length, total, dbExists: true });
   } catch (error) {
     req.logger.error('Failed to get images', { error: error.message });
     res.status(500).json({ error: 'Failed to get images' });
@@ -315,16 +356,14 @@ router.post('/delete-image', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
-    const { medium, storagePath: storagePathParam } = req.query;
-    const storagePath = storagePathParam || (medium ? path.join(req.constants.const_MEDIA_DIR || '/media', medium) : null);
+    const { medium, storagePath } = req.query;
 
-    if (!storagePath) {
-      return res.status(400).json({ error: 'Storage path required' });
+    if (!medium && !storagePath) {
+      return res.status(400).json({ error: 'medium or storagePath required' });
     }
-    
-    const dbPath = path.join(storagePath, req.constants.const_IMAGE_DATABASE_FILENAME);
-    
-    if (!existsSync(dbPath)) {
+
+    const handle = await openImageDb(req, { medium, storagePath });
+    if (!handle.db) {
       return res.json({
         imagesAll: 0,
         directories: [],
@@ -333,30 +372,47 @@ router.get('/stats', async (req, res) => {
         fileTypes: [],
         fileTypeExtensions: [],
         cameraModelNames: [],
+        socialPublishPending: SOCIAL_SERVICES.map((service) => ({ service, count: 0 })),
+        socialPublished: SOCIAL_SERVICES.map((service) => ({ service, count: 0 })),
       });
     }
-    
-    const db = new sqlite3.Database(dbPath);
+    const db = handle.db;
     const dbAll = promisify(db.all.bind(db));
-    
+
     const imagesAll = await dbAll('SELECT COUNT(*) as count FROM EXIF_DATA');
-    const directories = await dbAll('SELECT DISTINCT Directory FROM EXIF_DATA');
+    const directories = await dbAll('SELECT DISTINCT Directory FROM EXIF_DATA WHERE Directory IS NOT NULL ORDER BY Directory');
     const ratings = await dbAll('SELECT LbbRating, COUNT(*) as count FROM EXIF_DATA GROUP BY LbbRating');
-    const dates = await dbAll('SELECT DISTINCT Create_Date FROM EXIF_DATA WHERE Create_Date IS NOT NULL');
-    const fileTypes = await dbAll('SELECT DISTINCT File_Type FROM EXIF_DATA');
-    const fileTypeExtensions = await dbAll('SELECT DISTINCT File_Extension FROM EXIF_DATA');
-    const cameraModelNames = await dbAll('SELECT DISTINCT Camera_Model_Name FROM EXIF_DATA WHERE Camera_Model_Name IS NOT NULL');
-    
-    db.close();
-    
+    const dates = await dbAll('SELECT DISTINCT Create_Date FROM EXIF_DATA WHERE Create_Date IS NOT NULL ORDER BY Create_Date');
+    const fileTypes = await dbAll('SELECT DISTINCT File_Type FROM EXIF_DATA WHERE File_Type IS NOT NULL ORDER BY File_Type');
+    // Column is File_Type_Extension per scripts/lib_view.py:74; the previous
+    // SELECT DISTINCT File_Extension was a pre-existing bug (no such column).
+    const fileTypeExtensions = await dbAll('SELECT DISTINCT File_Type_Extension FROM EXIF_DATA WHERE File_Type_Extension IS NOT NULL ORDER BY File_Type_Extension');
+    const cameraModelNames = await dbAll('SELECT DISTINCT Camera_Model_Name FROM EXIF_DATA WHERE Camera_Model_Name IS NOT NULL ORDER BY Camera_Model_Name');
+
+    // Per-service publish-state aggregates. Always emit one entry per service
+    // (count: 0 when none) so the FilterBar can render a complete service list.
+    const socialPublishPending = [];
+    const socialPublished = [];
+    for (const service of SOCIAL_SERVICES) {
+      const mask = maskFor(service);
+      const pending = await dbAll('SELECT COUNT(*) as count FROM EXIF_DATA WHERE (social_publish & ?) != 0', [mask]);
+      const published = await dbAll('SELECT COUNT(*) as count FROM EXIF_DATA WHERE (social_published & ?) != 0', [mask]);
+      socialPublishPending.push({ service, count: pending[0]?.count || 0 });
+      socialPublished.push({ service, count: published[0]?.count || 0 });
+    }
+
+    if (!handle.mock) db.close();
+
     res.json({
       imagesAll: imagesAll[0]?.count || 0,
-      directories: directories.map(d => d.Directory),
+      directories: directories.map((d) => d.Directory),
       ratings,
-      dates: dates.map(d => d.Create_Date),
-      fileTypes: fileTypes.map(f => f.File_Type),
-      fileTypeExtensions: fileTypeExtensions.map(f => f.File_Extension),
-      cameraModelNames: cameraModelNames.map(c => c.Camera_Model_Name),
+      dates: dates.map((d) => d.Create_Date),
+      fileTypes: fileTypes.map((f) => f.File_Type),
+      fileTypeExtensions: fileTypeExtensions.map((f) => f.File_Type_Extension),
+      cameraModelNames: cameraModelNames.map((c) => c.Camera_Model_Name),
+      socialPublishPending,
+      socialPublished,
     });
   } catch (error) {
     req.logger.error('Failed to get stats', { error: error.message });
@@ -490,12 +546,35 @@ router.post('/delete-rejected', async (req, res) => {
   }
 });
 
+const IMAGE_MIME_TYPES = {
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.tiff': 'image/tiff',
+  '.tif': 'image/tiff', '.bmp': 'image/bmp', '.heic': 'image/heic',
+  '.heif': 'image/heif', '.raw': 'image/raw',
+  '.cr2': 'image/x-canon-cr2', '.nef': 'image/x-nikon-nef',
+};
+
 router.get('/image', async (req, res) => {
   try {
-    const { medium, id } = req.query;
+    const { medium, id, variant } = req.query;
 
     if (!medium || !id) {
       return res.status(400).json({ error: 'medium and id are required' });
+    }
+
+    const isThumb = variant === 'thumb';
+
+    // Mock mode: serve a tiny inline PNG for both variants. Mirrors the shape
+    // tests expect (status header + 200 body) without depending on real media.
+    if (shouldUseMocks()) {
+      res.setHeader('X-Thumbnail-Status', isThumb ? 'ok' : 'missing');
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      res.setHeader('ETag', `W/"mock-${id}-${isThumb ? 'thumb' : 'full'}"`);
+      if (req.headers['if-none-match'] === res.getHeader('ETag')) {
+        return res.status(304).end();
+      }
+      return res.end(MOCK_TRANSPARENT_PNG);
     }
 
     const storagePath = path.join(req.constants.const_MEDIA_DIR || '/media', medium);
@@ -514,23 +593,40 @@ router.get('/image', async (req, res) => {
       return res.status(404).json({ error: 'file_missing' });
     }
 
-    const imagePath = path.join(storagePath, image.Directory, image.File_Name);
+    // Pick the file to serve. For variant=thumb, prefer the existing TIMS
+    // thumbnail (generated by scripts/backup.py:generateThumbnails into
+    // <dir>/tims/<filename>.JPG, ≤ 800 px JPEG). Fall back to the original
+    // when TIMS is missing so the grid still renders something.
+    const originalPath = path.join(storagePath, image.Directory, image.File_Name);
+    const tims_path = path.join(storagePath, image.Directory, 'tims', `${image.File_Name}.JPG`);
+    let servedPath = originalPath;
+    let thumbStatus = 'missing';
+    let mimeType = IMAGE_MIME_TYPES[path.extname(image.File_Name).toLowerCase()] || 'application/octet-stream';
 
-    if (!existsSync(imagePath)) {
+    if (isThumb && existsSync(tims_path)) {
+      servedPath = tims_path;
+      thumbStatus = 'ok';
+      mimeType = 'image/jpeg';
+    } else if (isThumb) {
+      req.logger.debug('TIMS thumbnail missing', { medium, id, tims_path });
+    }
+
+    if (!existsSync(servedPath)) {
       return res.status(404).json({ error: 'file_missing' });
     }
 
-    const ext = path.extname(image.File_Name).toLowerCase();
-    const mimeTypes = {
-      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
-      '.gif': 'image/gif', '.webp': 'image/webp', '.tiff': 'image/tiff',
-      '.tif': 'image/tiff', '.bmp': 'image/bmp', '.heic': 'image/heic',
-      '.heif': 'image/heif', '.raw': 'image/raw',
-      '.cr2': 'image/x-canon-cr2', '.nef': 'image/x-nikon-nef',
-    };
+    // ETag from served file's mtime+size. Same shape Express uses for static files.
+    const stat = statSync(servedPath);
+    const etag = `W/"${stat.size}-${Math.floor(stat.mtimeMs)}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    if (isThumb) res.setHeader('X-Thumbnail-Status', thumbStatus);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
 
-    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-    res.sendFile(imagePath);
+    res.setHeader('Content-Type', mimeType);
+    res.sendFile(servedPath);
   } catch (error) {
     req.logger.error('Failed to serve image', { error: error.message });
     res.status(500).json({ error: 'Failed to serve image' });

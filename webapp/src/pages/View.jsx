@@ -50,6 +50,10 @@ function filtersToParams(filters) {
   if (filters.filename) params.filename = filters.filename;
   if (filters.camera) params.camera = filters.camera;
   if (filters.fileType) params.file_type = filters.fileType;
+  if (filters.directory) params.directory = filters.directory;
+  if (filters.extension && filters.extension.length > 0) params.extension = filters.extension.join(',');
+  if (filters.socialPublish && filters.socialPublish.length > 0) params.social_publish = filters.socialPublish.join(',');
+  if (filters.socialPublished && filters.socialPublished.length > 0) params.social_published = filters.socialPublished.join(',');
   return params;
 }
 
@@ -61,6 +65,10 @@ function searchToFilters(searchParams) {
     filename: searchParams.get('filename') || '',
     camera: searchParams.get('camera') || '',
     fileType: searchParams.get('fileType') || '',
+    directory: searchParams.get('directory') || '',
+    extension: searchParams.get('extension') ? searchParams.get('extension').split(',') : [],
+    socialPublish: searchParams.get('socialPublish') ? searchParams.get('socialPublish').split(',') : [],
+    socialPublished: searchParams.get('socialPublished') ? searchParams.get('socialPublished').split(',') : [],
   };
 }
 
@@ -431,6 +439,10 @@ export default function View() {
     if (newFilters.filename) urlParams.filename = newFilters.filename;
     if (newFilters.camera) urlParams.camera = newFilters.camera;
     if (newFilters.fileType) urlParams.fileType = newFilters.fileType;
+    if (newFilters.directory) urlParams.directory = newFilters.directory;
+    if (newFilters.extension && newFilters.extension.length > 0) urlParams.extension = newFilters.extension.join(',');
+    if (newFilters.socialPublish && newFilters.socialPublish.length > 0) urlParams.socialPublish = newFilters.socialPublish.join(',');
+    if (newFilters.socialPublished && newFilters.socialPublished.length > 0) urlParams.socialPublished = newFilters.socialPublished.join(',');
     setSearchParams(urlParams);
   }, [setSearchParams]);
 
@@ -725,9 +737,18 @@ export default function View() {
                   <CardMedia
                     component="img"
                     height="150"
-                    image={`https://placehold.co/200x150?text=${encodeURIComponent(image.File_Name)}`}
+                    image={`/api/view/image?medium=${encodeURIComponent(medium)}&id=${image.ID}&variant=thumb`}
                     alt={image.File_Name}
-                    sx={{ objectFit: 'cover' }}
+                    sx={{
+                      objectFit: 'cover',
+                      backgroundColor: 'action.hover',
+                    }}
+                    onError={(e) => {
+                      // Hide broken-image icon and show a 1×1 transparent pixel
+                      // so the card still renders with its filename caption.
+                      e.currentTarget.src =
+                        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=';
+                    }}
                   />
                   <Box
                     sx={{

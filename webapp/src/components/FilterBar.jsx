@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
+  Checkbox,
   Chip,
   TextField,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
+  ListItemText,
+  OutlinedInput,
   Button,
   Stack,
   Typography,
@@ -32,6 +35,10 @@ export const DEFAULT_FILTERS = {
   filename: '',
   camera: '',
   fileType: '',
+  directory: '',
+  extension: [],
+  socialPublish: [],
+  socialPublished: [],
 };
 
 function FilterBar({ filters, onFiltersChange, stats }) {
@@ -80,6 +87,15 @@ function FilterBar({ filters, onFiltersChange, stats }) {
 
   const cameraModels = stats?.cameraModelNames || [];
   const fileTypes = stats?.fileTypes || [];
+  const directories = stats?.directories || [];
+  const fileTypeExtensions = stats?.fileTypeExtensions || [];
+  const socialPublishStats = stats?.socialPublishPending || [];
+  const socialPublishedStats = stats?.socialPublished || [];
+
+  const handleMultiSelectChange = (key) => (e) => {
+    const value = e.target.value;
+    onFiltersChange({ ...filters, [key]: typeof value === 'string' ? value.split(',') : value });
+  };
 
   return (
     <Box sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
@@ -179,6 +195,92 @@ function FilterBar({ filters, onFiltersChange, stats }) {
                 {fileTypes.map((ft) => (
                   <MenuItem key={ft} value={ft}>
                     {ft}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Stack>
+
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
+          {/* Directory */}
+          {directories.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>{t('view.filter.directory')}</InputLabel>
+              <Select
+                value={filters.directory || ''}
+                label={t('view.filter.directory')}
+                onChange={(e) => onFiltersChange({ ...filters, directory: e.target.value })}
+              >
+                <MenuItem value="">
+                  <em>{t('view.filter.rating_all')}</em>
+                </MenuItem>
+                {directories.map((d) => (
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {/* File-type extension (multi) */}
+          {fileTypeExtensions.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>{t('view.filter.extension')}</InputLabel>
+              <Select
+                multiple
+                value={filters.extension || []}
+                onChange={handleMultiSelectChange('extension')}
+                input={<OutlinedInput label={t('view.filter.extension')} />}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                {fileTypeExtensions.map((ext) => (
+                  <MenuItem key={ext} value={ext}>
+                    <Checkbox checked={(filters.extension || []).includes(ext)} />
+                    <ListItemText primary={ext} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {/* Social: marked-for-publish (multi, per-service) */}
+          {socialPublishStats.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>{t('view.filter.social_publish')}</InputLabel>
+              <Select
+                multiple
+                value={filters.socialPublish || []}
+                onChange={handleMultiSelectChange('socialPublish')}
+                input={<OutlinedInput label={t('view.filter.social_publish')} />}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                {socialPublishStats.map(({ service, count }) => (
+                  <MenuItem key={service} value={service} disabled={count === 0}>
+                    <Checkbox checked={(filters.socialPublish || []).includes(service)} />
+                    <ListItemText primary={`${service} (${count})`} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {/* Social: already-published (multi, per-service) */}
+          {socialPublishedStats.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>{t('view.filter.social_published')}</InputLabel>
+              <Select
+                multiple
+                value={filters.socialPublished || []}
+                onChange={handleMultiSelectChange('socialPublished')}
+                input={<OutlinedInput label={t('view.filter.social_published')} />}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                {socialPublishedStats.map(({ service, count }) => (
+                  <MenuItem key={service} value={service} disabled={count === 0}>
+                    <Checkbox checked={(filters.socialPublished || []).includes(service)} />
+                    <ListItemText primary={`${service} (${count})`} />
                   </MenuItem>
                 ))}
               </Select>
