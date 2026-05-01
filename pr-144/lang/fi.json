@@ -37,7 +37,11 @@
     "view": "View",
     "maintenance": "Huolto",
     "rclone_gui": "rclone GUI",
-    "scrape": "Arkistoitu käyttöliittymä"
+    "scrape": "Arkistoitu käyttöliittymä",
+    "devices": "Devices",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System"
   },
   "network": {
     "wifi_config": {
@@ -124,7 +128,8 @@
       "usb_devices": "USB-laitteet",
       "internal_storage": "Sisäinen tallennustila",
       "partitions": "Partitiot",
-      "local_storage": "Paikallinen tallennustila"
+      "local_storage": "Paikallinen tallennustila",
+      "logs": "Backup logs"
     },
     "logout_button": "Kirjaudu ulos",
     "nvme_button": "NVMe SSD",
@@ -146,7 +151,9 @@
     "system": "Järjestelmä",
     "model": "Malli",
     "device_states": "Laitteen tila",
-    "info": "Info"
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
   },
   "system": {
     "wifi_info": "WiFi Info",
@@ -155,7 +162,8 @@
     "wifi_signal": "Signal level",
     "wifi_bitrate": "Bit rate",
     "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi"
+    "wifi_not_connected": "Not connected to WiFi",
+    "logs_section": "Logs"
   },
   "config": {
     "alert_password_too_short": "Salasanan on oltava vähintään 5 merkkiä pitkä.",
@@ -525,7 +533,8 @@
       "install_error": "Päivityksen asennus epäonnistui",
       "branch": "Haara",
       "installed_version": "Asennettu versio",
-      "available_version": "Saatavilla oleva versio"
+      "available_version": "Saatavilla oleva versio",
+      "section": "Updates"
     },
     "database": {
       "generate_thumbnails": "Generate thumbnails",
@@ -584,6 +593,12 @@
       "file_removed": "VPN-konfiguraatiotiedosto poistettu",
       "confirm_remove": "Haluatko varmasti poistaa {type} konfiguraatiotiedoston?",
       "remove": "Poista"
+    },
+    "intro": "Configure Cloud, Social, and Mail integrations.",
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
     }
   },
   "mock_controls": {

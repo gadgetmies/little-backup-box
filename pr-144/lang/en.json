@@ -62,7 +62,11 @@
     "view": "View",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
-    "scrape": "Scraped UI"
+    "scrape": "Scraped UI",
+    "devices": "Devices",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System"
   },
   "scrape": {
     "title": "Scraped Pages",
@@ -124,7 +128,8 @@
       "usb_devices": "USB Devices",
       "internal_storage": "Internal Storage",
       "partitions": "Partitions",
-      "local_storage": "Local Storage"
+      "local_storage": "Local Storage",
+      "logs": "Backup logs"
     },
     "logout_button": "Logout",
     "nvme_button": "NVMe SSD",
@@ -146,7 +151,9 @@
     "system": "System",
     "model": "Model",
     "device_states": "Device status",
-    "info": "Info"
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
   },
   "system": {
     "wifi_info": "WiFi Info",
@@ -155,7 +162,8 @@
     "wifi_signal": "Signal level",
     "wifi_bitrate": "Bit rate",
     "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi"
+    "wifi_not_connected": "Not connected to WiFi",
+    "logs_section": "Logs"
   },
   "config": {
     "alert_password_too_short": "Password must be at least 5 characters long.",
@@ -525,7 +533,8 @@
       "install_error": "Failed to install update",
       "branch": "Branch",
       "installed_version": "Installed version",
-      "available_version": "Available version"
+      "available_version": "Available version",
+      "section": "Updates"
     },
     "database": {
       "generate_thumbnails": "Generate thumbnails",
@@ -584,6 +593,12 @@
       "file_removed": "VPN config file removed",
       "confirm_remove": "Are you sure you want to remove the {type} config file?",
       "remove": "Remove"
+    },
+    "intro": "Configure Cloud, Social, and Mail integrations.",
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
     }
   },
   "mock_controls": {

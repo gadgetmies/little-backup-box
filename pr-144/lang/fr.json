@@ -15,7 +15,11 @@
     "view": "View",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
-    "scrape": "Interface archivée"
+    "scrape": "Interface archivée",
+    "devices": "Devices",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System"
   },
   "network": {
     "wifi_config": {
@@ -102,7 +106,8 @@
       "usb_devices": "Périphériques USB",
       "internal_storage": "Stockage interne",
       "partitions": "Partitions",
-      "local_storage": "Stockage Local"
+      "local_storage": "Stockage Local",
+      "logs": "Backup logs"
     },
     "logout_button": "Se déconnecter",
     "nvme_button": "NVMe SSD",
@@ -124,7 +129,9 @@
     "system": "Système",
     "model": "Modèle",
     "device_states": "Statut du périphérique",
-    "info": "Info"
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
   },
   "config": {
     "lang_header": "Choisir la langue/Select language",
@@ -443,7 +450,8 @@
     "wifi_signal": "Signal level",
     "wifi_bitrate": "Bit rate",
     "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi"
+    "wifi_not_connected": "Not connected to WiFi",
+    "logs_section": "Logs"
   },
   "cmd": {
     "format": {
@@ -525,7 +533,8 @@
       "install_error": "Échec de l'installation de la mise à jour",
       "branch": "Branche",
       "installed_version": "Version installée",
-      "available_version": "Version disponible"
+      "available_version": "Version disponible",
+      "section": "Updates"
     },
     "dev_update_button": "Install development update",
     "dev_update_warning": "Development branch may contain unstable changes.",
@@ -584,6 +593,12 @@
       "file_removed": "Fichier de configuration VPN supprimé",
       "confirm_remove": "Êtes-vous sûr de vouloir supprimer le fichier de configuration {type}?",
       "remove": "Supprimer"
+    },
+    "intro": "Configure Cloud, Social, and Mail integrations.",
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
     }
   },
   "mock_controls": {
