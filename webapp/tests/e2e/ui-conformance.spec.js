@@ -11,22 +11,19 @@ import { test, expect } from '@playwright/test';
  * When the route table changes (tasks 6.1 / 8.1), update this list to match
  * `webapp/docs/page-map.md`.
  *
- * NOTE: this spec is expected to fail until the per-page restructure tasks
- * (group 5 of the redesign-webapp-ui-structure change) land. Each failing
- * route is a page that still uses h5/h6 directly or duplicates the AppBar
- * title in the body; fixing the page is what makes the assertion green.
  */
 
 const ROUTES = [
   '/',
-  '/setup',
-  '/tools',
-  '/sysinfo',
-  '/network',
+  '/view',
   '/maintenance',
   '/integrations',
+  '/devices',
+  '/storage',
+  '/network',
+  '/system',
+  '/preferences',
   '/scrape',
-  '/view',
 ];
 
 test.describe('UI conformance — heading scale', () => {

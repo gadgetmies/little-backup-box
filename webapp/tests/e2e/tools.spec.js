@@ -11,7 +11,7 @@ test.describe('Tools Page', () => {
   test.beforeEach(async ({ page }) => {
     extractor = new ContentExtractor(page);
     comparator = new ContentComparator();
-    await page.goto('/tools');
+    await page.goto('/storage');
     await waitForApiCall(page, '/tools/mounts');
     await waitForApiCall(page, '/tools/devices');
   });

@@ -1,31 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
-  Typography,
+  Button,
+  Chip,
+  IconButton,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableRow,
-  Button,
-  Grid,
-  Chip,
-  IconButton,
   Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Card,
-  CardContent,
-  Alert,
+  Typography,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
-import useAsyncAction from '../hooks/useAsyncAction';
+import PageSection from '../components/PageSection';
+import LogConfig from '../components/LogConfig';
+import LogMonitor from '../components/LogMonitor';
+import UpdateManager from '../components/UpdateManager';
 
 function System() {
   const { t } = useLanguage();
@@ -33,28 +29,7 @@ function System() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [cameras, setCameras] = useState([]);
   const [copiedText, setCopiedText] = useState('');
-  const [expandedCameras, setExpandedCameras] = useState(() => {
-    try {
-      const saved = localStorage.getItem('accordion-sysinfo-cameras');
-      return saved !== null ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-  const [wifiInfo, setWifiInfo] = useState(null);
   const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
-
-  const fetchWifiInfoFn = useCallback(() => api.get('/network/wifi/info'), []);
-  const {
-    execute: fetchWifiInfo,
-    loading: wifiLoading,
-  } = useAsyncAction(fetchWifiInfoFn);
-
-  const handleCameraAccordionChange = (index, isExpanded) => {
-    const newExpanded = { ...expandedCameras, [index]: isExpanded };
-    setExpandedCameras(newExpanded);
-    localStorage.setItem('accordion-sysinfo-cameras', JSON.stringify(newExpanded));
-  };
 
   const loadSystemInfo = async () => {
     try {
@@ -74,21 +49,10 @@ function System() {
     }
   };
 
-  const loadWifiInfo = useCallback(async () => {
-    try {
-      const response = await fetchWifiInfo();
-      setWifiInfo(response?.data || { connected: false });
-    } catch (error) {
-      console.error('Failed to load WiFi info:', error);
-      setWifiInfo({ connected: false });
-    }
-  }, [fetchWifiInfo]);
-
   const loadAll = useCallback(() => {
     loadSystemInfo();
     loadCameras();
-    loadWifiInfo();
-  }, [loadWifiInfo]);
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,233 +69,152 @@ function System() {
     }
   };
 
-
   return (
-    <Box>
-      <Grid container spacing={3}>
-        {systemInfo && (
-          <Grid item xs={12}>
-            <Typography variant="h2" gutterBottom>
-              {t('sysinfo.system') || 'System'}
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Table size="small">
-              <TableBody>
+    <Stack spacing={3} sx={{ pb: 10 }}>
+      <PageSection variant="card" title={t('sysinfo.system') || 'Device info'}>
+        {systemInfo ? (
+          <Table size="small">
+            <TableBody>
+              <TableRow>
+                <TableCell>{t('sysinfo.model') || 'Model'}:</TableCell>
+                <TableCell>{systemInfo.model}</TableCell>
+              </TableRow>
+              {systemInfo.temp !== null && (
                 <TableRow>
+                  <TableCell>{t('sysinfo.temp') || 'Temperature'}:</TableCell>
                   <TableCell>
-                    {t('sysinfo.model') || 'Model'}:
-                  </TableCell>
-                  <TableCell>{systemInfo.model}</TableCell>
-                </TableRow>
-                {systemInfo.temp !== null && (
-                  <TableRow>
-                    <TableCell>{t('sysinfo.temp') || 'Temperature'}:</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={`${systemInfo.temp}°C`} 
-                        size="small" 
-                        color={systemInfo.temp > 70 ? 'error' : systemInfo.temp > 60 ? 'warning' : 'default'}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {systemInfo.cpuusage !== null && (
-                  <TableRow>
-                    <TableCell>{t('sysinfo.cpuload') || 'CPU Load'}:</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={`${systemInfo.cpuusage}%`} 
-                        size="small"
-                        color={systemInfo.cpuusage > 80 ? 'error' : systemInfo.cpuusage > 60 ? 'warning' : 'default'}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {systemInfo.memRam && (
-                  <TableRow>
-                    <TableCell>{t('sysinfo.memory_ram') || 'RAM'}:</TableCell>
-                    <TableCell>{systemInfo.memRam}</TableCell>
-                  </TableRow>
-                )}
-                {systemInfo.memSwap && (
-                  <TableRow>
-                    <TableCell>{t('sysinfo.memory_swap') || 'Swap'}:</TableCell>
-                    <TableCell>{systemInfo.memSwap}</TableCell>
-                  </TableRow>
-                )}
-                <TableRow>
-                  <TableCell>{t('sysinfo.conditions') || 'Conditions'}:</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={systemInfo.abnormalConditions} 
+                    <Chip
+                      label={`${systemInfo.temp}°C`}
                       size="small"
-                      color={systemInfo.abnormalConditions === 'None' ? 'success' : 'warning'}
+                      color={systemInfo.temp > 70 ? 'error' : systemInfo.temp > 60 ? 'warning' : 'default'}
                     />
                   </TableCell>
                 </TableRow>
-              </TableBody>
-            </Table>
-            </Box>
-          </Grid>
-        )}
-
-        <Grid item xs={12}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="h2">
-              {t('system.wifi_info')}
-            </Typography>
-            <IconButton onClick={loadWifiInfo} disabled={wifiLoading} size="small">
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-          {wifiInfo && wifiInfo.connected === false && (
-            <Alert severity="info">{t('system.wifi_not_connected')}</Alert>
-          )}
-          {wifiInfo && wifiInfo.connected && (
-            <Card variant="outlined">
-              <CardContent>
-                <Table size="small">
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>{t('system.wifi_interface')}</TableCell>
-                      <TableCell>{wifiInfo.interface}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>{t('system.wifi_ssid')}</TableCell>
-                      <TableCell>{wifiInfo.ssid}</TableCell>
-                    </TableRow>
-                    {wifiInfo.signal_level !== null && (
-                      <TableRow>
-                        <TableCell>{t('system.wifi_signal')}</TableCell>
-                        <TableCell>{wifiInfo.signal_level} dBm</TableCell>
-                      </TableRow>
-                    )}
-                    {wifiInfo.bit_rate !== null && (
-                      <TableRow>
-                        <TableCell>{t('system.wifi_bitrate')}</TableCell>
-                        <TableCell>{wifiInfo.bit_rate} Mbps</TableCell>
-                      </TableRow>
-                    )}
-                    {wifiInfo.frequency !== null && (
-                      <TableRow>
-                        <TableCell>{t('system.wifi_frequency')}</TableCell>
-                        <TableCell>{wifiInfo.frequency} GHz</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography variant="h2" gutterBottom>
-            {t('sysinfo.cameras') || 'Cameras/smartphones'}
+              )}
+              {systemInfo.cpuusage !== null && (
+                <TableRow>
+                  <TableCell>{t('sysinfo.cpuload') || 'CPU Load'}:</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={`${systemInfo.cpuusage}%`}
+                      size="small"
+                      color={systemInfo.cpuusage > 80 ? 'error' : systemInfo.cpuusage > 60 ? 'warning' : 'default'}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
+              {systemInfo.memRam && (
+                <TableRow>
+                  <TableCell>{t('sysinfo.memory_ram') || 'RAM'}:</TableCell>
+                  <TableCell>{systemInfo.memRam}</TableCell>
+                </TableRow>
+              )}
+              {systemInfo.memSwap && (
+                <TableRow>
+                  <TableCell>{t('sysinfo.memory_swap') || 'Swap'}:</TableCell>
+                  <TableCell>{systemInfo.memSwap}</TableCell>
+                </TableRow>
+              )}
+              <TableRow>
+                <TableCell>{t('sysinfo.conditions') || 'Conditions'}:</TableCell>
+                <TableCell>
+                  <Chip
+                    label={systemInfo.abnormalConditions}
+                    size="small"
+                    color={systemInfo.abnormalConditions === 'None' ? 'success' : 'warning'}
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            {t('sysinfo.loading') || 'Loading…'}
           </Typography>
-          <Box sx={{ mt: 2 }}>
-            {cameras.length > 0 ? (
-              cameras.map((camera, i) => (
-                <Accordion 
-                  key={i}
-                  expanded={expandedCameras[i] || false}
-                  onChange={(event, isExpanded) => handleCameraAccordionChange(i, isExpanded)}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    aria-controls={`camera-${i}-content`}
-                    id={`camera-${i}-header`}
-                  >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                        {camera.model}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {camera.port}
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {camera.serial && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                          {t('sysinfo.camera_serial') || 'Serial number'}:
-                        </Typography>
-                        <Typography variant="body2">
-                          {camera.serial}
-                        </Typography>
-                      </Box>
-                    )}
-                    {camera.storages && camera.storages.length > 0 && (
-                      <Box>
-                        <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
-                          {t('sysinfo.camera_storages') || 'Storage paths'}:
-                        </Typography>
-                        {camera.storages.map((storage, storageIndex) => {
-                          const modelPattern = `${camera.model}:!${storage}`;
-                          const specificPattern = camera.serial 
-                            ? `${camera.model}_${camera.serial}:!${storage}`
-                            : null;
-                          return (
-                            <Box key={storageIndex} sx={{ mb: 2, p: 1, bgcolor: 'background.default', borderRadius: 1 }}>
-                              <Typography variant="body2" sx={{ mb: 1, fontFamily: 'monospace' }}>
-                                {storage}
-                              </Typography>
-                              <Box sx={{ ml: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <Typography variant="caption" sx={{ flex: 1 }}>
-                                    {t('config.backup.camera.model_folders_header') || 'Folders to sync by camera model'}:
-                                  </Typography>
-                                  <Tooltip title={copiedText === modelPattern ? 'Copied!' : 'Copy to clipboard'}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleCopyToClipboard(modelPattern)}
-                                    >
-                                      <ContentCopyIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </Box>
-                                <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1, ml: 1 }}>
-                                  {modelPattern}
-                                </Typography>
-                                {specificPattern && (
-                                  <>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                      <Typography variant="caption" sx={{ flex: 1 }}>
-                                        {t('config.backup.camera.specific_device_folders_header') || 'Folders to sync from specific camera'}:
-                                      </Typography>
-                                      <Tooltip title={copiedText === specificPattern ? 'Copied!' : 'Copy to clipboard'}>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleCopyToClipboard(specificPattern)}
-                                        >
-                                          <ContentCopyIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Box>
-                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', ml: 1 }}>
-                                      {specificPattern}
-                                    </Typography>
-                                  </>
-                                )}
-                              </Box>
-                            </Box>
-                          );
-                        })}
-                      </Box>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No cameras detected
-              </Typography>
-            )}
-          </Box>
-        </Grid>
+        )}
+      </PageSection>
 
-      </Grid>
+      <PageSection variant="card" title={t('sysinfo.cameras') || 'Connected devices'}>
+        {cameras.length > 0 ? (
+          <Stack spacing={2}>
+            {cameras.map((camera, i) => (
+              <Box key={i} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                  {camera.model}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {camera.port}
+                </Typography>
+                {camera.serial && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {t('sysinfo.camera_serial') || 'Serial number'}: {camera.serial}
+                  </Typography>
+                )}
+                {camera.storages && camera.storages.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    {camera.storages.map((storage, storageIndex) => {
+                      const modelPattern = `${camera.model}:!${storage}`;
+                      const specificPattern = camera.serial
+                        ? `${camera.model}_${camera.serial}:!${storage}`
+                        : null;
+                      return (
+                        <Box key={storageIndex} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                            {storage}
+                          </Typography>
+                          <Box sx={{ ml: 1, mt: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', flex: 1 }}>
+                                {modelPattern}
+                              </Typography>
+                              <Tooltip title={copiedText === modelPattern ? 'Copied!' : 'Copy to clipboard'}>
+                                <IconButton size="small" onClick={() => handleCopyToClipboard(modelPattern)}>
+                                  <ContentCopyIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                            {specificPattern && (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace', flex: 1 }}>
+                                  {specificPattern}
+                                </Typography>
+                                <Tooltip title={copiedText === specificPattern ? 'Copied!' : 'Copy to clipboard'}>
+                                  <IconButton size="small" onClick={() => handleCopyToClipboard(specificPattern)}>
+                                    <ContentCopyIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            {t('sysinfo.no_cameras') || 'No cameras detected'}
+          </Typography>
+        )}
+      </PageSection>
+
+      <PageSection
+        variant="accordion"
+        title={t('maintenance.update.section') || 'Updates'}
+        localStorageKey="lbb-accordion-system-updates"
+      >
+        <UpdateManager />
+      </PageSection>
+
+      <PageSection variant="card" title={t('system.logs_section') || 'Logs'}>
+        <Stack spacing={3}>
+          <LogConfig />
+          <LogMonitor />
+        </Stack>
+      </PageSection>
 
       <Box
         sx={{
@@ -353,16 +236,11 @@ function System() {
             }),
         }}
       >
-        <Button
-          variant="contained"
-          startIcon={<RefreshIcon />}
-          onClick={loadAll}
-          size="large"
-        >
+        <Button variant="contained" startIcon={<RefreshIcon />} onClick={loadAll} size="large">
           {t('sysinfo.refresh_button') || 'Refresh'}
         </Button>
       </Box>
-    </Box>
+    </Stack>
   );
 }
 

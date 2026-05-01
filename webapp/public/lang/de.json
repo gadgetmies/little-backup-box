@@ -15,7 +15,11 @@
     "view": "View",
     "maintenance": "Wartung",
     "rclone_gui": "rclone GUI",
-    "scrape": "Archivierte UI"
+    "scrape": "Archivierte UI",
+    "devices": "Devices",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System"
   },
   "network": {
     "wifi_config": {
@@ -102,7 +106,8 @@
       "usb_devices": "USB-Geräte",
       "internal_storage": "Interner Speicher",
       "partitions": "Partitionen",
-      "local_storage": "Lokaler Speicher"
+      "local_storage": "Lokaler Speicher",
+      "logs": "Backup logs"
     },
     "logout_button": "Ausloggen",
     "nvme_button": "NVMe SSD",
@@ -124,7 +129,9 @@
     "system": "System",
     "model": "Modell",
     "device_states": "Gerätestatus",
-    "info": "Info"
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
   },
   "config": {
     "lang_header": "Sprache auswählen/Select language",
@@ -443,7 +450,8 @@
     "wifi_signal": "Signal level",
     "wifi_bitrate": "Bit rate",
     "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi"
+    "wifi_not_connected": "Not connected to WiFi",
+    "logs_section": "Logs"
   },
   "cmd": {
     "format": {
@@ -525,7 +533,8 @@
       "install_error": "Update-Installation fehlgeschlagen",
       "branch": "Branch",
       "installed_version": "Installierte Version",
-      "available_version": "Verfügbare Version"
+      "available_version": "Verfügbare Version",
+      "section": "Updates"
     },
     "dev_update_button": "Install development update",
     "dev_update_warning": "Development branch may contain unstable changes.",
@@ -584,6 +593,12 @@
       "file_removed": "VPN-Konfigurationsdatei entfernt",
       "confirm_remove": "Möchten Sie die {type} Konfigurationsdatei wirklich entfernen?",
       "remove": "Entfernen"
+    },
+    "intro": "Configure Cloud, Social, and Mail integrations.",
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
     }
   },
   "mock_controls": {

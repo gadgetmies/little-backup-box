@@ -11,7 +11,7 @@ test.describe('SysInfo Page', () => {
   test.beforeEach(async ({ page }) => {
     extractor = new ContentExtractor(page);
     comparator = new ContentComparator();
-    await page.goto('/sysinfo');
+    await page.goto('/system');
     await waitForApiCall(page, '/sysinfo/system');
   });
 

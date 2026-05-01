@@ -32,6 +32,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import VPNConfig from '../components/VPNConfig';
+import SectionHeader from '../components/SectionHeader';
 import useAsyncAction from '../hooks/useAsyncAction';
 
 // Complete list of countries from ISO 3166 (matching original PHP implementation)
@@ -313,7 +314,7 @@ function Network() {
 
   useEffect(() => {
     // Load selected tab from localStorage
-    const savedTab = localStorage.getItem('network-tab');
+    const savedTab = localStorage.getItem('lbb-tabs-network');
     if (savedTab !== null) {
       try {
         const tabIndex = parseInt(savedTab, 10);
@@ -330,7 +331,7 @@ function Network() {
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
-    localStorage.setItem('network-tab', newValue.toString());
+    localStorage.setItem('lbb-tabs-network', newValue.toString());
   };
 
   const loadInitialData = async () => {
@@ -581,9 +582,8 @@ function Network() {
 
           {networkInfo.qrLinks.length > 0 && (
             <Box>
-              <Typography variant="h6" gutterBottom>
-                {t('network.qr_codes') || 'QR Codes'}
-              </Typography>
+              <SectionHeader level={3} title={t('network.qr_codes') || 'QR Codes'} sx={{ mb: 1 }} />
+
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 {networkInfo.qrLinks.map((qrLink, index) => (
                   <Box

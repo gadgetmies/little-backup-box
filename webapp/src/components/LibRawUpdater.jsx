@@ -24,9 +24,6 @@ function LibRawUpdater() {
 
   return (
     <Box>
-      <Typography variant="h2" gutterBottom>
-        {t('maintenance.libraw_title')}
-      </Typography>
       <Typography variant="body1" sx={{ mb: 2 }}>
         {t('maintenance.libraw_description')}
       </Typography>

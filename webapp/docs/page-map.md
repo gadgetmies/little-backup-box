@@ -117,17 +117,15 @@ Three peer sections of similar weight that the user typically wants visible toge
 - **Purpose**: inspect, mount, repair, format, and verify storage devices.
 - **Legacy redirects**: `/tools` → `/storage`.
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Disk usage | `PageSection.card` | View disk-space usage |
-| 2 | Devices | `PageSection.card` | View connected block devices |
-| 3 | Device health | `PageSection.card` | View device health states |
-| 4 | Mount | `PageSection.accordion` (`lbb-accordion-storage-mount`, default collapsed) | Mount storage as backup source; Mount storage as backup target; Unmount storage |
-| 5 | Repair | `PageSection.accordion` (`lbb-accordion-storage-repair`, default collapsed) | Check filesystem for errors; Repair filesystem errors |
-| 6 | Format | `PageSection.accordion` (`lbb-accordion-storage-format`, default collapsed) | Format a partition |
-| 7 | Verify capacity | `PageSection.accordion` (`lbb-accordion-storage-f3`, default collapsed) | Verify USB drive capacity (f3) |
+This page uses `Tabs` rather than the Card+Accordion combination originally drafted, because the operational sections (Mount / Repair / Format / Verify) each render large per-device tables and forms (~150–250 lines each). Stacking them as Accordions on one page produced too much vertical scroll once any two were expanded; Tabs keeps each operation isolated. Selected tab persists in `localStorage` under `lbb-tabs-storage`.
 
-Top three (read-only inspection) are always visible Cards; the four operational sections are progressively-disclosed Accordions because they're rarely needed and each carries destructive actions.
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | Info | View disk-space usage; View connected block devices; View device health states |
+| 2 | Mount | Mount storage as backup source; Mount storage as backup target; Unmount storage |
+| 3 | Repair | Check filesystem for errors; Repair filesystem errors |
+| 4 | Format | Format a partition |
+| 5 | Verify capacity | Verify USB drive capacity (f3) |
 
 ### `/network` — Network
 
@@ -135,15 +133,16 @@ Top three (read-only inspection) are always visible Cards; the four operational 
 - **Purpose**: configure WiFi, see addresses and connectivity, configure VPN.
 - **Legacy redirects**: none.
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Internet | `PageSection.card` | View internet connectivity status |
-| 2 | Access | `PageSection.card` | View device IP addresses and access links; View QR codes for device access |
-| 3 | WiFi | `PageSection.card` | Set the WiFi country (regulatory domain); View WiFi interface info |
-| 4 | VPN | `PageSection.card` | Configure VPN |
-| 5 | WiFi recovery | `PageSection.accordion` (`lbb-accordion-network-wifi-recovery`, default collapsed) | Reset WiFi to access-point mode |
+This page uses `Tabs` for the three configuration domains (WiFi / Network info / VPN) — same rationale as `/storage`: each domain has substantial content and stacking them produced excessive scroll. Below the tabs sits the rare-and-destructive WiFi-recovery accordion (separate because it lives outside the tabbed flow). Selected tab persists in `localStorage` under `lbb-tabs-network`.
 
-Peer Cards for the four routine sections; the AP-mode reset is rare and destructive (locks you out of WiFi until reconfigured), so it's an Accordion.
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | WiFi | Set the WiFi country (regulatory domain); View WiFi interface info |
+| 2 | Network info | View internet connectivity status; View device IP addresses and access links; View QR codes for device access |
+| 3 | VPN | Configure VPN |
+
+Below the tabs:
+- **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode
 
 ### `/system` — System
 

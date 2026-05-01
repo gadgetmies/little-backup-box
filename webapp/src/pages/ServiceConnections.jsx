@@ -40,6 +40,7 @@ import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
 import SocialMediaConfig from '../components/SocialMediaConfig';
 import CloudConfig from '../components/CloudConfig';
+import SectionHeader from '../components/SectionHeader';
 
 function TabPanel({ children, value, index, ...other }) {
   const needsBottomPadding = value === index && (index === 0 || index === 1 || index === 2 || index === 3);
@@ -70,7 +71,12 @@ function ServiceConnections() {
   const rsyncLastSavedConfig = useRef(null);
   const rsyncIsSaving = useRef(false);
   const [message, setMessage] = useState('');
-  const [currentTab, setCurrentTab] = useState(0);
+  const [currentTab, setCurrentTab] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = window.localStorage.getItem('lbb-tabs-integrations');
+    const map = { cloud: 0, social: 1, mail: 2 };
+    return saved && map[saved] !== undefined ? map[saved] : 0;
+  });
   const mailLastSavedConfig = useRef(null);
   const [mailIsSaved, setMailIsSaved] = useState(true);
   const [rsyncIsSaved, setRsyncIsSaved] = useState(true);
@@ -84,18 +90,6 @@ function ServiceConnections() {
   const cloudRemoteSaveTimeout = useRef(null);
 
   useEffect(() => {
-    // Load selected tab from localStorage
-    const savedTab = localStorage.getItem('integrations-tab');
-    if (savedTab !== null) {
-      try {
-        const tabIndex = parseInt(savedTab, 10);
-        if (tabIndex >= 0 && tabIndex <= 3) {
-          setCurrentTab(tabIndex);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved tab:', e);
-      }
-    }
     if (config) {
       const mailConfig = {
         conf_MAIL_IP: config.conf_MAIL_IP || '0',
@@ -329,7 +323,8 @@ function ServiceConnections() {
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
-    localStorage.setItem('integrations-tab', newValue.toString());
+    const reverseMap = { 0: 'cloud', 1: 'social', 2: 'mail' };
+    localStorage.setItem('lbb-tabs-integrations', reverseMap[newValue] || 'cloud');
   };
 
   const areAllMailFieldsFilled = () => {
@@ -451,32 +446,31 @@ function ServiceConnections() {
 
   return (
     <Box>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+        {t('integrations.intro') || 'Configure Cloud, Social, and Mail integrations.'}
+      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={currentTab} onChange={handleTabChange} aria-label="service connections tabs">
-          <Tab 
-            label={t('config.mail.section') || 'Email'} 
+          <Tab
+            label={t('integrations.tab.cloud') || 'Cloud'}
             id="integrations-tab-0"
             aria-controls="integrations-tabpanel-0"
           />
-          <Tab 
-            label={t('integrations.social_media.title') || 'Social Media Integration'} 
+          <Tab
+            label={t('integrations.tab.social') || 'Social'}
             id="integrations-tab-1"
             aria-controls="integrations-tabpanel-1"
           />
-          <Tab 
-            label={t('integrations.cloud_services.title') || 'Cloud Services Configuration'} 
+          <Tab
+            label={t('integrations.tab.mail') || 'Mail'}
             id="integrations-tab-2"
             aria-controls="integrations-tabpanel-2"
-          />
-          <Tab 
-            label={t('network.rsync_config.title') || 'rsync Server Configuration'} 
-            id="integrations-tab-3"
-            aria-controls="integrations-tabpanel-3"
           />
         </Tabs>
       </Box>
 
-      <TabPanel value={currentTab} index={0}>
+      {/* Mail panel — was index 0, now 2 */}
+      <TabPanel value={currentTab} index={2}>
               {hasMissingEmailServerConfig() && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
                   {t('config.mail.server_settings_notice') || 'Server settings must be configured before email notifications can be sent.'}
@@ -503,9 +497,8 @@ function ServiceConnections() {
                     />
                   </Stack>
                   
-                  <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
-                    {t('config.mail.smtp_header') || 'SMTP Configuration'}
-                  </Typography>
+                  <SectionHeader level={3} title={t('config.mail.smtp_header') || 'SMTP Configuration'} sx={{ mt: 3, mb: 2 }} />
+
                   <Stack spacing={3} sx={{ mb: 4 }}>
                     <TextField
                       required
@@ -651,7 +644,7 @@ function ServiceConnections() {
                     spacing={2} 
                     sx={{ 
                       mt: 4,
-                      ...(currentTab === 0 && {
+                      ...(currentTab === 2 && {
                         position: 'fixed',
                         bottom: 0,
                         left: { xs: 0, md: `${currentDrawerWidth}px` },
@@ -675,7 +668,7 @@ function ServiceConnections() {
                       startIcon={<SaveIcon />}
                       onClick={handleSaveMail}
                       disabled={mailIsSaved}
-                      size={currentTab === 0 ? 'large' : 'medium'}
+                      size={currentTab === 2 ? 'large' : 'medium'}
                     >
                       {t('config.save_button') || 'Save'}
                     </Button>
@@ -684,7 +677,7 @@ function ServiceConnections() {
                       startIcon={<EmailIcon />}
                       onClick={handleTestMail}
                       disabled={!areAllMailFieldsFilled()}
-                      size={currentTab === 0 ? 'large' : 'medium'}
+                      size={currentTab === 2 ? 'large' : 'medium'}
                     >
                       {t('config.mail.testmail_header') || 'Send Test Mail'}
                     </Button>
@@ -692,9 +685,7 @@ function ServiceConnections() {
       </TabPanel>
 
       <TabPanel value={currentTab} index={1}>
-              <Typography variant="h2" gutterBottom>
-                {t('integrations.social_general')}
-              </Typography>
+              <SectionHeader level={2} title={t('integrations.social_general')} sx={{ mb: 2 }} />
               <Stack spacing={2} sx={{ mb: 3 }}>
                 <TextField
                   label={t('integrations.social_publish_date')}
@@ -733,7 +724,8 @@ function ServiceConnections() {
               />
       </TabPanel>
 
-      <TabPanel value={currentTab} index={2}>
+      {/* Cloud panel — was index 2, now 0; absorbs the rsync panel */}
+      <TabPanel value={currentTab} index={0}>
               {cloudRemotes.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   {cloudRemotes.map((remoteName) => (
@@ -798,12 +790,13 @@ function ServiceConnections() {
                 onSavedStateChange={(isSaved, handleSave) => {
                   cloudConfigRef.current = { isSaved, handleSave };
                 }}
-                isSticky={currentTab === 2}
+                isSticky={currentTab === 0}
                 drawerWidth={currentDrawerWidth}
               />
-      </TabPanel>
 
-      <TabPanel value={currentTab} index={3}>
+              <Divider sx={{ my: 4 }} />
+
+              <SectionHeader level={2} title={t('network.rsync_config.title') || 'rsync server'} sx={{ mb: 2 }} />
               <Stack spacing={3}>
                     <TextField
                       variant="outlined"
@@ -885,7 +878,7 @@ function ServiceConnections() {
                       spacing={2} 
                       sx={{ 
                         mt: 2,
-                        ...(currentTab === 3 && {
+                        ...(currentTab === 0 && {
                           position: 'fixed',
                           bottom: 0,
                           left: { xs: 0, md: `${currentDrawerWidth}px` },
@@ -909,7 +902,7 @@ function ServiceConnections() {
                         startIcon={rsyncSaving ? <CircularProgress size={16} /> : <SaveIcon />}
                         onClick={handleSaveRsync}
                         disabled={rsyncIsSaved || rsyncSaving}
-                        size={currentTab === 3 ? 'large' : 'medium'}
+                        size={currentTab === 0 ? 'large' : 'medium'}
                       >
                         {t('config.save_button') || 'Save'}
                       </Button>

@@ -11,7 +11,7 @@ test.describe('Setup/Settings Page', () => {
   test.beforeEach(async ({ page }) => {
     extractor = new ContentExtractor(page);
     comparator = new ContentComparator();
-    await page.goto('/setup');
+    await page.goto('/preferences');
     await waitForApiCall(page, '/setup/config');
   });
 

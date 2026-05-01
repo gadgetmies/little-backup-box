@@ -1,28 +1,52 @@
 import React from 'react';
-import { Box, Grid } from '@mui/material';
-import UpdateManager from '../components/UpdateManager';
+import { Stack } from '@mui/material';
+import { useLanguage } from '../contexts/LanguageContext';
+import PageSection from '../components/PageSection';
+import DatabaseOperations from '../components/DatabaseOperations';
+import FileOperations from '../components/FileOperations';
 import SettingsOperations from '../components/SettingsOperations';
 import LibRawUpdater from '../components/LibRawUpdater';
 
 function Maintenance() {
+  const { t } = useLanguage();
+
   return (
-    <Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <UpdateManager />
-        </Grid>
+    <Stack spacing={3}>
+      <PageSection
+        variant="accordion"
+        title={t('maintenance.database.section') || 'Database operations'}
+        localStorageKey="lbb-accordion-maintenance-database"
+        legacyLocalStorageKey="accordion-database-operations"
+      >
+        <DatabaseOperations />
+      </PageSection>
 
-        <Grid item xs={12}>
-          <LibRawUpdater />
-        </Grid>
+      <PageSection
+        variant="accordion"
+        title={t('main.file_operations') || 'File operations'}
+        localStorageKey="lbb-accordion-maintenance-files"
+        legacyLocalStorageKey="accordion-file-operations"
+      >
+        <FileOperations />
+      </PageSection>
 
-        <Grid item xs={12}>
-          <SettingsOperations />
-        </Grid>
-      </Grid>
-    </Box>
+      <PageSection
+        variant="accordion"
+        title={t('config.save_settings_section') || 'Settings backup'}
+        localStorageKey="lbb-accordion-maintenance-settings"
+      >
+        <SettingsOperations />
+      </PageSection>
+
+      <PageSection
+        variant="accordion"
+        title={t('maintenance.libraw_title') || 'LibRaw update'}
+        localStorageKey="lbb-accordion-maintenance-updates"
+      >
+        <LibRawUpdater />
+      </PageSection>
+    </Stack>
   );
 }
 
 export default Maintenance;
-

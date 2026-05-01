@@ -292,7 +292,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
             onChange={(event, isExpanded) => handleAccordionChange('telegram', isExpanded)}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
+              <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
                 {t('config.social.telegram.header') || 'Telegram'}
               </Typography>
             </AccordionSummary>
@@ -339,7 +339,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('mastodon', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.mastodon.header') || 'Mastodon'}
             </Typography>
           </AccordionSummary>
@@ -376,7 +376,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('bluesky', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.bluesky.header') || 'Bluesky'}
             </Typography>
           </AccordionSummary>
@@ -420,7 +420,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('matrix', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.matrix.header') || 'Matrix'}
             </Typography>
           </AccordionSummary>

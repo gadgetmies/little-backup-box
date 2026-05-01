@@ -39,8 +39,8 @@ test.describe('Navigation and Layout', () => {
     
     if (await settingsLink.count() > 0) {
       await settingsLink.click();
-      await page.waitForURL('**/setup');
-      expect(page.url()).toContain('/setup');
+      await page.waitForURL('**/preferences');
+      expect(page.url()).toContain('/preferences');
     }
   });
 
@@ -61,8 +61,8 @@ test.describe('Navigation and Layout', () => {
     
     if (await toolsLink.count() > 0) {
       await toolsLink.click();
-      await page.waitForURL('**/tools');
-      expect(page.url()).toContain('/tools');
+      await page.waitForURL('**/storage');
+      expect(page.url()).toContain('/storage');
     }
   });
 
@@ -72,13 +72,13 @@ test.describe('Navigation and Layout', () => {
     
     if (await sysinfoLink.count() > 0) {
       await sysinfoLink.click();
-      await page.waitForURL('**/sysinfo');
-      expect(page.url()).toContain('/sysinfo');
+      await page.waitForURL('**/system');
+      expect(page.url()).toContain('/system');
     }
   });
 
   test('should highlight active route', async ({ page }) => {
-    await page.goto('/setup');
+    await page.goto('/preferences');
     await page.waitForTimeout(500);
 
     const activeLink = page.locator('[class*="active"], [aria-current="page"], [class*="selected"]').first();
@@ -140,7 +140,7 @@ test.describe('Navigation and Layout', () => {
     await page.goto('/');
     await page.waitForTimeout(500);
 
-    await page.goto('/setup');
+    await page.goto('/preferences');
     await page.waitForTimeout(500);
 
     await page.goto('/view');

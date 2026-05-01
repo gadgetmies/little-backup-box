@@ -95,7 +95,7 @@ function ScrapedUI() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <FolderIcon color="primary" />
                 <Box>
-                  <Typography variant="h6">{site.name}</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{site.name}</Typography>
                   {site.lastModified && (
                     <Typography variant="body2" color="text.secondary">
                       {`${t('scrape.updated')} ${formatDate(site.lastModified)}`}

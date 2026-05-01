@@ -33,7 +33,7 @@ test.describe('Complete User Flow Integration Tests', () => {
   });
 
   test('complete settings flow', async ({ page }) => {
-    await page.goto('/setup');
+    await page.goto('/preferences');
     await waitForApiCall(page, '/setup/config');
 
     const languageSelect = page.locator('select, [role="combobox"]').first();
@@ -105,7 +105,7 @@ test.describe('Complete User Flow Integration Tests', () => {
   });
 
   test('complete tools flow', async ({ page }) => {
-    await page.goto('/tools');
+    await page.goto('/storage');
     await waitForApiCall(page, '/tools/mounts');
     await waitForApiCall(page, '/tools/devices');
 
@@ -125,7 +125,7 @@ test.describe('Complete User Flow Integration Tests', () => {
   });
 
   test('complete sysinfo flow', async ({ page }) => {
-    await page.goto('/sysinfo');
+    await page.goto('/system');
     await waitForApiCall(page, '/sysinfo/system');
 
     const systemResponse = await page.waitForResponse((response) =>
@@ -166,21 +166,21 @@ test.describe('Complete User Flow Integration Tests', () => {
     await page.waitForTimeout(500);
     expect(page.url()).toContain('/');
 
-    await page.goto('/setup');
+    await page.goto('/preferences');
     await page.waitForTimeout(500);
-    expect(page.url()).toContain('/setup');
+    expect(page.url()).toContain('/preferences');
 
     await page.goto('/view');
     await page.waitForTimeout(500);
     expect(page.url()).toContain('/view');
 
-    await page.goto('/tools');
+    await page.goto('/storage');
     await page.waitForTimeout(500);
-    expect(page.url()).toContain('/tools');
+    expect(page.url()).toContain('/storage');
 
-    await page.goto('/sysinfo');
+    await page.goto('/system');
     await page.waitForTimeout(500);
-    expect(page.url()).toContain('/sysinfo');
+    expect(page.url()).toContain('/system');
 
     await page.goto('/');
     await page.waitForTimeout(500);

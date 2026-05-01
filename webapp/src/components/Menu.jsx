@@ -35,7 +35,6 @@ import LanguageIcon from '@mui/icons-material/Language';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import PaletteIcon from '@mui/icons-material/Palette';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import StorageIcon from '@mui/icons-material/Storage';
 import InfoIcon from '@mui/icons-material/Info';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
@@ -93,18 +92,20 @@ function Menu() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Sidebar order matches webapp/docs/page-map.md (task-frequency descending).
   const menuItems = [
     { path: '/', key: 'main', icon: <ArchiveIcon /> },
-    { path: '/tools', key: 'filesystem', icon: <StorageIcon /> },
-    { path: '/integrations', key: 'integrations', icon: <LinkIcon /> },
-    { path: '/maintenance', key: 'maintenance', icon: <BuildCircleIcon /> },
-    { path: '/sysinfo', key: 'sysinfo', icon: <InfoIcon /> },
-    { path: '/network', key: 'network', icon: <RouterIcon /> },
-    { path: '/setup', key: 'config', icon: <PaletteIcon /> },
     { path: '/view', key: 'gallery', icon: <PhotoLibraryIcon /> },
+    { path: '/maintenance', key: 'maintenance', icon: <BuildCircleIcon /> },
+    { path: '/integrations', key: 'integrations', icon: <LinkIcon /> },
+    { path: '/devices', key: 'devices', icon: <PaletteIcon /> },
+    { path: '/storage', key: 'storage', icon: <StorageIcon /> },
+    { path: '/network', key: 'network', icon: <RouterIcon /> },
+    { path: '/system', key: 'system', icon: <InfoIcon /> },
+    { path: '/preferences', key: 'preferences', icon: <SettingsBrightnessIcon /> },
+    { path: '/scrape', key: 'scrape', icon: <PublicIcon /> },
     { path: '/files', key: 'filebrowser', icon: <FolderOpenIcon />, external: true },
     { path: '/frame.php?page=rclone_gui', key: 'rclone_gui', icon: <AppsIcon />, external: true, hasInfo: true },
-    { path: '/scrape', key: 'scrape', icon: <PublicIcon />},
   ];
 
   const handleDrawerToggle = () => {
@@ -428,14 +429,15 @@ function Menu() {
   const getPageTitle = () => {
     const routeMap = {
       '/': { key: 'mainmenue.main', fallback: 'Backup' },
-      '/setup': { key: 'mainmenue.config', fallback: 'User Interface' },
-      '/view': { key: 'mainmenue.view', fallback: 'View' },
-      '/integrations': { key: 'mainmenue.integrations', fallback: 'Service Connections' },
-      '/tools': { key: 'mainmenue.filesystem', fallback: 'Filesystem' },
-      '/sysinfo': { key: 'mainmenue.sysinfo', fallback: 'System' },
-      '/network': { key: 'mainmenue.network', fallback: 'Network' },
+      '/view': { key: 'mainmenue.gallery', fallback: 'Library' },
       '/maintenance': { key: 'mainmenue.maintenance', fallback: 'Maintenance' },
-      '/scrape': { key: 'mainmenue.scrape', fallback: 'Scraped UI' },
+      '/integrations': { key: 'mainmenue.integrations', fallback: 'Integrations' },
+      '/devices': { key: 'mainmenue.devices', fallback: 'Devices' },
+      '/storage': { key: 'mainmenue.storage', fallback: 'Storage' },
+      '/network': { key: 'mainmenue.network', fallback: 'Network' },
+      '/system': { key: 'mainmenue.system', fallback: 'System' },
+      '/preferences': { key: 'mainmenue.preferences', fallback: 'Preferences' },
+      '/scrape': { key: 'mainmenue.scrape', fallback: 'Legacy UI' },
     };
     const routeInfo = routeMap[location.pathname] || routeMap['/'];
     const translation = t(routeInfo.key);
@@ -564,7 +566,7 @@ function Menu() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 0, mr: 2 }}>
+          <Typography variant="h6" component="h1" sx={{ flexGrow: 0, mr: 2, fontWeight: 'inherit' }}>
             {getPageTitle()}
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
