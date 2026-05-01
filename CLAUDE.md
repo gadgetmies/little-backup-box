@@ -42,6 +42,9 @@ npx playwright test tests/e2e/home.spec.js  # Run a single test file
 ### UI library
 MUI v5 (`@mui/material`, `@mui/icons-material`) is the component library throughout the frontend. The app uses a custom MUI theme defined in `src/theme.js` (dark mode by default, with explicit typography scale). Always reach for MUI components rather than plain HTML or custom CSS.
 
+### UI structure
+Page layout, the heading scale (h1 from AppBar; h2 = section; h3 = subsection; h4–h6 unused), and the rubric for choosing between Card, Accordion, and Tabs are documented in `webapp/docs/ui-pattern-system.md`. Pages compose the shared `<PageSection>` and `<SectionHeader>` primitives instead of reaching for raw `Card` / `Accordion` / `Typography variant="h2">` for sectioning. The canonical "what does the app do?" inventory lives in `webapp/docs/feature-catalog.md`, and the canonical "where does feature X live?" map is in `webapp/docs/page-map.md` — update both when you add, move, or remove a user-facing feature.
+
 ### i18n
 Every user-visible string must go through the translation hook:
 
