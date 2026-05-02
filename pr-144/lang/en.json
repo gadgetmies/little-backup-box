@@ -52,14 +52,10 @@
   },
   "mainmenue": {
     "main": "Backup",
-    "sysinfo": "System",
     "network": "Network",
-    "config": "User Interface",
     "integrations": "Service Connections",
-    "filesystem": "Filesystem",
     "filebrowser": "File browser",
     "gallery": "Gallery",
-    "view": "View",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
     "scrape": "Scraped UI",
@@ -101,7 +97,6 @@
     "target": "Target",
     "backup": {
       "options": "Options",
-      "configuration": "Run backup",
       "generate_thumbnails_checkbox_label": "Generate thumbnails and read into database (only for local storage)",
       "initiated": "initiated",
       "power_off_checkbox_label": "Turn off after run",
@@ -144,7 +139,6 @@
     "diskspace": "Disk space",
     "memory_ram": "RAM used",
     "memory_swap": "SWAP used",
-    "camera_storages": "Storage paths",
     "refresh_button": "Refresh",
     "camera_serial": "Serial number",
     "cameras": "Cameras/smartphones",
@@ -156,22 +150,13 @@
     "loading": "Loading…"
   },
   "system": {
-    "wifi_info": "WiFi Info",
-    "wifi_interface": "Interface",
-    "wifi_ssid": "SSID",
-    "wifi_signal": "Signal level",
-    "wifi_bitrate": "Bit rate",
-    "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi",
     "logs_section": "Logs"
   },
   "config": {
     "alert_password_too_short": "Password must be at least 5 characters long.",
     "message_settings_saved": "config.cfg was written successfully.",
-    "saving": "Saving...",
     "lang_header": "Select language",
     "lang_browser_detect": "Auto-detect",
-    "view_section_desc": "These settings define the default UI values for new users.",
     "view_theme_header": "Theme",
     "view_theme_light": "light",
     "view_theme_dark": "dark",
@@ -190,7 +175,6 @@
     "background_image": "Background image",
     "background_image_help": "Path to an image file on the device",
     "background_image_path_traversal": "Path traversal not allowed",
-    "debug_section": "Developer / Debug",
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
@@ -224,22 +208,14 @@
     "backup": {
       "none": "no automatic backup",
       "section": "Backup",
-      "camera": {
-        "model_folders_header": "Folders to sync by camera model",
-        "specific_device_folders_header": "Folders to sync from specific camera"
-      },
       "general_settings_header": "Defaults",
       "file_operation_label": "File operation",
       "file_operation_copy": "Copy files",
       "file_operation_move": "Move files",
       "rename": {
-        "header": "Rename files",
         "warning": "Attention! The files should then be deleted from the source. Otherwise they will be transferred again during the next backup, renamed and replacing the version from the previous backup.",
         "desc": "An attempt is made to read the creation date from all media files on local storage devices. If this is possible, the file is renamed according to the following pattern:<br>\nFor example, &quot;Image0123.jpg&quot; becomes &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
       }
-    },
-    "imageviewer": {
-      "section": "Image viewer View"
     },
     "mail": {
       "password_label": "Password for the mail server",
@@ -341,7 +317,6 @@
       "check_label": "Check for updates"
     },
     "screen": {
-      "virtual_keyboard_enable_header": "Virtual keyboard",
       "virtual_keyboard_enable_label": "Enable virtual keyboard"
     },
     "social": {
@@ -554,8 +529,7 @@
     "libraw_warning": "This process takes 5–15 minutes and will temporarily interrupt RAW processing.",
     "file": {
       "rename_error": "Failed to start rename operation",
-      "rename_started": "Rename files operation started",
-      "target": "Target Storage"
+      "rename_started": "Rename files operation started"
     },
     "settings": {
       "download_error": "Failed to download settings",
@@ -568,7 +542,6 @@
   },
   "integrations": {
     "social_media": {
-      "title": "Social Media",
       "test_telegram": "Test Connection",
       "test_mastodon": "Test Connection",
       "test_bluesky": "Test Connection",
@@ -579,7 +552,6 @@
     "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
     "social_publish_filename": "Include filename in post",
     "cloud_services": {
-      "title": "Cloud Services",
       "no_services": "No cloud services configured. Please configure rclone first."
     },
     "cloud_target_dir": "Target base directory",

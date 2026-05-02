@@ -27,14 +27,10 @@
   },
   "mainmenue": {
     "main": "Varmuus kopio",
-    "sysinfo": "Järjestelmä",
     "network": "Verkko",
-    "config": "Käyttöliittymä",
     "integrations": "Palveluyhteydet",
-    "filesystem": "Tiedostojärjestelmä",
     "filebrowser": "Tiedostoselain",
     "gallery": "Galleria",
-    "view": "View",
     "maintenance": "Huolto",
     "rclone_gui": "rclone GUI",
     "scrape": "Arkistoitu käyttöliittymä",
@@ -101,7 +97,6 @@
     "target": "Kohde",
     "backup": {
       "options": "Asetukset",
-      "configuration": "Suorita varmuus kopio",
       "generate_thumbnails_checkbox_label": "Luo esikatselukuvia ja lue tietokantaan (vain paikallisille tallennustiloille)",
       "initiated": "aloitettu",
       "power_off_checkbox_label": "Sammuta suorituksen jälkeen",
@@ -144,7 +139,6 @@
     "diskspace": "Levytila",
     "memory_ram": "RAM käytetty",
     "memory_swap": "SWAP käytetty",
-    "camera_storages": "Tallennuspolut",
     "refresh_button": "Päivitä",
     "camera_serial": "Sarjanumero",
     "cameras": "Kamerat/älypuhelimet",
@@ -156,22 +150,13 @@
     "loading": "Loading…"
   },
   "system": {
-    "wifi_info": "WiFi Info",
-    "wifi_interface": "Interface",
-    "wifi_ssid": "SSID",
-    "wifi_signal": "Signal level",
-    "wifi_bitrate": "Bit rate",
-    "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi",
     "logs_section": "Logs"
   },
   "config": {
     "alert_password_too_short": "Salasanan on oltava vähintään 5 merkkiä pitkä.",
     "message_settings_saved": "config.cfg kirjoitettiin onnistuneesti.",
-    "saving": "Tallennetaan...",
     "lang_header": "Valitse kieli",
     "lang_browser_detect": "Tunnista automaattisesti",
-    "view_section_desc": "Nämä asetukset määrittelevät oletusarvoiset käyttöliittymäarvot uusille käyttäjille.",
     "view_theme_header": "Teema",
     "view_theme_light": "vaalea",
     "view_theme_dark": "tumma",
@@ -190,7 +175,6 @@
     "background_image": "Background image",
     "background_image_help": "Path to an image file on the device",
     "background_image_path_traversal": "Path traversal not allowed",
-    "debug_section": "Developer / Debug",
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
@@ -224,22 +208,14 @@
     "backup": {
       "none": "ei automaattista varmuus kopiota",
       "section": "Varmuus kopio",
-      "camera": {
-        "model_folders_header": "Synkronoitavat kansiot kameran mallin mukaan",
-        "specific_device_folders_header": "Synkronoitavat kansiot tietystä kamerasta"
-      },
       "general_settings_header": "Oletusarvot",
       "file_operation_label": "Tiedosto-operaatio",
       "file_operation_copy": "Kopioi tiedostot",
       "file_operation_move": "Siirrä tiedostot",
       "rename": {
-        "header": "Nimeä tiedostot uudelleen",
         "warning": "Varoitus! Tiedostot tulisi sen jälkeen poistaa lähteestä. Muuten ne siirretään uudelleen seuraavan varmuus kopion aikana, nimetään uudelleen ja korvaavat edellisen varmuus kopion version.",
         "desc": "Yritetään lukea luontipäivämäärä kaikista media-tiedostoista paikallisilla tallennuslaitteilla. Jos tämä on mahdollista, tiedosto nimetään uudelleen seuraavan mallin mukaan:<br>\nEsimerkiksi &quot;Image0123.jpg&quot; muuttuu &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
       }
-    },
-    "imageviewer": {
-      "section": "Kuvakatselin View"
     },
     "mail": {
       "password_label": "Sähköpostipalvelimen salasana",
@@ -341,7 +317,6 @@
       "check_label": "Tarkista päivitykset"
     },
     "screen": {
-      "virtual_keyboard_enable_header": "Virtuaalinäppäimistö",
       "virtual_keyboard_enable_label": "Ota virtuaalinäppäimistö käyttöön"
     },
     "social": {
@@ -554,8 +529,7 @@
     "libraw_warning": "This process takes 5–15 minutes and will temporarily interrupt RAW processing.",
     "file": {
       "rename_error": "Uudelleennimeämistoiminnon aloitus epäonnistui",
-      "rename_started": "Tiedostojen uudelleennimeäminen aloitettu",
-      "target": "Kohdetallennus"
+      "rename_started": "Tiedostojen uudelleennimeäminen aloitettu"
     },
     "settings": {
       "download_error": "Asetusten lataaminen epäonnistui",
@@ -568,7 +542,6 @@
   },
   "integrations": {
     "social_media": {
-      "title": "Sosiaalinen media",
       "test_telegram": "Testaa Yhteys",
       "test_mastodon": "Testaa Yhteys",
       "test_bluesky": "Testaa Yhteys",
@@ -579,7 +552,6 @@
     "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
     "social_publish_filename": "Include filename in post",
     "cloud_services": {
-      "title": "Pilvipalvelut",
       "no_services": "Pilvipalveluja ei ole määritelty. Määritä ensin rclone."
     },
     "cloud_target_dir": "Target base directory",
