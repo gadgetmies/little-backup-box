@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Backup from './pages/Backup';
 import Preferences from './pages/Preferences';
@@ -46,12 +46,6 @@ function App() {
           <Route path="/system" element={<System />} />
           <Route path="/preferences" element={<Preferences />} />
           <Route path="/scrape" element={<ScrapedUI />} />
-
-          {/* Legacy redirects — keep for one release after the rename so external
-              links and bookmarks resolve. Remove in a follow-up change. */}
-          <Route path="/setup" element={<Navigate to="/preferences" replace />} />
-          <Route path="/tools" element={<Navigate to="/storage" replace />} />
-          <Route path="/sysinfo" element={<Navigate to="/system" replace />} />
         </Routes>
       </Layout>
       <MockControls />

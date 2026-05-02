@@ -5,14 +5,10 @@
   },
   "mainmenue": {
     "main": "Sauvegarde",
-    "sysinfo": "système",
     "network": "Réseau",
-    "config": "Interface utilisateur",
     "integrations": "Connexions de Services",
-    "filesystem": "Système de fichiers",
     "filebrowser": "Navigateur de fichiers",
     "gallery": "Galerie",
-    "view": "View",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
     "scrape": "Interface archivée",
@@ -79,7 +75,6 @@
     "target": "Cible",
     "backup": {
       "options": "Options",
-      "configuration": "Exécuter la sauvegarde",
       "generate_thumbnails_checkbox_label": "Générer des vignettes et lire dans la base de données (uniquement pour le stockage local)",
       "initiated": "initié",
       "power_off_checkbox_label": "Éteindre après la course",
@@ -122,7 +117,6 @@
     "conditions": "Conditions",
     "memory_ram": "RAM utilisé",
     "memory_swap": "SWAP utilisé",
-    "camera_storages": "Chemins de stockage",
     "refresh_button": "Rafraîchir",
     "camera_serial": "Numéro de série",
     "cameras": "Appareils photo/smartphones",
@@ -136,7 +130,6 @@
   "config": {
     "lang_header": "Choisir la langue/Select language",
     "lang_browser_detect": "Détection automatique/Auto-detect",
-    "view_section_desc": "Ces paramètres définissent les valeurs par défaut de l'interface utilisateur pour les nouveaux utilisateurs.",
     "view_theme_header": "Schéma de couleur",
     "view_theme_light": "lumière",
     "view_theme_dark": "foncé",
@@ -155,7 +148,6 @@
     "background_image": "Background image",
     "background_image_help": "Path to an image file on the device",
     "background_image_path_traversal": "Path traversal not allowed",
-    "debug_section": "Developer / Debug",
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
@@ -185,29 +177,20 @@
     "save_settings_upload_header": "Télécharger",
     "alert_password_too_short": "Le mot de passe doit comporter au moins 5 caractères.",
     "message_settings_saved": "config.cfg a été écrit avec succès.",
-    "saving": "Enregistrement...",
     "rsync_module_label1": "Nom du module sur le serveur rsync, par exemple 'little-backup-box' (par défaut :",
     "wifi_country_label": "Sélectionnez le pays dans lequel cette Little Backup Box doit être utilisée",
     "wifi_country_header": "Pays Wi-Fi",
     "backup": {
       "none": "pas de sauvegarde automatique",
       "section": "Sauvegarde",
-      "camera": {
-        "model_folders_header": "Modèle de caméra à synchroniser avec Ordner",
-        "specific_device_folders_header": "Carpetas para sincronizar desde una cámara específica"
-      },
       "general_settings_header": "Valeurs par défaut",
       "file_operation_label": "Opération sur les fichiers",
       "file_operation_copy": "Copier les fichiers",
       "file_operation_move": "Déplacer les fichiers",
       "rename": {
-        "header": "Renommer les fichiers",
         "warning": "Danger! Les fichiers doivent ensuite être supprimés de la source. Dans le cas contraire, ils seront à nouveau transférés lors de la prochaine sauvegarde, renommés et ainsi remplacer la version de la sauvegarde précédente.",
         "desc": "Une tentative est effectuée pour lire la date de création de tous les fichiers multimédias sur le support de stockage local. Si cela est possible, le fichier sera renommé selon le modèle suivant :<br>\nÀ partir de &quot;Image0123.jpg&quot; sera par exemple &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
       }
-    },
-    "imageviewer": {
-      "section": "Visionneuse d'images View"
     },
     "mail": {
       "password_label": "Mot de passe pour le serveur de messagerie",
@@ -309,7 +292,6 @@
       "check_label": "Rechercher des mises à jour"
     },
     "screen": {
-      "virtual_keyboard_enable_header": "Clavier virtuel",
       "virtual_keyboard_enable_label": "Activer le clavier virtuel"
     },
     "social": {
@@ -444,13 +426,6 @@
   },
   "seconds_short": "s",
   "system": {
-    "wifi_info": "WiFi Info",
-    "wifi_interface": "Interface",
-    "wifi_ssid": "SSID",
-    "wifi_signal": "Signal level",
-    "wifi_bitrate": "Bit rate",
-    "wifi_frequency": "Frequency",
-    "wifi_not_connected": "Not connected to WiFi",
     "logs_section": "Logs"
   },
   "cmd": {
@@ -553,7 +528,6 @@
       "partial_success": "Completed with warnings"
     },
     "file": {
-      "target": "Stockage cible",
       "rename_started": "Opération de renommage démarrée",
       "rename_error": "Échec du démarrage de l'opération de renommage"
     },
@@ -568,7 +542,6 @@
   },
   "integrations": {
     "social_media": {
-      "title": "Médias Sociaux",
       "test_telegram": "Tester la Connexion",
       "test_mastodon": "Tester la Connexion",
       "test_bluesky": "Tester la Connexion",
@@ -579,7 +552,6 @@
     "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
     "social_publish_filename": "Include filename in post",
     "cloud_services": {
-      "title": "Services Cloud",
       "no_services": "Aucun service cloud configuré. Veuillez configurer rclone d'abord."
     },
     "cloud_target_dir": "Target base directory",
