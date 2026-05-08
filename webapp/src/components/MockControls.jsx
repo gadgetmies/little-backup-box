@@ -78,7 +78,10 @@ function MockControls() {
         position: 'fixed',
         bottom: 16,
         right: 16,
-        zIndex: 9999,
+        // Below MUI's modal/popover layer (1300) so AppBar popovers, dialogs,
+        // and snackbars render above this developer overlay. AppBar level (1100)
+        // is enough to sit above page content.
+        zIndex: 1100,
       }}
     >
       <Paper elevation={4} sx={{ minWidth: 220 }}>
