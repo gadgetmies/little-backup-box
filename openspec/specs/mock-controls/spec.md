@@ -72,3 +72,19 @@ When `VITE_USE_MOCK_API=true`, the mock adapter (`webapp/src/utils/mockApi.js`) 
 - **THEN** the mock returns `severity: 'ready'`
 - **WHEN** the resolved status is any other non-empty string
 - **THEN** the mock returns `severity: 'info'`
+
+### Requirement: MockControls renders below MUI's modal/popover layer
+
+The MockControls panel SHALL use a `z-index` strictly less than `1300` (MUI's modal-layer baseline). Popovers, Dialogs (1300), and Snackbars (1400) anchored anywhere in the viewport SHALL render above the panel; ordinary page content SHALL render below it. AppBar level (`1100`) is the recommended value.
+
+The panel is a developer overlay; it must not occlude interactive UI such as the AppBar StatusIndicator popover, confirmation dialogs, or transient toasts even when the panel is expanded and visually overlaps them.
+
+#### Scenario: AppBar popover renders above the panel
+
+- **WHEN** the AppBar StatusIndicator popover (or any other MUI Popover anchored in the viewport) opens AND the MockControls panel is expanded
+- **THEN** the popover renders fully visible above the MockControls panel
+
+#### Scenario: Dialog and snackbar render above the panel
+
+- **WHEN** an MUI Dialog or Snackbar appears in the bottom-right region while the MockControls panel is expanded
+- **THEN** the Dialog or Snackbar renders fully visible above the MockControls panel
