@@ -546,6 +546,15 @@ These settings affect every future backup; they are not per-run options.
 
 ## Manage device lifecycle
 
+### View device status (AppBar)
+
+- **Purpose**: see at a glance whether the device is idle ("Ready") or has a current display message (e.g., during a backup), and read the latest message in a popover.
+- **Audience**: every user — visible from every page.
+- **UI location**: AppBar → status icon (between language and theme menus). Click to open a popover with the current status text.
+- **Backend**: `GET /api/display/status` polled every 1 s; reads the latest frame from `<tmp>/display-content/` (queue) or `display-content-old.txt` (when the physical display is disabled).
+- **Prerequisites**: none.
+- **Related**: View live logs.
+
 ### View system information
 
 - **Purpose**: see CPU model, temperature, load, RAM, swap, and overall system condition flags.

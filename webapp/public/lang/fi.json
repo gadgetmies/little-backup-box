@@ -609,5 +609,9 @@
   },
   "menu": {
     "yes": "Kyllä"
+  },
+  "status": {
+    "tooltip": "Device status",
+    "ready": "Ready"
   }
 }

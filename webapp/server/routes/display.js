@@ -15,6 +15,10 @@ function readLatestFrame(dir) {
   return readFileSync(latest, 'utf-8');
 }
 
+function severityFor(status) {
+  return status === '' || status === 'Ready' ? 'ready' : 'info';
+}
+
 router.get('/status', (req, res) => {
   const dir = getDisplayContentPath(req.WORKING_DIR, req.constants);
   const oldFile = getDisplayContentOldFilePath(req.WORKING_DIR, req.constants);
@@ -22,7 +26,8 @@ router.get('/status', (req, res) => {
   try {
     const fromQueue = readLatestFrame(dir);
     if (fromQueue !== null && fromQueue.trim() !== '') {
-      return res.json({ status: fromQueue.trim() });
+      const status = fromQueue.trim();
+      return res.json({ status, severity: severityFor(status) });
     }
   } catch (error) {
     // Directory missing or unreadable — fall through to old-file fallback.
@@ -32,13 +37,14 @@ router.get('/status', (req, res) => {
   try {
     const fromOld = readFileSync(oldFile, 'utf-8');
     if (fromOld.trim() !== '') {
-      return res.json({ status: fromOld.trim() });
+      const status = fromOld.trim();
+      return res.json({ status, severity: severityFor(status) });
     }
   } catch {
     // Old file missing — return empty status.
   }
 
-  return res.json({ status: '' });
+  return res.json({ status: '', severity: 'ready' });
 });
 
 export default router;

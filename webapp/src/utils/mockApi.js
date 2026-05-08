@@ -102,6 +102,7 @@ const mockData = {
   },
   displayStatus: {
     status: 'Ready',
+    severity: 'ready',
   },
   log: '',
   viewImages: {

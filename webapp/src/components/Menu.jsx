@@ -50,6 +50,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import api from '../utils/api';
+import StatusIndicator from './StatusIndicator';
 
 export const drawerWidth = 240;
 export const drawerCollapsedWidth = 64;
@@ -603,6 +604,7 @@ function Menu() {
                 </MenuItem>
               ))}
             </MuiMenu>
+            <StatusIndicator />
             <Tooltip title={t('config.view_theme_header') || 'Theme'}>
               <IconButton
                 color="inherit"

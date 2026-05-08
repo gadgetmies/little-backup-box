@@ -1,10 +1,4 @@
-# Device display status
-
-## Purpose
-
-Contract for `GET /api/display/status` and the AppBar `<StatusIndicator>` component: how the latest display frame written by the device-side scripts is surfaced in the webapp.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: `GET /api/display/status` returns the latest queued display message
 
@@ -41,11 +35,11 @@ The handler SHALL treat the path identified by `getDisplayContentPath(workingDir
 
 ### Requirement: Device status is rendered as an AppBar icon-button with a dropdown
 
-The webapp SHALL render the device status as a small icon-button in the AppBar (inside `Menu.jsx`'s top-right cluster, between the language menu and the theme menu) implemented by a `StatusIndicator` component at `webapp/src/components/StatusIndicator.jsx`.
+The webapp SHALL render the device status as a small icon-button in the AppBar (inside `Menu.jsx`'s top-right cluster, between the language menu and the theme menu) implemented by a new `StatusIndicator` component at `webapp/src/components/StatusIndicator.jsx`.
 
 The icon SHALL reflect `severity`: a check-circle (or similar "OK" iconography) for `'ready'`, an info-circle for `'info'`. Clicking the button SHALL open an MUI `<Popover>` containing the current `status` text. When `status` is empty (severity `'ready'`), the dropdown SHALL display a localised "Ready" placeholder under the key `status.ready`.
 
-The webapp SHALL NOT mount a per-page `<DisplayStatus>` Alert in `Layout.jsx`; the AppBar instance is the single rendering surface for device status.
+The previous per-page `<DisplayStatus>` component and its mount in `Layout.jsx` SHALL be removed.
 
 #### Scenario: Severity is `'ready'`
 
@@ -69,7 +63,7 @@ The webapp SHALL NOT mount a per-page `<DisplayStatus>` Alert in `Layout.jsx`; t
 
 - **WHEN** any page renders
 - **THEN** there is no `<Alert severity="info">` containing device status text above the page content
-- **AND** `Layout.jsx` does not import or mount any per-page status component
+- **AND** `Layout.jsx` does not import or mount `<DisplayStatus>`
 
 ### Requirement: Tooltip and placeholder are translated
 
@@ -84,12 +78,3 @@ The AppBar button SHALL expose a tooltip (key `status.tooltip`, default English 
 
 - **WHEN** the popover renders with no current status text
 - **THEN** the placeholder text is `t('status.ready')`
-
-### Requirement: Path helpers are centralised
-
-`webapp/server/utils/paths.js` SHALL expose both `getDisplayContentPath(workingDir, constants)` (the directory) and `getDisplayContentOldFilePath(workingDir, constants)` (the sibling fallback file). The route handler SHALL NOT hardcode either filename.
-
-#### Scenario: Route uses path helpers
-
-- **WHEN** the display-status route handler resolves filesystem paths
-- **THEN** it calls the helpers from `paths.js` and never literals `'display-content'` or `'display-content-old.txt'` inline

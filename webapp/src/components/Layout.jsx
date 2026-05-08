@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import Menu, { drawerWidth, drawerCollapsedWidth } from './Menu';
-import DisplayStatus from './DisplayStatus';
 
 function Layout({ children }) {
   const { config, constants } = useConfig();
@@ -53,7 +52,6 @@ function Layout({ children }) {
         }}
       >
         <Toolbar />
-        <DisplayStatus />
         <Container maxWidth="xl" sx={{ flex: 1, py: 3 }}>
           {children}
         </Container>

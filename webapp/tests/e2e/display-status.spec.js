@@ -1,43 +1,65 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Display status alert', () => {
-  test('renders the polled status text on the Backup page', async ({ page }) => {
+test.describe('AppBar status indicator', () => {
+  test('shows the ready icon and renders the placeholder when severity is ready', async ({ page }) => {
     await page.route('**/api/display/status', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ status: 'Ready' }),
+        body: JSON.stringify({ status: '', severity: 'ready' }),
       });
     });
 
     await page.goto('/');
-    // The DisplayStatus component polls /api/display/status once a second.
-    // The route stub returns "Ready" — wait long enough for the first cycle.
-    const alert = page.locator('[role="alert"]').filter({ hasText: 'Ready' });
-    await expect(alert).toBeVisible({ timeout: 5000 });
+    const button = page.getByRole('button', { name: 'Device status' });
+    await expect(button).toBeVisible({ timeout: 5000 });
+
+    await button.click();
+    // The popover renders the localised "Ready" placeholder when status is empty.
+    await expect(page.getByText('Ready', { exact: true })).toBeVisible();
   });
 
-  test('renders nothing when the polled status is empty', async ({ page }) => {
+  test('shows the info icon and renders the status text when severity is info', async ({ page }) => {
     await page.route('**/api/display/status', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ status: '' }),
+        body: JSON.stringify({ status: 'Working', severity: 'info' }),
       });
     });
 
     await page.goto('/');
-    // Give the polling cycle time to run; assert no Alert with status text appears.
+    const button = page.getByRole('button', { name: 'Device status' });
+    await expect(button).toBeVisible({ timeout: 5000 });
+
+    await button.click();
+    await expect(page.getByText('Working', { exact: true })).toBeVisible();
+  });
+
+  test('hides the button when the status request fails', async ({ page }) => {
+    await page.route('**/api/display/status', (route) => {
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+    });
+
+    await page.goto('/');
+    // Wait at least one polling cycle.
     await page.waitForTimeout(1500);
-    const alerts = page.locator('[role="alert"]');
-    const count = await alerts.count();
-    // Other alerts may exist on the page (e.g. mock-controls); none should match a
-    // status-shaped text. Easiest sanity check: the DisplayStatus alert is the only
-    // one rendered with severity="info" inside the layout's <Box sx={{ px:2, pt:2 }}>.
-    // Just confirm nothing reads "Ready" or similar status strings.
-    for (let i = 0; i < count; i++) {
-      const text = (await alerts.nth(i).textContent()) || '';
-      expect(text).not.toMatch(/^(Ready|Working|Backup complete|VPN connected)$/);
-    }
+    await expect(page.getByRole('button', { name: 'Device status' })).toHaveCount(0);
+  });
+
+  test('per-page Alert is gone (no body-rendered status banner)', async ({ page }) => {
+    await page.route('**/api/display/status', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'Working', severity: 'info' }),
+      });
+    });
+
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+    // No <Alert> in <main> with the status text.
+    const statusInMain = page.locator('main [role="alert"]', { hasText: 'Working' });
+    await expect(statusInMain).toHaveCount(0);
   });
 });
