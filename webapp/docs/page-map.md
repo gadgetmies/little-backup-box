@@ -24,12 +24,12 @@ The route table is allowed to evolve, but every change must update both this fil
 | 6 | `/network` | Network | `mainmenue.network` |
 | 7 | `/hardware` | Hardware | `mainmenue.hardware` |
 | 8 | `/preferences` | Preferences | `mainmenue.preferences` |
-| 9 | `/system` | Info | `mainmenue.system` |
+| 9 | `/system` | System | `mainmenue.system` |
 | 10 | `/scrape` | Legacy UI | `mainmenue.scrape` |
 | ext | `/files` | Files (external) | `mainmenue.filebrowser` |
 | ext | `/frame.php?page=rclone_gui` | rclone GUI (external) | `mainmenue.rclone_gui` |
 
-The sidebar order targets typical-user task frequency: things touched every backup session at the top (Backup → Library → Storage), occasional admin in the middle (Maintenance, Connections, Network), set-once configuration after that (Hardware, Preferences), and diagnostics / legacy at the end. Note the route slugs are stable but the displayed page titles diverge in three cases: `/integrations` displays "Connections", `/system` displays "Info", and `/hardware` was renamed from `/devices` (no redirect — the old route was new enough that no external links pointed at it).
+The sidebar order targets typical-user task frequency: things touched every backup session at the top (Backup → Library → Storage), occasional admin in the middle (Maintenance, Connections, Network), set-once configuration after that (Hardware, Preferences), and diagnostics / legacy at the end. Note the route slugs are stable but the displayed page title diverges for `/integrations` (displays "Connections"), and `/hardware` was renamed from `/devices` (no redirect — the old route was new enough that no external links pointed at it).
 
 External links always appear after internal links and never highlight as the active route.
 
@@ -144,10 +144,10 @@ This page uses `Tabs` for the three configuration domains (WiFi / Network info /
 Below the tabs:
 - **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode
 
-### `/system` — Info
+### `/system` — System
 
 - **Sidebar position**: 9
-- **Purpose**: device telemetry, software updates, and log inspection. Displayed page title is "Info"; route slug stays `/system` for stability.
+- **Purpose**: device telemetry, software updates, and log inspection.
 - **Legacy redirects**: none (the legacy `/sysinfo` redirect was removed in commit 6b853f1).
 
 This page uses `Tabs` for the four functional areas — same rationale as `/storage` and `/network`: each panel has substantial content (Device info table, cameras list, two updaters, log stream + config). Selected tab persists in `localStorage` under `lbb-tabs-system`.

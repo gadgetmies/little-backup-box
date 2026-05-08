@@ -436,7 +436,7 @@ function Menu() {
       '/network': { key: 'mainmenue.network', fallback: 'Network' },
       '/hardware': { key: 'mainmenue.hardware', fallback: 'Hardware' },
       '/preferences': { key: 'mainmenue.preferences', fallback: 'Preferences' },
-      '/system': { key: 'mainmenue.system', fallback: 'Info' },
+      '/system': { key: 'mainmenue.system', fallback: 'System' },
       '/scrape': { key: 'mainmenue.scrape', fallback: 'Legacy UI' },
     };
     const routeInfo = routeMap[location.pathname] || routeMap['/'];
