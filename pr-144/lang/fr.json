@@ -6,16 +6,16 @@
   "mainmenue": {
     "main": "Sauvegarde",
     "network": "Réseau",
-    "integrations": "Connexions de Services",
+    "integrations": "Connections",
     "filebrowser": "Navigateur de fichiers",
     "gallery": "Galerie",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
     "scrape": "Interface archivée",
-    "devices": "Devices",
     "storage": "Storage",
     "preferences": "Preferences",
-    "system": "System"
+    "system": "Info",
+    "hardware": "Hardware"
   },
   "network": {
     "wifi_config": {
@@ -426,7 +426,13 @@
   },
   "seconds_short": "s",
   "system": {
-    "logs_section": "Logs"
+    "logs_section": "Logs",
+    "tab": {
+      "device": "Device",
+      "cameras": "Cameras",
+      "updates": "Updates",
+      "logs": "Logs"
+    }
   },
   "cmd": {
     "format": {
@@ -566,7 +572,6 @@
       "confirm_remove": "Êtes-vous sûr de vouloir supprimer le fichier de configuration {type}?",
       "remove": "Supprimer"
     },
-    "intro": "Configure Cloud, Social, and Mail integrations.",
     "tab": {
       "cloud": "Cloud",
       "social": "Social",
