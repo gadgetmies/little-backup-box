@@ -609,5 +609,9 @@
   },
   "menu": {
     "yes": "Oui"
+  },
+  "status": {
+    "tooltip": "Device status",
+    "ready": "Ready"
   }
 }
