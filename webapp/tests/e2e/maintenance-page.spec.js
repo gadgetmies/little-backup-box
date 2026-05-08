@@ -1,15 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Maintenance page', () => {
-  test('renders four accordions with the documented localStorage keys', async ({ page }) => {
+  test('renders three accordions with the documented localStorage keys', async ({ page }) => {
     await page.goto('/maintenance');
     await page.waitForLoadState('networkidle');
 
-    // Each accordion title should be visible
+    // Each accordion title should be visible (LibRaw lives on /system now)
     await expect(page.getByRole('button', { name: /Database operations/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /File operations/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Settings/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /(LibRaw|Updates|Update)/i })).toBeVisible();
   });
 
   test('expanding the Database operations accordion persists state', async ({ page }) => {

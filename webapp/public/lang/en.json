@@ -53,16 +53,16 @@
   "mainmenue": {
     "main": "Backup",
     "network": "Network",
-    "integrations": "Service Connections",
+    "integrations": "Connections",
     "filebrowser": "File browser",
     "gallery": "Gallery",
     "maintenance": "Maintenance",
     "rclone_gui": "rclone GUI",
     "scrape": "Scraped UI",
-    "devices": "Devices",
     "storage": "Storage",
     "preferences": "Preferences",
-    "system": "System"
+    "system": "Info",
+    "hardware": "Hardware"
   },
   "scrape": {
     "title": "Scraped Pages",
@@ -150,7 +150,13 @@
     "loading": "Loading…"
   },
   "system": {
-    "logs_section": "Logs"
+    "logs_section": "Logs",
+    "tab": {
+      "device": "Device",
+      "cameras": "Cameras",
+      "updates": "Updates",
+      "logs": "Logs"
+    }
   },
   "config": {
     "alert_password_too_short": "Password must be at least 5 characters long.",
@@ -566,7 +572,6 @@
       "confirm_remove": "Are you sure you want to remove the {type} config file?",
       "remove": "Remove"
     },
-    "intro": "Configure Cloud, Social, and Mail integrations.",
     "tab": {
       "cloud": "Cloud",
       "social": "Social",

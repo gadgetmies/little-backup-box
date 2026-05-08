@@ -18,16 +18,18 @@ The route table is allowed to evolve, but every change must update both this fil
 | --- | --- | --- | --- |
 | 1 | `/` | Backup | `mainmenue.main` |
 | 2 | `/view` | Library | `mainmenue.gallery` |
-| 3 | `/maintenance` | Maintenance | `mainmenue.maintenance` |
-| 4 | `/integrations` | Integrations | `mainmenue.integrations` |
-| 5 | `/devices` | Devices | `mainmenue.devices` |
-| 6 | `/storage` | Storage | `mainmenue.storage` |
-| 7 | `/network` | Network | `mainmenue.network` |
-| 8 | `/system` | System | `mainmenue.system` |
-| 9 | `/preferences` | Preferences | `mainmenue.preferences` |
+| 3 | `/storage` | Storage | `mainmenue.storage` |
+| 4 | `/maintenance` | Maintenance | `mainmenue.maintenance` |
+| 5 | `/integrations` | Connections | `mainmenue.integrations` |
+| 6 | `/network` | Network | `mainmenue.network` |
+| 7 | `/hardware` | Hardware | `mainmenue.hardware` |
+| 8 | `/preferences` | Preferences | `mainmenue.preferences` |
+| 9 | `/system` | Info | `mainmenue.system` |
 | 10 | `/scrape` | Legacy UI | `mainmenue.scrape` |
 | ext | `/files` | Files (external) | `mainmenue.filebrowser` |
 | ext | `/frame.php?page=rclone_gui` | rclone GUI (external) | `mainmenue.rclone_gui` |
+
+The sidebar order targets typical-user task frequency: things touched every backup session at the top (Backup → Library → Storage), occasional admin in the middle (Maintenance, Connections, Network), set-once configuration after that (Hardware, Preferences), and diagnostics / legacy at the end. Note the route slugs are stable but the displayed page titles diverge in three cases: `/integrations` displays "Connections", `/system` displays "Info", and `/hardware` was renamed from `/devices` (no redirect — the old route was new enough that no external links pointed at it).
 
 External links always appear after internal links and never highlight as the active route.
 
@@ -67,8 +69,8 @@ The Single view is a full-window overlay rather than a peer section; this is the
 
 ### `/maintenance` — Maintenance
 
-- **Sidebar position**: 3
-- **Purpose**: post-backup cleanup, library reconciliation, settings backup, and library updates.
+- **Sidebar position**: 4
+- **Purpose**: post-backup cleanup, library reconciliation, settings backup.
 - **Legacy redirects**: none.
 
 | # | Section | Pattern | Features assigned |
@@ -76,32 +78,30 @@ The Single view is a full-window overlay rather than a peer section; this is the
 | 1 | Database operations | `PageSection.accordion` (`lbb-accordion-maintenance-database`, default collapsed) | Generate or refresh thumbnails for stored media; Sync the media database; Update EXIF in stored media |
 | 2 | File operations | `PageSection.accordion` (`lbb-accordion-maintenance-files`, default collapsed) | Rename files in stored media |
 | 3 | Settings backup | `PageSection.accordion` (`lbb-accordion-maintenance-settings`, default collapsed) | Export device settings; Import device settings |
-| 4 | Updates | `PageSection.accordion` (`lbb-accordion-maintenance-updates`, default collapsed) | Update LibRaw camera-format library |
 
-System-software updates (the OS-level update flow) live on `/system` rather than here, because they're a device-lifecycle concern; LibRaw lives here because it's a stored-media concern.
+Both update flows (system updates and LibRaw) now live on `/system` → "Updates" tab — they are administrative, not stored-media concerns.
 
-### `/integrations` — Integrations
+### `/integrations` — Connections
 
-- **Sidebar position**: 4
-- **Purpose**: connect the device to external services (cloud destinations, social platforms, mail, VPN).
-- **Legacy redirects**: none.
+- **Sidebar position**: 5
+- **Purpose**: connect the device to external services (cloud destinations, social platforms, mail).
+- **Legacy redirects**: none. Route slug stays `/integrations` for stability; only the displayed page title is "Connections".
 
-This page uses `Tabs` because the four panels are mutually exclusive views of the same subject (third-party connections), and stacking them all would make a long scroll of unrelated forms. The page header lists all four tab labels so users do not miss content under inactive tabs. Selected tab persists in `localStorage` under `lbb-tabs-integrations`.
+This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (third-party connections), and stacking them all would make a long scroll of unrelated forms. Selected tab persists in `localStorage` under `lbb-tabs-integrations`.
 
 | # | Tab label | Features assigned |
 | --- | --- | --- |
 | 1 | Cloud | Configure rclone cloud remotes; Configure rsync server target |
 | 2 | Social | Configure social media accounts and publish defaults |
 | 3 | Mail | Configure SMTP and email-notification recipients; Send a test email |
-| 4 | VPN | (cross-reference) — VPN is on `/network` because it's a connectivity primitive, not a third-party integration |
 
-> Note: VPN was originally placed under `/integrations` in design.md Decision 5, but on closer reading the catalog treats VPN as a connectivity layer used by other integrations rather than a peer of mail/social/cloud. The page-map authority moves VPN to `/network`. The Integrations page lists it with a one-line pointer instead of a real tab — three tabs (Cloud / Social / Mail) is the active count.
+VPN lives on `/network` (it's a connectivity primitive, not a third-party integration). No intro line above the tab strip — the three short tab labels are self-explanatory.
 
-### `/devices` — Devices
+### `/hardware` — Hardware
 
-- **Sidebar position**: 5
+- **Sidebar position**: 7
 - **Purpose**: configure the device's physical hardware peripherals (display, buttons, fan).
-- **Legacy redirects**: none (newly introduced page; content moved out of `/setup`).
+- **Legacy redirects**: none.
 
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
@@ -113,9 +113,9 @@ Three peer sections of similar weight that the user typically wants visible toge
 
 ### `/storage` — Storage
 
-- **Sidebar position**: 6
+- **Sidebar position**: 3
 - **Purpose**: inspect, mount, repair, format, and verify storage devices.
-- **Legacy redirects**: `/tools` → `/storage`.
+- **Legacy redirects**: none (the legacy `/tools` redirect was removed in commit 6b853f1).
 
 This page uses `Tabs` rather than the Card+Accordion combination originally drafted, because the operational sections (Mount / Repair / Format / Verify) each render large per-device tables and forms (~150–250 lines each). Stacking them as Accordions on one page produced too much vertical scroll once any two were expanded; Tabs keeps each operation isolated. Selected tab persists in `localStorage` under `lbb-tabs-storage`.
 
@@ -129,7 +129,7 @@ This page uses `Tabs` rather than the Card+Accordion combination originally draf
 
 ### `/network` — Network
 
-- **Sidebar position**: 7
+- **Sidebar position**: 6
 - **Purpose**: configure WiFi, see addresses and connectivity, configure VPN.
 - **Legacy redirects**: none.
 
@@ -144,26 +144,28 @@ This page uses `Tabs` for the three configuration domains (WiFi / Network info /
 Below the tabs:
 - **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode
 
-### `/system` — System
+### `/system` — Info
 
-- **Sidebar position**: 8
-- **Purpose**: device telemetry, software updates, and log inspection.
-- **Legacy redirects**: `/sysinfo` → `/system`.
+- **Sidebar position**: 9
+- **Purpose**: device telemetry, software updates, and log inspection. Displayed page title is "Info"; route slug stays `/system` for stability.
+- **Legacy redirects**: none (the legacy `/sysinfo` redirect was removed in commit 6b853f1).
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Device info | `PageSection.card` | View system information |
-| 2 | Connected devices | `PageSection.card` | View connected cameras and smartphones; Copy camera storage pattern to clipboard |
-| 3 | Updates | `PageSection.accordion` (`lbb-accordion-system-updates`, default collapsed) | Check for system updates; Install system updates |
-| 4 | Logs | `PageSection.card` | View live logs; Set log level; Toggle log sync; Keep display images for debugging |
+This page uses `Tabs` for the four functional areas — same rationale as `/storage` and `/network`: each panel has substantial content (Device info table, cameras list, two updaters, log stream + config). Selected tab persists in `localStorage` under `lbb-tabs-system`.
+
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | Device | View system information |
+| 2 | Cameras | View connected cameras and smartphones; Copy camera storage pattern to clipboard |
+| 3 | Updates | Check for system updates; Install system updates; Update LibRaw camera-format library |
+| 4 | Logs | View live logs; Set log level; Toggle log sync; Keep display images for debugging |
 
 Reboot / Power off / Stop LBB / Logout do not live on this page — they live in the AppBar power menu and are accessible from anywhere. They are catalogued under "Manage device lifecycle" but their UI location is "AppBar → power menu".
 
 ### `/preferences` — Preferences
 
-- **Sidebar position**: 9
+- **Sidebar position**: 8
 - **Purpose**: personal preferences (language, theme, timezone, etc.) and system-wide backup defaults.
-- **Legacy redirects**: `/setup` → `/preferences`.
+- **Legacy redirects**: none (the legacy `/setup` redirect was removed in commit 6b853f1).
 
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |

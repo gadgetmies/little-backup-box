@@ -28,16 +28,16 @@
   "mainmenue": {
     "main": "Varmuus kopio",
     "network": "Verkko",
-    "integrations": "Palveluyhteydet",
+    "integrations": "Connections",
     "filebrowser": "Tiedostoselain",
     "gallery": "Galleria",
     "maintenance": "Huolto",
     "rclone_gui": "rclone GUI",
     "scrape": "Arkistoitu käyttöliittymä",
-    "devices": "Devices",
     "storage": "Storage",
     "preferences": "Preferences",
-    "system": "System"
+    "system": "Info",
+    "hardware": "Hardware"
   },
   "network": {
     "wifi_config": {
@@ -150,7 +150,13 @@
     "loading": "Loading…"
   },
   "system": {
-    "logs_section": "Logs"
+    "logs_section": "Logs",
+    "tab": {
+      "device": "Device",
+      "cameras": "Cameras",
+      "updates": "Updates",
+      "logs": "Logs"
+    }
   },
   "config": {
     "alert_password_too_short": "Salasanan on oltava vähintään 5 merkkiä pitkä.",
@@ -566,7 +572,6 @@
       "confirm_remove": "Haluatko varmasti poistaa {type} konfiguraatiotiedoston?",
       "remove": "Poista"
     },
-    "intro": "Configure Cloud, Social, and Mail integrations.",
     "tab": {
       "cloud": "Cloud",
       "social": "Social",

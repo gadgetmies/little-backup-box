@@ -94,7 +94,7 @@ Example: `/integrations` has Cloud / Social / Mail. Each panel is a long form; t
 
 Tabs rules:
 - **Tab labels are at most three words.** "Cloud", "Social", "Mail" — never "Settings", "Configuration", "Options".
-- The page **always shows a one-line description above the tab strip** that names every available tab. This prevents users from missing content hidden under inactive tabs.
+- An optional one-line description above the tab strip can name every available tab when the labels alone do not communicate scope (e.g., when tab labels are translated and might not be self-evident, or when there are 4+ tabs and the rightmost may be off-screen on narrow viewports). For 3 short, English-recognisable labels (Cloud / Social / Mail) the intro is noise — omit it.
 - The selected tab persists in `localStorage` under `lbb-tabs-<page>` (e.g., `lbb-tabs-integrations`).
 - Don't use Tabs for two panels — render them stacked or side-by-side.
 - Don't use Tabs to hide complexity inside a single section — that's an Accordion.
@@ -143,19 +143,16 @@ function MyPage() {
 For a tabbed page:
 
 ```jsx
-function IntegrationsPage() {
+function ConnectionsPage() {
   const { t } = useLanguage();
   const [tab, setTab] = useTabSelection('lbb-tabs-integrations', 'cloud');
 
   return (
     <Stack spacing={3}>
-      <Typography variant="body1">
-        {t('integrations.intro')} {/* "Configure Cloud, Social, and Mail." */}
-      </Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-        <Tab value="cloud" label={t('integrations.cloud')} />
-        <Tab value="social" label={t('integrations.social')} />
-        <Tab value="mail" label={t('integrations.mail')} />
+        <Tab value="cloud" label={t('integrations.tab.cloud')} />
+        <Tab value="social" label={t('integrations.tab.social')} />
+        <Tab value="mail" label={t('integrations.tab.mail')} />
       </Tabs>
       {tab === 'cloud' && <CloudConfig />}
       {tab === 'social' && <SocialMediaConfig />}

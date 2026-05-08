@@ -3,12 +3,15 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   IconButton,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableRow,
+  Tabs,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -18,10 +21,20 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
-import PageSection from '../components/PageSection';
 import LogConfig from '../components/LogConfig';
 import LogMonitor from '../components/LogMonitor';
 import UpdateManager from '../components/UpdateManager';
+import LibRawUpdater from '../components/LibRawUpdater';
+
+function TabPanel({ children, value, index }) {
+  return (
+    <div role="tabpanel" hidden={value !== index} id={`system-tabpanel-${index}`}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+const TAB_NAMES = ['device', 'cameras', 'updates', 'logs'];
 
 function System() {
   const { t } = useLanguage();
@@ -29,6 +42,12 @@ function System() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [cameras, setCameras] = useState([]);
   const [copiedText, setCopiedText] = useState('');
+  const [currentTab, setCurrentTab] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = window.localStorage.getItem('lbb-tabs-system');
+    const idx = TAB_NAMES.indexOf(saved);
+    return idx >= 0 ? idx : 0;
+  });
   const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
 
   const loadSystemInfo = async () => {
@@ -59,6 +78,13 @@ function System() {
     loadAll();
   }, [loadAll]);
 
+  const handleTabChange = (_event, newValue) => {
+    setCurrentTab(newValue);
+    if (TAB_NAMES[newValue]) {
+      localStorage.setItem('lbb-tabs-system', TAB_NAMES[newValue]);
+    }
+  };
+
   const handleCopyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -70,8 +96,17 @@ function System() {
   };
 
   return (
-    <Stack spacing={3} sx={{ pb: 10 }}>
-      <PageSection variant="card" title={t('sysinfo.system') || 'Device info'}>
+    <Box sx={{ pb: 10 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="system tabs">
+          <Tab label={t('system.tab.device') || 'Device'} id="system-tab-0" aria-controls="system-tabpanel-0" />
+          <Tab label={t('system.tab.cameras') || 'Cameras'} id="system-tab-1" aria-controls="system-tabpanel-1" />
+          <Tab label={t('system.tab.updates') || 'Updates'} id="system-tab-2" aria-controls="system-tabpanel-2" />
+          <Tab label={t('system.tab.logs') || 'Logs'} id="system-tab-3" aria-controls="system-tabpanel-3" />
+        </Tabs>
+      </Box>
+
+      <TabPanel value={currentTab} index={0}>
         {systemInfo ? (
           <Table size="small">
             <TableBody>
@@ -132,9 +167,9 @@ function System() {
             {t('sysinfo.loading') || 'Loading…'}
           </Typography>
         )}
-      </PageSection>
+      </TabPanel>
 
-      <PageSection variant="card" title={t('sysinfo.cameras') || 'Connected devices'}>
+      <TabPanel value={currentTab} index={1}>
         {cameras.length > 0 ? (
           <Stack spacing={2}>
             {cameras.map((camera, i) => (
@@ -199,22 +234,22 @@ function System() {
             {t('sysinfo.no_cameras') || 'No cameras detected'}
           </Typography>
         )}
-      </PageSection>
+      </TabPanel>
 
-      <PageSection
-        variant="accordion"
-        title={t('maintenance.update.section') || 'Updates'}
-        localStorageKey="lbb-accordion-system-updates"
-      >
-        <UpdateManager />
-      </PageSection>
+      <TabPanel value={currentTab} index={2}>
+        <Stack spacing={3}>
+          <UpdateManager />
+          <Divider />
+          <LibRawUpdater />
+        </Stack>
+      </TabPanel>
 
-      <PageSection variant="card" title={t('system.logs_section') || 'Logs'}>
+      <TabPanel value={currentTab} index={3}>
         <Stack spacing={3}>
           <LogConfig />
           <LogMonitor />
         </Stack>
-      </PageSection>
+      </TabPanel>
 
       <Box
         sx={{
@@ -240,7 +275,7 @@ function System() {
           {t('sysinfo.refresh_button') || 'Refresh'}
         </Button>
       </Box>
-    </Stack>
+    </Box>
   );
 }
 

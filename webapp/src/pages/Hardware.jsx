@@ -6,7 +6,7 @@ import DisplayConfig from '../components/DisplayConfig';
 import ButtonHardwareConfig from '../components/ButtonHardwareConfig';
 import FanConfig from '../components/FanConfig';
 
-function Devices() {
+function Hardware() {
   const { t } = useLanguage();
 
   return (
@@ -26,4 +26,4 @@ function Devices() {
   );
 }
 
-export default Devices;
+export default Hardware;

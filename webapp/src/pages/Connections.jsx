@@ -57,7 +57,7 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
-function ServiceConnections() {
+function Connections() {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
   const { desktopOpen } = useDrawer();
@@ -446,11 +446,8 @@ function ServiceConnections() {
 
   return (
     <Box>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-        {t('integrations.intro') || 'Configure Cloud, Social, and Mail integrations.'}
-      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="service connections tabs">
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="connections tabs">
           <Tab
             label={t('integrations.tab.cloud') || 'Cloud'}
             id="integrations-tab-0"
@@ -928,5 +925,5 @@ function ServiceConnections() {
   );
 }
 
-export default ServiceConnections;
+export default Connections;
 

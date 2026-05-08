@@ -5,7 +5,6 @@ import PageSection from '../components/PageSection';
 import DatabaseOperations from '../components/DatabaseOperations';
 import FileOperations from '../components/FileOperations';
 import SettingsOperations from '../components/SettingsOperations';
-import LibRawUpdater from '../components/LibRawUpdater';
 
 function Maintenance() {
   const { t } = useLanguage();
@@ -36,14 +35,6 @@ function Maintenance() {
         localStorageKey="lbb-accordion-maintenance-settings"
       >
         <SettingsOperations />
-      </PageSection>
-
-      <PageSection
-        variant="accordion"
-        title={t('maintenance.libraw_title') || 'LibRaw update'}
-        localStorageKey="lbb-accordion-maintenance-updates"
-      >
-        <LibRawUpdater />
       </PageSection>
     </Stack>
   );

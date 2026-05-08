@@ -6,9 +6,9 @@ import Preferences from './pages/Preferences';
 import Storage from './pages/Storage';
 import System from './pages/System';
 import Maintenance from './pages/Maintenance';
-import ServiceConnections from './pages/ServiceConnections';
+import Connections from './pages/Connections';
 import Network from './pages/Network';
-import Devices from './pages/Devices';
+import Hardware from './pages/Hardware';
 import ScrapedUI from './pages/ScrapedUI';
 import MockControls from './components/MockControls';
 import View from './pages/View';
@@ -39,8 +39,8 @@ function App() {
           <Route path="/" element={<Backup />} />
           <Route path="/view" element={<View />} />
           <Route path="/maintenance" element={<Maintenance />} />
-          <Route path="/integrations" element={<ServiceConnections />} />
-          <Route path="/devices" element={<Devices />} />
+          <Route path="/integrations" element={<Connections />} />
+          <Route path="/hardware" element={<Hardware />} />
           <Route path="/storage" element={<Storage />} />
           <Route path="/network" element={<Network />} />
           <Route path="/system" element={<System />} />

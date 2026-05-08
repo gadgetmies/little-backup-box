@@ -84,7 +84,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Audience**: users with off-site or off-device backup policies.
 - **UI location**: `/` → "Run a backup" section → "Options" accordion → "Secondary" subsection
 - **Backend**: `POST /api/backup/start` (consumes secondary fields); `scripts/backup.py`
-- **Prerequisites**: rsync server configured (Integrations → rsync) or at least one cloud remote configured (Integrations → Cloud).
+- **Prerequisites**: rsync server configured (Connections → Cloud → rsync subsection) or at least one cloud remote configured (Connections → Cloud).
 - **Related**: Configure rclone cloud remotes; Configure rsync server target.
 
 ## Browse and triage media
@@ -185,7 +185,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Audience**: users publishing photos on Instagram, Twitter, etc.
 - **UI location**: `/view` → "Single view" overlay → SocialPublishPanel
 - **Backend**: `POST /api/social/publish`, `GET /api/social/services`
-- **Prerequisites**: at least one social account configured (Integrations → Social).
+- **Prerequisites**: at least one social account configured (Connections → Social).
 - **Related**: Configure social media accounts and publish defaults.
 
 ### Delete rejected images
@@ -257,7 +257,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: pull the latest LibRaw build so newer camera RAW formats are recognised.
 - **Audience**: users with newly-released cameras whose RAW files aren't being read.
-- **UI location**: `/maintenance` → "Updates" accordion → "Update LibRaw" action
+- **UI location**: `/system` → "Updates" tab
 - **Backend**: `POST /api/setup/update/libraw`
 - **Prerequisites**: internet connectivity.
 - **Related**: Check for system updates.
@@ -521,7 +521,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: configure rotation, brightness, and other settings of the device's attached display.
 - **Audience**: users with a touchscreen or HDMI display.
-- **UI location**: `/devices` → "Display" card
+- **UI location**: `/hardware` → "Display" card
 - **Backend**: `POST /api/config/save` (`conf_DISPLAY_*`); `scripts/display_*.py`
 - **Prerequisites**: a display attached.
 - **Related**: Enable virtual keyboard (Personal preferences).
@@ -530,7 +530,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: choose which device action each physical button triggers.
 - **Audience**: users with the optional button hardware.
-- **UI location**: `/devices` → "Buttons" card
+- **UI location**: `/hardware` → "Buttons" card
 - **Backend**: `POST /api/config/save` (`conf_BUTTON_*`); `scripts/buttons.py`
 - **Prerequisites**: button hardware connected.
 - **Related**: Configure the physical display.
@@ -539,7 +539,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: set the temperature threshold and GPIO pin used for PWM fan control.
 - **Audience**: users with a PWM-controlled fan.
-- **UI location**: `/devices` → "Fan" card
+- **UI location**: `/hardware` → "Fan" card
 - **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_GPIO_PIN`)
 - **Prerequisites**: PWM fan connected.
 - **Related**: View system information.
@@ -550,7 +550,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: see CPU model, temperature, load, RAM, swap, and overall system condition flags.
 - **Audience**: anyone diagnosing performance or thermal issues.
-- **UI location**: `/system` → "Device info" card
+- **UI location**: `/system` → "Device" tab
 - **Backend**: `GET /api/sysinfo/system`
 - **Prerequisites**: none.
 - **Related**: View connected cameras and smartphones.
@@ -559,7 +559,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: list cameras/phones currently connected over USB, with their storage paths and the folder-sync pattern to use as a preset.
 - **Audience**: users configuring presets for a specific camera.
-- **UI location**: `/system` → "Connected devices" card
+- **UI location**: `/system` → "Cameras" tab
 - **Backend**: `GET /api/sysinfo/cameras`
 - **Prerequisites**: camera connected via USB.
 - **Related**: Configure and start a backup.
@@ -568,7 +568,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: copy a camera's folder-sync pattern to the clipboard so it can be pasted into a preset elsewhere.
 - **Audience**: users wiring up source presets.
-- **UI location**: `/system` → "Connected devices" card → per-device copy button
+- **UI location**: `/system` → "Cameras" tab → per-device copy button
 - **Backend**: none (client-side clipboard).
 - **Prerequisites**: camera detected.
 - **Related**: View connected cameras and smartphones.
@@ -577,7 +577,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: query upstream to see whether a newer release is available.
 - **Audience**: anyone keeping the device current.
-- **UI location**: `/system` → "Updates" accordion → "Check" action
+- **UI location**: `/system` → "Updates" tab → "Check" action
 - **Backend**: `GET /api/setup/update-check`
 - **Prerequisites**: internet connectivity.
 - **Related**: Install system updates.
@@ -586,7 +586,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: apply a previously-detected update.
 - **Audience**: anyone keeping the device current.
-- **UI location**: `/system` → "Updates" accordion → "Install" action
+- **UI location**: `/system` → "Updates" tab → "Install" action
 - **Backend**: `POST /api/setup/update/install`, `GET /api/setup/update/status`
 - **Prerequisites**: an update is available.
 - **Related**: Check for system updates.
@@ -631,7 +631,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: stream the device's logs in the browser for live monitoring or debugging.
 - **Audience**: developers and users diagnosing issues.
-- **UI location**: `/system` → "Logs" card
+- **UI location**: `/system` → "Logs" tab
 - **Backend**: `GET /api/log/stream`
 - **Prerequisites**: none.
 - **Related**: Stream backup logs.
@@ -640,7 +640,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: tune logging verbosity (ERROR / WARNING / INFO / DEBUG).
 - **Audience**: developers debugging.
-- **UI location**: `/system` → "Logs" card → "Log level" control
+- **UI location**: `/system` → "Logs" tab → "Log level" control
 - **Backend**: `POST /api/config/save` (writes `conf_log_level`)
 - **Prerequisites**: none.
 - **Related**: View live logs.
@@ -649,7 +649,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: enable/disable shipping logs to an external server.
 - **Audience**: deployments collecting logs centrally.
-- **UI location**: `/system` → "Logs" card → "Log sync" control
+- **UI location**: `/system` → "Logs" tab → "Log sync" control
 - **Backend**: `POST /api/config/save` (writes `conf_log_sync`)
 - **Prerequisites**: external log target configured at the OS level.
 - **Related**: Set log level.
@@ -658,7 +658,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: retain the on-display image artefacts so a developer can inspect what the front display rendered.
 - **Audience**: display-firmware developers.
-- **UI location**: `/system` → "Logs" card → "Keep display images" control
+- **UI location**: `/system` → "Logs" tab → "Keep display images" control
 - **Backend**: `POST /api/config/save` (writes `conf_display_images_keep`)
 - **Prerequisites**: device has a front display.
 - **Related**: Configure the physical display.

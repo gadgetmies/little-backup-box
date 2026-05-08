@@ -16,13 +16,13 @@ import { test, expect } from '@playwright/test';
 const ROUTES = [
   '/',
   '/view',
+  '/storage',
   '/maintenance',
   '/integrations',
-  '/devices',
-  '/storage',
   '/network',
-  '/system',
+  '/hardware',
   '/preferences',
+  '/system',
   '/scrape',
 ];
 
