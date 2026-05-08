@@ -1,24 +1,44 @@
 import express from 'express';
-import { readFileSync } from 'fs';
-import { getDisplayContentPath } from '../utils/paths.js';
+import { readdirSync, readFileSync, statSync } from 'fs';
+import path from 'path';
+import { getDisplayContentPath, getDisplayContentOldFilePath } from '../utils/paths.js';
 
 const router = express.Router();
 
+function readLatestFrame(dir) {
+  const entries = readdirSync(dir).filter((f) => f.endsWith('.txt'));
+  if (entries.length === 0) return null;
+  // Filenames are 14-digit uptime centiseconds, so lex order matches chronology.
+  entries.sort();
+  const latest = path.join(dir, entries[entries.length - 1]);
+  if (!statSync(latest).isFile()) return null;
+  return readFileSync(latest, 'utf-8');
+}
+
 router.get('/status', (req, res) => {
+  const dir = getDisplayContentPath(req.WORKING_DIR, req.constants);
+  const oldFile = getDisplayContentOldFilePath(req.WORKING_DIR, req.constants);
+
   try {
-    const displayContentPath = getDisplayContentPath(req.WORKING_DIR, req.constants);
-    
-    try {
-      const content = readFileSync(displayContentPath, 'utf-8');
-      res.json({ status: content.trim() });
-    } catch (error) {
-      res.json({ status: '' });
+    const fromQueue = readLatestFrame(dir);
+    if (fromQueue !== null && fromQueue.trim() !== '') {
+      return res.json({ status: fromQueue.trim() });
     }
   } catch (error) {
-    req.logger.error('Failed to get display status', { error: error.message });
-    res.json({ status: '' });
+    // Directory missing or unreadable — fall through to old-file fallback.
+    req.logger?.debug?.('Display queue unreadable', { error: error.message });
   }
+
+  try {
+    const fromOld = readFileSync(oldFile, 'utf-8');
+    if (fromOld.trim() !== '') {
+      return res.json({ status: fromOld.trim() });
+    }
+  } catch {
+    // Old file missing — return empty status.
+  }
+
+  return res.json({ status: '' });
 });
 
 export default router;
-
