@@ -582,7 +582,11 @@
     "title": "Mock Controls",
     "delay": "Delay",
     "failure_mode": "Failure mode",
-    "failure_none": "None"
+    "failure_none": "None",
+    "display_status": "Display status",
+    "display_status_ready": "Ready",
+    "display_status_info": "Info",
+    "display_status_custom": "Custom…"
   },
   "cancel": "Abbrechen",
   "hardware": {
