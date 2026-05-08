@@ -208,6 +208,30 @@ function delay(ms = 100) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function resolveDisplayStatus() {
+  // Reads MockControls' display-status setting from localStorage. Mirrors the
+  // backend severity rule (ready when status is empty or === "Ready", else info).
+  let mode = 'ready';
+  let custom = '';
+  try {
+    const raw = typeof window !== 'undefined' && window.localStorage.getItem('lbb-mock-controls');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const ds = parsed && parsed.displayStatus;
+      if (ds && ['ready', 'info', 'custom'].includes(ds.mode)) mode = ds.mode;
+      if (ds && typeof ds.custom === 'string') custom = ds.custom;
+    }
+  } catch {
+    // localStorage unavailable or malformed; fall through to defaults.
+  }
+  let status;
+  if (mode === 'ready') status = 'Ready';
+  else if (mode === 'info') status = 'Working';
+  else status = (custom || '').trim();
+  const severity = status === '' || status === 'Ready' ? 'ready' : 'info';
+  return { status, severity };
+}
+
 function generateBackupId() {
   return Date.now();
 }
@@ -685,7 +709,7 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/display/status') {
-      return { data: mockData.displayStatus };
+      return { data: resolveDisplayStatus() };
     }
     
     if (url === '/log' || url === '/log/') {
