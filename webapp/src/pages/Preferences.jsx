@@ -12,16 +12,17 @@ import {
   Select,
   Snackbar,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
 } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
-import PageSection from '../components/PageSection';
 import SectionHeader from '../components/SectionHeader';
 
 const PREFERENCES_KEYS = [
@@ -37,6 +38,16 @@ const PREFERENCES_KEYS = [
   'conf_write_rating_to_exif',
 ];
 
+const TAB_NAMES = ['display', 'locale', 'backup'];
+
+function TabPanel({ children, value, index }) {
+  return (
+    <div role="tabpanel" hidden={value !== index} id={`preferences-tabpanel-${index}`}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 function Preferences() {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
@@ -44,6 +55,12 @@ function Preferences() {
   const [message, setMessage] = useState('');
   const [cameraFolderMaskError, setCameraFolderMaskError] = useState(false);
   const [backgroundImageError, setBackgroundImageError] = useState(false);
+  const [currentTab, setCurrentTab] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = window.localStorage.getItem('lbb-tabs-preferences');
+    const idx = TAB_NAMES.indexOf(saved);
+    return idx >= 0 ? idx : 0;
+  });
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
   const lastSavedConfig = useRef(null);
@@ -93,6 +110,13 @@ function Preferences() {
     };
   }, [formData, updateConfig, t]);
 
+  const handleTabChange = (_event, newValue) => {
+    setCurrentTab(newValue);
+    if (TAB_NAMES[newValue]) {
+      localStorage.setItem('lbb-tabs-preferences', TAB_NAMES[newValue]);
+    }
+  };
+
   if (!config) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -102,24 +126,36 @@ function Preferences() {
   }
 
   return (
-    <Stack spacing={3}>
-      <PageSection variant="card" title={t('config.backup.general_settings_header') || 'Display'}>
-        <Stack spacing={3}>
-          <FormControl sx={{ maxWidth: 400 }}>
-            <InputLabel>{t('config.lang_header') || 'Language'}</InputLabel>
-            <Select
-              value={formData.conf_LANGUAGE || 'en'}
-              onChange={(e) => setFormData({ ...formData, conf_LANGUAGE: e.target.value })}
-              label={t('config.lang_header') || 'Language'}
-            >
-              <MenuItem value="en">English</MenuItem>
-              <MenuItem value="de">Deutsch</MenuItem>
-              <MenuItem value="es">Español</MenuItem>
-              <MenuItem value="fr">Français</MenuItem>
-              <MenuItem value="fi">Suomi</MenuItem>
-            </Select>
-          </FormControl>
+    <Box>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="preferences tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          <Tab
+            label={t('preferences.tab.display') || 'Display'}
+            id="preferences-tab-0"
+            aria-controls="preferences-tabpanel-0"
+          />
+          <Tab
+            label={t('preferences.tab.locale') || 'Locale'}
+            id="preferences-tab-1"
+            aria-controls="preferences-tabpanel-1"
+          />
+          <Tab
+            label={t('preferences.tab.backup') || 'Backup defaults'}
+            id="preferences-tab-2"
+            aria-controls="preferences-tabpanel-2"
+          />
+        </Tabs>
+      </Box>
 
+      <TabPanel value={currentTab} index={0}>
+        <Stack spacing={3}>
           <FormControl sx={{ maxWidth: 400 }}>
             <InputLabel>{t('config.view_theme_header') || 'Theme'}</InputLabel>
             <Select
@@ -133,16 +169,6 @@ function Preferences() {
               <MenuItem value="sepia">{t('config.view_theme_sepia')}</MenuItem>
             </Select>
           </FormControl>
-
-          <Autocomplete
-            sx={{ maxWidth: 400 }}
-            options={Intl.supportedValuesOf('timeZone')}
-            value={formData.conf_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
-            onChange={(_e, newValue) => {
-              if (newValue) setFormData({ ...formData, conf_timezone: newValue });
-            }}
-            renderInput={(params) => <TextField {...params} label={t('config.timezone')} />}
-          />
 
           <Box>
             <TextField
@@ -191,9 +217,38 @@ function Preferences() {
             label={t('config.screen.virtual_keyboard_enable_label') || 'Enable virtual keyboard'}
           />
         </Stack>
-      </PageSection>
+      </TabPanel>
 
-      <PageSection variant="card" title={t('config.backup.section') || 'Backup defaults'}>
+      <TabPanel value={currentTab} index={1}>
+        <Stack spacing={3}>
+          <FormControl sx={{ maxWidth: 400 }}>
+            <InputLabel>{t('config.lang_header') || 'Language'}</InputLabel>
+            <Select
+              value={formData.conf_LANGUAGE || 'en'}
+              onChange={(e) => setFormData({ ...formData, conf_LANGUAGE: e.target.value })}
+              label={t('config.lang_header') || 'Language'}
+            >
+              <MenuItem value="en">English</MenuItem>
+              <MenuItem value="de">Deutsch</MenuItem>
+              <MenuItem value="es">Español</MenuItem>
+              <MenuItem value="fr">Français</MenuItem>
+              <MenuItem value="fi">Suomi</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Autocomplete
+            sx={{ maxWidth: 400 }}
+            options={Intl.supportedValuesOf('timeZone')}
+            value={formData.conf_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+            onChange={(_e, newValue) => {
+              if (newValue) setFormData({ ...formData, conf_timezone: newValue });
+            }}
+            renderInput={(params) => <TextField {...params} label={t('config.timezone')} />}
+          />
+        </Stack>
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={2}>
         <Stack spacing={3}>
           <Box>
             <TextField
@@ -312,7 +367,7 @@ function Preferences() {
             </Box>
           </Box>
         </Stack>
-      </PageSection>
+      </TabPanel>
 
       <Snackbar
         open={!!message}
@@ -328,7 +383,7 @@ function Preferences() {
           {message}
         </Alert>
       </Snackbar>
-    </Stack>
+    </Box>
   );
 }
 

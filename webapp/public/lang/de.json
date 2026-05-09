@@ -544,6 +544,18 @@
       "upload_error": "Fehler beim Hochladen der Einstellungen",
       "upload_success": "Einstellungen erfolgreich hochgeladen",
       "uploading": "Hochladen..."
+    },
+    "tab": {
+      "database": "Datenbank",
+      "files": "Dateien",
+      "settings": "Einstellungen"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Anzeige",
+      "locale": "Sprache & Zeit",
+      "backup": "Backup-Standardwerte"
     }
   },
   "integrations": {
@@ -609,7 +621,12 @@
     "fan_section": "Lüfter",
     "fan_temp_out_of_range": "Muss 0–100 sein",
     "fan_temp_threshold": "Temperaturschwelle",
-    "fan_temp_threshold_help": "°C · 0 = Lüfter immer ein"
+    "fan_temp_threshold_help": "°C · 0 = Lüfter immer ein",
+    "tab": {
+      "display": "Anzeige",
+      "buttons": "Tasten",
+      "fan": "Lüfter"
+    }
   },
   "menu": {
     "yes": "Ja"

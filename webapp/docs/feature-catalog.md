@@ -203,7 +203,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: walk a target storage and create (or recreate) thumbnails for indexed media.
 - **Audience**: users who imported media outside the normal backup flow, or whose thumbnails are stale.
-- **UI location**: `/maintenance` → "Database operations" accordion
+- **UI location**: `/maintenance` → "Database" tab
 - **Backend**: `POST /api/backup/function` (`function: 'generate_thumbnails'`); `scripts/lib_database.py`
 - **Prerequisites**: target storage selected; media database initialised on that target.
 - **Related**: Sync the media database; Update EXIF in stored media.
@@ -212,7 +212,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: re-scan a target storage and reconcile the media database with what's actually on disk.
 - **Audience**: users whose database has drifted from disk content (manual deletions, file moves).
-- **UI location**: `/maintenance` → "Database operations" accordion
+- **UI location**: `/maintenance` → "Database" tab
 - **Backend**: `POST /api/backup/function` (`function: 'sync'`); `scripts/lib_database.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Generate or refresh thumbnails.
@@ -221,7 +221,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: rewrite EXIF metadata on stored files using current settings.
 - **Audience**: users whose backup ran before EXIF settings changed, or who toggled "write rating to EXIF" later.
-- **UI location**: `/maintenance` → "Database operations" accordion
+- **UI location**: `/maintenance` → "Database" tab
 - **Backend**: `POST /api/backup/function` (`function: 'update_exif'`); `scripts/lib_database.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Toggle "write rating to EXIF" (Configure backup defaults).
@@ -230,7 +230,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: apply the configured rename pattern to files already on a target storage.
 - **Audience**: users who didn't enable rename at backup time and want to apply it after the fact.
-- **UI location**: `/maintenance` → "File operations" accordion
+- **UI location**: `/maintenance` → "Files" tab
 - **Backend**: `POST /api/backup/function` (`function: 'rename'`); `scripts/backup.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Rename files during backup (option in Run a backup).
@@ -239,7 +239,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: download a single file containing the device's current `scripts/config.cfg`.
 - **Audience**: users keeping a backup of their device configuration.
-- **UI location**: `/maintenance` → "Settings backup" accordion → "Download settings" action
+- **UI location**: `/maintenance` → "Settings" tab → "Download settings" action
 - **Backend**: `GET /api/setup/download-settings`
 - **Prerequisites**: none.
 - **Related**: Import device settings.
@@ -248,7 +248,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: upload a previously-exported config file and apply it.
 - **Audience**: users restoring or migrating a device.
-- **UI location**: `/maintenance` → "Settings backup" accordion → "Upload settings" action
+- **UI location**: `/maintenance` → "Settings" tab → "Upload settings" action
 - **Backend**: `POST /api/setup/upload-settings`
 - **Prerequisites**: a previously-exported settings file.
 - **Related**: Export device settings.
@@ -362,7 +362,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: define the folder pattern used to locate photos on connected cameras (default `DCIM`).
 - **Audience**: users with non-standard camera folder layouts.
-- **UI location**: `/preferences` → "Backup defaults" card → "Camera folder mask"
+- **UI location**: `/preferences` → "Backup defaults" tab → "Camera folder mask"
 - **Backend**: `POST /api/config/save` (writes `conf_camera_folder_mask`)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
@@ -371,7 +371,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: refuse to start a backup if the target has less than the chosen amount of free space.
 - **Audience**: users protecting against accidental over-fill.
-- **UI location**: `/preferences` → "Backup defaults" card → "Target free-space minimum"
+- **UI location**: `/preferences` → "Backup defaults" tab → "Target free-space minimum"
 - **Backend**: `POST /api/config/save` (writes `conf_target_size_minimum`)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
@@ -380,7 +380,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: auto-shutdown the device after the chosen number of minutes of inactivity.
 - **Audience**: battery-powered users.
-- **UI location**: `/preferences` → "Backup defaults" card → "Idle power-off"
+- **UI location**: `/preferences` → "Backup defaults" tab → "Idle power-off"
 - **Backend**: `POST /api/config/save` (writes `conf_idle_power_off`)
 - **Prerequisites**: none.
 - **Related**: Power off after backup (option in Run a backup).
@@ -389,7 +389,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: pick the default copy/move mode for every (source, target) combination, so the Backup page pre-fills correctly.
 - **Audience**: users with mixed workflows across media types.
-- **UI location**: `/preferences` → "Backup defaults" card → "Default mode" subsection (matrix)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Default mode" subsection (matrix)
 - **Backend**: `POST /api/config/save` (writes `conf_default_backup_*` keys)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
@@ -398,7 +398,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: persist gallery star-ratings into image EXIF metadata, not just the local DB.
 - **Audience**: users who want ratings to travel with the file.
-- **UI location**: `/preferences` → "Backup defaults" card → "Write rating to EXIF"
+- **UI location**: `/preferences` → "Backup defaults" tab → "Write rating to EXIF"
 - **Backend**: `POST /api/config/save` (writes `conf_write_rating_to_exif`)
 - **Prerequisites**: none.
 - **Related**: Rate an image.
@@ -521,7 +521,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: configure rotation, brightness, and other settings of the device's attached display.
 - **Audience**: users with a touchscreen or HDMI display.
-- **UI location**: `/hardware` → "Display" card
+- **UI location**: `/hardware` → "Display" tab
 - **Backend**: `POST /api/config/save` (`conf_DISPLAY_*`); `scripts/display_*.py`
 - **Prerequisites**: a display attached.
 - **Related**: Enable virtual keyboard (Personal preferences).
@@ -530,7 +530,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: choose which device action each physical button triggers.
 - **Audience**: users with the optional button hardware.
-- **UI location**: `/hardware` → "Buttons" card
+- **UI location**: `/hardware` → "Buttons" tab
 - **Backend**: `POST /api/config/save` (`conf_BUTTON_*`); `scripts/buttons.py`
 - **Prerequisites**: button hardware connected.
 - **Related**: Configure the physical display.
@@ -539,7 +539,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: set the temperature threshold and GPIO pin used for PWM fan control.
 - **Audience**: users with a PWM-controlled fan.
-- **UI location**: `/hardware` → "Fan" card
+- **UI location**: `/hardware` → "Fan" tab
 - **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_GPIO_PIN`)
 - **Prerequisites**: PWM fan connected.
 - **Related**: View system information.
@@ -678,7 +678,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: change the interface language (English, German, Spanish, Finnish, French) or auto-detect from the browser.
 - **Audience**: every user.
-- **UI location**: AppBar → language menu, *and* `/preferences` → "Display" card → "Language"
+- **UI location**: AppBar → language menu, *and* `/preferences` → "Locale" tab → "Language"
 - **Backend**: `POST /api/config/save` (writes `conf_LANGUAGE`); also persists to `localStorage` (`lbb-language`).
 - **Prerequisites**: none.
 - **Related**: Set UI theme.
@@ -687,7 +687,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: switch between Light, Dark, System, and Sepia themes.
 - **Audience**: every user.
-- **UI location**: AppBar → theme menu, *and* `/preferences` → "Display" card → "Theme"
+- **UI location**: AppBar → theme menu, *and* `/preferences` → "Display" tab → "Theme"
 - **Backend**: `POST /api/config/save` (writes `conf_THEME`); also persists to `localStorage` (`lbb-theme`).
 - **Prerequisites**: none.
 - **Related**: Set UI language.
@@ -696,7 +696,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: configure the device's system timezone so timestamps in logs and EXIF are correct.
 - **Audience**: any user; mandatory after first install.
-- **UI location**: `/preferences` → "Display" card → "Timezone"
+- **UI location**: `/preferences` → "Locale" tab → "Timezone"
 - **Backend**: `POST /api/config/save` (writes `conf_timezone`)
 - **Prerequisites**: none.
 - **Related**: Set UI language.
@@ -705,7 +705,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: pick an on-disk image to use as the UI background.
 - **Audience**: users personalising the UI.
-- **UI location**: `/preferences` → "Display" card → "Background image"
+- **UI location**: `/preferences` → "Display" tab → "Background image"
 - **Backend**: `POST /api/config/save` (writes `conf_background_image`)
 - **Prerequisites**: an image file accessible to the device.
 - **Related**: Set UI theme.
@@ -714,7 +714,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: turn UI toast/popup notifications on or off.
 - **Audience**: users who find toasts noisy.
-- **UI location**: `/preferences` → "Display" card → "Popup messages"
+- **UI location**: `/preferences` → "Display" tab → "Popup messages"
 - **Backend**: `POST /api/config/save` (writes `conf_popup_messages`)
 - **Prerequisites**: none.
 - **Related**: Enable email notifications for backup (the silent alternative).
@@ -723,7 +723,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: show an on-screen keyboard for touchscreen-only deployments.
 - **Audience**: users with touchscreen-only setups.
-- **UI location**: `/preferences` → "Display" card → "Virtual keyboard"
+- **UI location**: `/preferences` → "Display" tab → "Virtual keyboard"
 - **Backend**: `POST /api/config/save` (writes `conf_VIRTUAL_KEYBOARD_ENABLED`)
 - **Prerequisites**: touchscreen.
 - **Related**: Configure the physical display.

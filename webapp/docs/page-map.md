@@ -73,11 +73,13 @@ The Single view is a full-window overlay rather than a peer section; this is the
 - **Purpose**: post-backup cleanup, library reconciliation, settings backup.
 - **Legacy redirects**: none.
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Database operations | `PageSection.accordion` (`lbb-accordion-maintenance-database`, default collapsed) | Generate or refresh thumbnails for stored media; Sync the media database; Update EXIF in stored media |
-| 2 | File operations | `PageSection.accordion` (`lbb-accordion-maintenance-files`, default collapsed) | Rename files in stored media |
-| 3 | Settings backup | `PageSection.accordion` (`lbb-accordion-maintenance-settings`, default collapsed) | Export device settings; Import device settings |
+This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (post-backup library maintenance). Selected tab persists in `localStorage` under `lbb-tabs-maintenance` as the symbolic tab name (`'database'`, `'files'`, `'settings'`).
+
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | Database | Generate or refresh thumbnails for stored media; Sync the media database; Update EXIF in stored media |
+| 2 | Files | Rename files in stored media |
+| 3 | Settings | Export device settings; Import device settings |
 
 Both update flows (system updates and LibRaw) now live on `/system` → "Updates" tab — they are administrative, not stored-media concerns.
 
@@ -103,13 +105,13 @@ VPN lives on `/network` (it's a connectivity primitive, not a third-party integr
 - **Purpose**: configure the device's physical hardware peripherals (display, buttons, fan).
 - **Legacy redirects**: none.
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Display | `PageSection.card` | Configure the physical display |
-| 2 | Buttons | `PageSection.card` | Configure hardware buttons |
-| 3 | Fan | `PageSection.card` | Configure fan control |
+This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (peripheral configuration). Selected tab persists in `localStorage` under `lbb-tabs-hardware` as the symbolic tab name (`'display'`, `'buttons'`, `'fan'`).
 
-Three peer sections of similar weight that the user typically wants visible together — the Card pattern fits.
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | Display | Configure the physical display |
+| 2 | Buttons | Configure hardware buttons |
+| 3 | Fan | Configure fan control |
 
 ### `/storage` — Storage
 
@@ -164,17 +166,20 @@ Reboot / Power off / Stop LBB / Logout do not live on this page — they live in
 ### `/preferences` — Preferences
 
 - **Sidebar position**: 8
-- **Purpose**: personal preferences (language, theme, timezone, etc.) and system-wide backup defaults.
+- **Purpose**: personal preferences (UI display, locale, system-wide backup defaults).
 - **Legacy redirects**: none (the legacy `/setup` redirect was removed in commit 6b853f1).
 
-| # | Section | Pattern | Features assigned |
-| --- | --- | --- | --- |
-| 1 | Display | `PageSection.card` | Set UI language; Set UI theme; Set the device timezone; Set background image; Toggle popup messages; Enable virtual keyboard |
-| 2 | Backup defaults | `PageSection.card` | Set the camera-folder mask; Set the target free-space minimum; Set idle power-off threshold; Set default backup mode per source/target pair; Toggle "write rating to EXIF" |
+This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (user preferences). Selected tab persists in `localStorage` under `lbb-tabs-preferences` as the symbolic tab name (`'display'`, `'locale'`, `'backup'`). Saves are debounced and apply page-wide regardless of active tab.
 
-Two peer Cards. "Backup defaults" lives here (rather than on `/`) because they are system-wide policy, not per-run options.
+| # | Tab label | Features assigned |
+| --- | --- | --- |
+| 1 | Display | Set UI theme; Set background image; Toggle popup messages; Enable virtual keyboard |
+| 2 | Locale | Set UI language; Set the device timezone |
+| 3 | Backup defaults | Set the camera-folder mask; Set the target free-space minimum; Set idle power-off threshold; Set default backup mode per source/target pair; Toggle "write rating to EXIF" |
 
-Language and Theme also surface in the AppBar quick-menu for one-click access; that is a shortcut, not a separate feature — both still live in the catalog only once.
+"Backup defaults" lives here (rather than on `/`) because they are system-wide policy, not per-run options.
+
+Language and Theme also surface in the AppBar quick-menu for one-click access; that is a shortcut, not a separate feature — Language is catalogued once under "Locale" and Theme once under "Display".
 
 ### `/scrape` — Legacy UI
 
@@ -192,7 +197,8 @@ Single section, no internal restructure. Listed in the sidebar last to reflect t
 
 Some features are reachable from more than one entry point but are implemented and catalogued exactly once:
 
-- **Set UI language** and **Set UI theme** — primary location is `/preferences` → "Display"; AppBar quick-menus are shortcuts.
+- **Set UI language** — primary location is `/preferences` → "Locale"; AppBar quick-menu is a shortcut.
+- **Set UI theme** — primary location is `/preferences` → "Display"; AppBar quick-menu is a shortcut.
 - **Reboot the device**, **Power off the device**, **Stop the LBB process**, **Log out** — primary location is the AppBar power menu (always available); not on any page.
 
 ## Verifying the page map

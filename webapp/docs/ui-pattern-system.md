@@ -65,7 +65,7 @@ There are exactly three trigger conditions; one and only one applies for each gr
 
 …the page has **2–4 peer sections of similar weight that the user typically wants visible together** without progressive disclosure.
 
-Example: `/preferences` has two peers — Display and Backup defaults. Both are commonly viewed in the same visit; both should be visible without clicking.
+Example: a settings page where two peer groups (e.g., notifications + profile) are typically tweaked in the same visit and both fit above the fold.
 
 Don't use Card when…
 - …the page has only one section (use `PageSection.plain`).
@@ -78,7 +78,7 @@ Don't use Card when…
 
 Examples:
 - `/` "Options" accordion — most users start a backup with the prefilled defaults; only some tweak per-run.
-- `/maintenance` "Database operations" / "File operations" / "Settings backup" / "Updates" — four post-backup groupings that each hold rare-but-important actions.
+- A page with four+ post-backup groupings of rare-but-important actions, each tucked behind its own header until needed.
 - `/storage` "Format" — destructive, used once a year per device.
 
 Accordion rules:
@@ -95,7 +95,7 @@ Example: `/integrations` has Cloud / Social / Mail. Each panel is a long form; t
 Tabs rules:
 - **Tab labels are at most three words.** "Cloud", "Social", "Mail" — never "Settings", "Configuration", "Options".
 - An optional one-line description above the tab strip can name every available tab when the labels alone do not communicate scope (e.g., when tab labels are translated and might not be self-evident, or when there are 4+ tabs and the rightmost may be off-screen on narrow viewports). For 3 short, English-recognisable labels (Cloud / Social / Mail) the intro is noise — omit it.
-- The selected tab persists in `localStorage` under `lbb-tabs-<page>` (e.g., `lbb-tabs-integrations`).
+- The selected tab persists in `localStorage` under `lbb-tabs-<page>` (e.g., `lbb-tabs-integrations`). The stored value is the tab's **symbolic name** (`'cloud'`, `'database'`), never the numeric index, so reordering or inserting tabs in the React code never silently re-routes a user's saved selection. Pages fall back to the first tab when the persisted value matches no current tab.
 - Don't use Tabs for two panels — render them stacked or side-by-side.
 - Don't use Tabs to hide complexity inside a single section — that's an Accordion.
 

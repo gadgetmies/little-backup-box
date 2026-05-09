@@ -544,6 +544,18 @@
       "upload_error": "Failed to upload settings",
       "upload_success": "Settings uploaded successfully",
       "uploading": "Uploading..."
+    },
+    "tab": {
+      "database": "Database",
+      "files": "Files",
+      "settings": "Settings"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Display",
+      "locale": "Locale",
+      "backup": "Backup defaults"
     }
   },
   "integrations": {
@@ -609,7 +621,12 @@
     "fan_section": "Fan",
     "fan_temp_out_of_range": "Must be 0–100",
     "fan_temp_threshold": "Temperature threshold",
-    "fan_temp_threshold_help": "°C · 0 = fan always off"
+    "fan_temp_threshold_help": "°C · 0 = fan always off",
+    "tab": {
+      "display": "Display",
+      "buttons": "Buttons",
+      "fan": "Fan"
+    }
   },
   "menu": {
     "yes": "Yes"
