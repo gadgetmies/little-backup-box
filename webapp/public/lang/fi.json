@@ -220,7 +220,7 @@
       "file_operation_move": "Siirrä tiedostot",
       "rename": {
         "warning": "Varoitus! Tiedostot tulisi sen jälkeen poistaa lähteestä. Muuten ne siirretään uudelleen seuraavan varmuus kopion aikana, nimetään uudelleen ja korvaavat edellisen varmuus kopion version.",
-        "desc": "Yritetään lukea luontipäivämäärä kaikista media-tiedostoista paikallisilla tallennuslaitteilla. Jos tämä on mahdollista, tiedosto nimetään uudelleen seuraavan mallin mukaan:<br>\nEsimerkiksi &quot;Image0123.jpg&quot; muuttuu &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
+        "desc": "Yritetään lukea luontipäivämäärä kaikista media-tiedostoista paikallisilla tallennuslaitteilla. Jos tämä on mahdollista, tiedosto nimetään uudelleen seuraavan mallin mukaan: esimerkiksi \"Image0123.jpg\" muuttuu \"2024-10-18_23-47-26_-_Image.jpg\"."
       }
     },
     "mail": {

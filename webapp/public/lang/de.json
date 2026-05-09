@@ -189,7 +189,7 @@
       "file_operation_move": "Dateien verschieben",
       "rename": {
         "warning": "Achtung! Die Dateien sollten danach von der Quelle gelöscht werden. Ansonsten werden sie beim nächsten Backup erneut übertragen, umbenannt und ersetzen so die Version aus dem vorhergehenden Backup.",
-        "desc": "Aus allen Medien-Dateien auf lokalen Datenträgern wird versucht, das Erstell-Datum auszulesen. Ist dies möglich, wird die Datei nach folgendem Muster umbenannt:<br>\nAus &quot;Image0123.jpg&quot; wird z.B. &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
+        "desc": "Aus allen Medien-Dateien auf lokalen Datenträgern wird versucht, das Erstell-Datum auszulesen. Ist dies möglich, wird die Datei nach folgendem Muster umbenannt: aus \"Image0123.jpg\" wird z.B. \"2024-10-18_23-47-26_-_Image.jpg\"."
       }
     },
     "mail": {
