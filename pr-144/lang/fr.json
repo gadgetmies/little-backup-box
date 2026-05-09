@@ -544,6 +544,18 @@
       "upload_error": "Échec du téléchargement des paramètres",
       "upload_success": "Paramètres téléchargés avec succès",
       "uploading": "Téléchargement..."
+    },
+    "tab": {
+      "database": "Base de données",
+      "files": "Fichiers",
+      "settings": "Paramètres"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Affichage",
+      "locale": "Langue et région",
+      "backup": "Valeurs par défaut"
     }
   },
   "integrations": {
@@ -609,7 +621,12 @@
     "fan_section": "Ventilateur",
     "fan_temp_out_of_range": "Doit être 0–100",
     "fan_temp_threshold": "Seuil de température",
-    "fan_temp_threshold_help": "°C · 0 = ventilateur toujours allumé"
+    "fan_temp_threshold_help": "°C · 0 = ventilateur toujours allumé",
+    "tab": {
+      "display": "Affichage",
+      "buttons": "Boutons",
+      "fan": "Ventilateur"
+    }
   },
   "menu": {
     "yes": "Oui"

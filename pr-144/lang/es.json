@@ -544,6 +544,18 @@
       "upload_error": "Error al cargar la configuración",
       "upload_success": "Configuración cargada con éxito",
       "uploading": "Cargando..."
+    },
+    "tab": {
+      "database": "Base de datos",
+      "files": "Archivos",
+      "settings": "Configuración"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Pantalla",
+      "locale": "Idioma y zona horaria",
+      "backup": "Predeterminados de copia"
     }
   },
   "integrations": {
@@ -609,7 +621,12 @@
     "fan_section": "Ventilador",
     "fan_temp_out_of_range": "Debe ser 0–100",
     "fan_temp_threshold": "Umbral de temperatura",
-    "fan_temp_threshold_help": "°C · 0 = ventilador siempre encendido"
+    "fan_temp_threshold_help": "°C · 0 = ventilador siempre encendido",
+    "tab": {
+      "display": "Pantalla",
+      "buttons": "Botones",
+      "fan": "Ventilador"
+    }
   },
   "menu": {
     "yes": "Sí"

@@ -544,6 +544,18 @@
       "upload_error": "Asetusten lataaminen epäonnistui",
       "upload_success": "Asetukset ladattu onnistuneesti",
       "uploading": "Ladataan..."
+    },
+    "tab": {
+      "database": "Tietokanta",
+      "files": "Tiedostot",
+      "settings": "Asetukset"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Näyttö",
+      "locale": "Kieli ja aika",
+      "backup": "Varmuuskopion oletukset"
     }
   },
   "integrations": {
@@ -609,7 +621,12 @@
     "fan_section": "Tuuletin",
     "fan_temp_out_of_range": "Täytyy olla 0–100",
     "fan_temp_threshold": "Lämpötilakynnys",
-    "fan_temp_threshold_help": "°C · 0 = tuuletin aina päällä"
+    "fan_temp_threshold_help": "°C · 0 = tuuletin aina päällä",
+    "tab": {
+      "display": "Näyttö",
+      "buttons": "Painikkeet",
+      "fan": "Tuuletin"
+    }
   },
   "menu": {
     "yes": "Kyllä"
