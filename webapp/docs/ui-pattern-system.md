@@ -193,6 +193,27 @@ This rule covers per-control affordances only. Section-level cues — a `<Warnin
 
 A red Cancel button or a "stop a single in-flight backup" button is *not* destructive in this sense (the user can immediately restart the operation), and does not need the icon.
 
+## Symmetric source/target matrices
+
+When a page renders a configuration grid whose row axis (sources) and column axis (targets) share a subset of types — i.e. the same identifier (`usb`, `internal`, `nvme`, …) is meaningful as both a source and a target, and the (source == target) cells are intentionally blank because you cannot back up a thing to itself — the shared subset must appear at the same index on both axes.
+
+Concretely:
+
+- **Shared types come first**, in the same order on both axes.
+- **Source-only types** (rows whose identifier never appears as a column — e.g. `camera`) come *after* the shared subset in the row list.
+- **Target-only types** (columns whose identifier never appears as a row — e.g. `cloud`, `rsync`) come *after* the shared subset in the column list.
+
+The point is that the (source == target) blank cells then form a true top-left-to-bottom-right diagonal in the shared sub-grid, so a reader scanning the table immediately sees the "X cannot back up to itself" pattern. Off-diagonals introduced by source-only or target-only entries fall *outside* the shared sub-grid and are fine.
+
+Today the only call site is the Default backup modes matrix on `/preferences`:
+
+```js
+const sources = ['usb', 'internal', 'nvme', 'camera']; // shared first, source-only last
+const targets = ['usb', 'internal', 'nvme', 'cloud', 'rsync']; // shared first, target-only last
+```
+
+The formal rule lives in `openspec/specs/webapp-ui-pattern-system/spec.md` under "Symmetric source/target matrices align shared axes at the same index"; this doc mirrors it for contributor reference.
+
 ## Things that aren't sections
 
 These do **not** use `PageSection`:

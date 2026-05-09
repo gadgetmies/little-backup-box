@@ -311,7 +311,7 @@ function Preferences() {
             <SectionHeader level={3} title={t('config.default_backup_mode_section')} sx={{ mb: 1 }} />
             <Box sx={{ overflowX: 'auto' }}>
               {(() => {
-                const sources = ['camera', 'usb', 'internal', 'nvme'];
+                const sources = ['usb', 'internal', 'nvme', 'camera'];
                 const targets = ['usb', 'internal', 'nvme', 'cloud', 'rsync'];
                 const validCombinations = new Set([
                   'camera-usb', 'camera-internal', 'camera-nvme',
