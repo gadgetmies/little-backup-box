@@ -220,7 +220,7 @@
       "file_operation_move": "Move files",
       "rename": {
         "warning": "Attention! The files should then be deleted from the source. Otherwise they will be transferred again during the next backup, renamed and replacing the version from the previous backup.",
-        "desc": "An attempt is made to read the creation date from all media files on local storage devices. If this is possible, the file is renamed according to the following pattern:<br>\nFor example, &quot;Image0123.jpg&quot; becomes &quot;2024-10-18_23-47-26_-_Image.jpg&quot;."
+        "desc": "An attempt is made to read the creation date from all media files on local storage devices. If this is possible, the file is renamed according to the following pattern: for example, \"Image0123.jpg\" becomes \"2024-10-18_23-47-26_-_Image.jpg\"."
       }
     },
     "mail": {
