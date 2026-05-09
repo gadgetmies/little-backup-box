@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -33,7 +33,10 @@ import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import VPNConfig from '../components/VPNConfig';
 import SectionHeader from '../components/SectionHeader';
+import PageSaveBar from '../components/PageSaveBar';
 import useAsyncAction from '../hooks/useAsyncAction';
+import { useDrawer } from '../contexts/DrawerContext';
+import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 
 // Complete list of countries from ISO 3166 (matching original PHP implementation)
 const COMPLETE_COUNTRIES = [
@@ -291,8 +294,11 @@ const COMPLETE_COUNTRIES = [
 function Network() {
   const { t } = useLanguage();
   const { updateConfig } = useConfig();
+  const { desktopOpen } = useDrawer();
+  const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
   const [wifiCountries, setWifiCountries] = useState([]);
   const [currentWifiCountry, setCurrentWifiCountry] = useState('');
+  const wifiCountryLastSaved = useRef('');
   const [networkInfo, setNetworkInfo] = useState({
     ips: [],
     internetStatus: false,
@@ -304,6 +310,8 @@ function Network() {
   const [currentTab, setCurrentTab] = useState(0);
   const [comitupDialogOpen, setComitupDialogOpen] = useState(false);
   const [comitupResetDone, setComitupResetDone] = useState(false);
+  const [vpnState, setVpnState] = useState({ isSaved: true, save: null });
+  const [isSaving, setIsSaving] = useState(false);
 
   const comitupResetFn = useCallback(() => api.post('/network/comitup/reset'), []);
   const {
@@ -366,10 +374,13 @@ function Network() {
   const loadCurrentWifiCountry = async () => {
     try {
       const response = await api.get('/setup/wifi-country');
-      setCurrentWifiCountry(response.data.country || '');
+      const country = response.data.country || '';
+      setCurrentWifiCountry(country);
+      wifiCountryLastSaved.current = country;
     } catch (error) {
       console.error('Failed to load current WiFi country:', error);
       setCurrentWifiCountry('');
+      wifiCountryLastSaved.current = '';
     }
   };
 
@@ -403,15 +414,38 @@ function Network() {
     }
   };
 
-  const handleWifiCountryChange = async (countryCode) => {
-    try {
-      await updateConfig({ conf_WIFI_COUNTRY: countryCode });
-      setCurrentWifiCountry(countryCode);
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
-    } catch (error) {
-      console.error('Failed to save WiFi country:', error);
-      setMessage('Error saving WiFi country');
+  const isWifiDirty = currentWifiCountry !== wifiCountryLastSaved.current;
+  const isAnyDirty = isWifiDirty || !vpnState.isSaved;
+
+  const handleVpnState = useCallback((isSaved, save) => {
+    setVpnState({ isSaved, save });
+  }, []);
+
+  const handleSavePage = async () => {
+    setIsSaving(true);
+    const tasks = [];
+    if (isWifiDirty) {
+      tasks.push([
+        'WiFi',
+        async () => {
+          await updateConfig({ conf_WIFI_COUNTRY: currentWifiCountry });
+          wifiCountryLastSaved.current = currentWifiCountry;
+        },
+      ]);
     }
+    if (!vpnState.isSaved && vpnState.save) {
+      tasks.push(['VPN', vpnState.save]);
+    }
+    const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
+    const failures = results
+      .map((r, i) => (r.status === 'rejected' ? `${tasks[i][0]}: ${r.reason?.message || 'error'}` : null))
+      .filter(Boolean);
+    if (failures.length === 0) {
+      setMessage(t('config.message_settings_saved') || 'Settings saved');
+    } else {
+      setMessage(`${t('config.save_partial_error') || 'Some settings failed to save'}: ${failures.join('; ')}`);
+    }
+    setIsSaving(false);
   };
 
 
@@ -438,7 +472,7 @@ function Network() {
   }
 
   return (
-    <Box>
+    <Box sx={{ pb: 10 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={currentTab}
@@ -472,7 +506,7 @@ function Network() {
             <InputLabel>{t('config.wifi_country_header') || 'WiFi country'}</InputLabel>
             <Select
               value={currentWifiCountry}
-              onChange={(e) => handleWifiCountryChange(e.target.value)}
+              onChange={(e) => setCurrentWifiCountry(e.target.value)}
               label={t('config.wifi_country_header') || 'WiFi country'}
             >
               {wifiCountries.map((country) => (
@@ -605,7 +639,7 @@ function Network() {
       </TabPanel>
 
       <TabPanel value={currentTab} index={2}>
-        <VPNConfig />
+        <VPNConfig onSavedStateChange={handleVpnState} onMessage={setMessage} />
       </TabPanel>
 
       <Accordion sx={{ mt: 2 }}>
@@ -691,6 +725,13 @@ function Network() {
           {message}
         </Alert>
       </Snackbar>
+
+      <PageSaveBar
+        isDirty={isAnyDirty}
+        isSaving={isSaving}
+        onSave={handleSavePage}
+        drawerWidth={currentDrawerWidth}
+      />
     </Box>
   );
 }

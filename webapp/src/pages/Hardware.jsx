@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Box, Tab, Tabs } from '@mui/material';
+import React, { useCallback, useState } from 'react';
+import { Alert, Box, Snackbar, Tab, Tabs } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useDrawer } from '../contexts/DrawerContext';
+import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import DisplayConfig from '../components/DisplayConfig';
 import ButtonHardwareConfig from '../components/ButtonHardwareConfig';
 import FanConfig from '../components/FanConfig';
+import PageSaveBar from '../components/PageSaveBar';
 
 const TAB_NAMES = ['display', 'buttons', 'fan'];
 
@@ -17,12 +20,19 @@ function TabPanel({ children, value, index }) {
 
 function Hardware() {
   const { t } = useLanguage();
+  const { desktopOpen } = useDrawer();
+  const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
   const [currentTab, setCurrentTab] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const saved = window.localStorage.getItem('lbb-tabs-hardware');
     const idx = TAB_NAMES.indexOf(saved);
     return idx >= 0 ? idx : 0;
   });
+  const [displayState, setDisplayState] = useState({ isSaved: true, save: null });
+  const [buttonsState, setButtonsState] = useState({ isSaved: true, save: null });
+  const [fanState, setFanState] = useState({ isSaved: true, save: null });
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleTabChange = (_event, newValue) => {
     setCurrentTab(newValue);
@@ -31,8 +41,39 @@ function Hardware() {
     }
   };
 
+  const handleDisplayState = useCallback((isSaved, save) => {
+    setDisplayState({ isSaved, save });
+  }, []);
+  const handleButtonsState = useCallback((isSaved, save) => {
+    setButtonsState({ isSaved, save });
+  }, []);
+  const handleFanState = useCallback((isSaved, save) => {
+    setFanState({ isSaved, save });
+  }, []);
+
+  const isAnyDirty = !displayState.isSaved || !buttonsState.isSaved || !fanState.isSaved;
+
+  const handleSavePage = async () => {
+    setIsSaving(true);
+    const dirty = [
+      ['Display', displayState],
+      ['Buttons', buttonsState],
+      ['Fan', fanState],
+    ].filter(([, s]) => !s.isSaved && s.save);
+    const results = await Promise.allSettled(dirty.map(([, s]) => s.save()));
+    const failures = results
+      .map((r, i) => (r.status === 'rejected' ? `${dirty[i][0]}: ${r.reason?.message || 'error'}` : null))
+      .filter(Boolean);
+    if (failures.length === 0) {
+      setMessage(t('config.message_settings_saved') || 'Settings saved');
+    } else {
+      setMessage(`${t('config.save_partial_error') || 'Some settings failed to save'}: ${failures.join('; ')}`);
+    }
+    setIsSaving(false);
+  };
+
   return (
-    <Box>
+    <Box sx={{ pb: 10 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={currentTab}
@@ -61,14 +102,36 @@ function Hardware() {
       </Box>
 
       <TabPanel value={currentTab} index={0}>
-        <DisplayConfig />
+        <DisplayConfig onSavedStateChange={handleDisplayState} />
       </TabPanel>
       <TabPanel value={currentTab} index={1}>
-        <ButtonHardwareConfig />
+        <ButtonHardwareConfig onSavedStateChange={handleButtonsState} />
       </TabPanel>
       <TabPanel value={currentTab} index={2}>
-        <FanConfig />
+        <FanConfig onSavedStateChange={handleFanState} />
       </TabPanel>
+
+      <PageSaveBar
+        isDirty={isAnyDirty}
+        isSaving={isSaving}
+        onSave={handleSavePage}
+        drawerWidth={currentDrawerWidth}
+      />
+
+      <Snackbar
+        open={!!message}
+        autoHideDuration={3000}
+        onClose={() => setMessage('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setMessage('')}
+          severity={message.includes('Error') || message.includes('failed') ? 'error' : 'success'}
+          sx={{ width: '100%' }}
+        >
+          {message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -41,6 +41,7 @@ import api from '../utils/api';
 import SocialMediaConfig from '../components/SocialMediaConfig';
 import CloudConfig from '../components/CloudConfig';
 import SectionHeader from '../components/SectionHeader';
+import PageSaveBar from '../components/PageSaveBar';
 
 function TabPanel({ children, value, index, ...other }) {
   const needsBottomPadding = value === index && (index === 0 || index === 1 || index === 2 || index === 3);
@@ -66,11 +67,9 @@ function Connections() {
   const [passwordError, setPasswordError] = useState('');
   const [rsyncFormData, setRsyncFormData] = useState({});
   const [rsyncPasswordError, setRsyncPasswordError] = useState('');
-  const [rsyncSaving, setRsyncSaving] = useState(false);
-  const rsyncSaveTimeoutRef = useRef(null);
   const rsyncLastSavedConfig = useRef(null);
-  const rsyncIsSaving = useRef(false);
   const [message, setMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [currentTab, setCurrentTab] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const saved = window.localStorage.getItem('lbb-tabs-integrations');
@@ -80,14 +79,15 @@ function Connections() {
   const mailLastSavedConfig = useRef(null);
   const [mailIsSaved, setMailIsSaved] = useState(true);
   const [rsyncIsSaved, setRsyncIsSaved] = useState(true);
-  const socialMediaConfigRef = useRef({ isSaved: true, handleSave: null });
-  const cloudConfigRef = useRef({ isSaved: true, handleSave: null });
+  const [socialMediaState, setSocialMediaState] = useState({ isSaved: true, save: null });
+  const [cloudConfigState, setCloudConfigState] = useState({ isSaved: true, save: null });
   const [socialGeneralFormData, setSocialGeneralFormData] = useState({});
   const socialGeneralLastSaved = useRef(null);
-  const socialGeneralSaveTimeout = useRef(null);
+  const [socialGeneralIsSaved, setSocialGeneralIsSaved] = useState(true);
   const [cloudRemotes, setCloudRemotes] = useState([]);
   const [cloudRemoteFormData, setCloudRemoteFormData] = useState({});
-  const cloudRemoteSaveTimeout = useRef(null);
+  const cloudRemoteLastSaved = useRef(null);
+  const [cloudRemoteIsSaved, setCloudRemoteIsSaved] = useState(true);
 
   useEffect(() => {
     if (config) {
@@ -139,57 +139,12 @@ function Connections() {
     }
   }, [config]);
 
+  // Track rsync dirty state (no autosave)
   useEffect(() => {
-    if (rsyncIsSaving.current) {
-      return;
-    }
-
-    if (Object.keys(rsyncFormData).length === 0) {
-      return;
-    }
-
+    if (Object.keys(rsyncFormData).length === 0) return;
     const formDataString = JSON.stringify(rsyncFormData);
-    const isSaved = rsyncLastSavedConfig.current === formDataString;
-    setRsyncIsSaved(isSaved);
-
-    if (isSaved) {
-      return;
-    }
-
-    if (rsyncSaveTimeoutRef.current) {
-      clearTimeout(rsyncSaveTimeoutRef.current);
-    }
-
-    rsyncSaveTimeoutRef.current = setTimeout(async () => {
-      rsyncIsSaving.current = true;
-      setRsyncSaving(true);
-      try {
-        const rsyncConfigToSave = {
-          conf_RSYNC_SERVER: rsyncFormData.conf_RSYNC_SERVER || '',
-          conf_RSYNC_PORT: rsyncFormData.conf_RSYNC_PORT || '',
-          conf_RSYNC_USER: rsyncFormData.conf_RSYNC_USER || '',
-          conf_RSYNC_PASSWORD: rsyncFormData.conf_RSYNC_PASSWORD ? btoa(rsyncFormData.conf_RSYNC_PASSWORD) : '',
-          conf_RSYNC_SERVER_MODULE: rsyncFormData.conf_RSYNC_SERVER_MODULE || '',
-        };
-        await updateConfig(rsyncConfigToSave);
-        rsyncLastSavedConfig.current = JSON.stringify(rsyncFormData);
-        setRsyncIsSaved(true);
-        setMessage(t('config.message_settings_saved') || 'Settings saved');
-      } catch (error) {
-        console.error('Failed to save rsync settings:', error);
-        setMessage('Error saving rsync settings');
-      } finally {
-        rsyncIsSaving.current = false;
-        setRsyncSaving(false);
-      }
-    }, 500);
-
-    return () => {
-      if (rsyncSaveTimeoutRef.current) {
-        clearTimeout(rsyncSaveTimeoutRef.current);
-      }
-    };
-  }, [rsyncFormData, updateConfig, t]);
+    setRsyncIsSaved(rsyncLastSavedConfig.current === formDataString);
+  }, [rsyncFormData]);
 
   // Track mail saved state
   useEffect(() => {
@@ -201,36 +156,108 @@ function Connections() {
     setMailIsSaved(isSaved);
   }, [mailFormData]);
 
-  // Auto-save social general settings
-  useEffect(() => {
-    if (Object.keys(socialGeneralFormData).length === 0) {
-      return;
-    }
-    const formDataString = JSON.stringify(socialGeneralFormData);
-    if (socialGeneralLastSaved.current === formDataString) {
-      return;
-    }
-    if (socialGeneralSaveTimeout.current) {
-      clearTimeout(socialGeneralSaveTimeout.current);
-    }
-    socialGeneralSaveTimeout.current = setTimeout(async () => {
-      try {
-        await updateConfig(socialGeneralFormData);
-        socialGeneralLastSaved.current = JSON.stringify(socialGeneralFormData);
-        setMessage(t('config.message_settings_saved') || 'Settings saved');
-      } catch (error) {
-        console.error('Failed to save social general settings:', error);
-        setMessage('Error saving social general settings');
-      }
-    }, 500);
-    return () => {
-      if (socialGeneralSaveTimeout.current) {
-        clearTimeout(socialGeneralSaveTimeout.current);
-      }
-    };
-  }, [socialGeneralFormData, updateConfig, t]);
+  const handleCloudConfigState = useCallback((isSaved, save) => {
+    setCloudConfigState({ isSaved, save });
+  }, []);
+  const handleSocialMediaState = useCallback((isSaved, save) => {
+    setSocialMediaState({ isSaved, save });
+  }, []);
 
-  // Load cloud remotes on mount
+  const handleSaveMail = useCallback(async () => {
+    if (mailFormData.conf_MAIL_PASSWORD && !validatePassword(mailFormData.conf_MAIL_PASSWORD)) {
+      throw new Error('Password validation failed');
+    }
+    const mailConfigToSave = {
+      conf_MAIL_IP: mailFormData.conf_MAIL_IP || '0',
+      conf_MAIL_HTML: mailFormData.conf_MAIL_HTML || '0',
+      conf_SMTP_SERVER: mailFormData.conf_SMTP_SERVER || '',
+      conf_SMTP_PORT: mailFormData.conf_SMTP_PORT || '',
+      conf_MAIL_SECURITY: mailFormData.conf_MAIL_SECURITY || 'STARTTLS',
+      conf_MAIL_USER: mailFormData.conf_MAIL_USER || '',
+      conf_MAIL_PASSWORD: mailFormData.conf_MAIL_PASSWORD ? btoa(mailFormData.conf_MAIL_PASSWORD) : '',
+      conf_MAIL_FROM: mailFormData.conf_MAIL_FROM || '',
+      conf_MAIL_TO: mailFormData.conf_MAIL_TO || '',
+      conf_MAIL_TIMEOUT_SEC: mailFormData.conf_MAIL_TIMEOUT_SEC || '30',
+    };
+    await updateConfig(mailConfigToSave);
+    mailLastSavedConfig.current = JSON.stringify(mailFormData);
+    setMailIsSaved(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mailFormData, updateConfig]);
+
+  const handleSaveRsync = useCallback(async () => {
+    if (rsyncFormData.conf_RSYNC_PASSWORD && !validateRsyncPassword(rsyncFormData.conf_RSYNC_PASSWORD)) {
+      throw new Error('Password validation failed');
+    }
+    const rsyncConfigToSave = {
+      conf_RSYNC_SERVER: rsyncFormData.conf_RSYNC_SERVER || '',
+      conf_RSYNC_PORT: rsyncFormData.conf_RSYNC_PORT || '',
+      conf_RSYNC_USER: rsyncFormData.conf_RSYNC_USER || '',
+      conf_RSYNC_PASSWORD: rsyncFormData.conf_RSYNC_PASSWORD ? btoa(rsyncFormData.conf_RSYNC_PASSWORD) : '',
+      conf_RSYNC_SERVER_MODULE: rsyncFormData.conf_RSYNC_SERVER_MODULE || '',
+    };
+    await updateConfig(rsyncConfigToSave);
+    rsyncLastSavedConfig.current = JSON.stringify(rsyncFormData);
+    setRsyncIsSaved(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rsyncFormData, updateConfig]);
+
+  const handleSaveSocialGeneral = useCallback(async () => {
+    await updateConfig(socialGeneralFormData);
+    socialGeneralLastSaved.current = JSON.stringify(socialGeneralFormData);
+    setSocialGeneralIsSaved(true);
+  }, [socialGeneralFormData, updateConfig]);
+
+  const handleSaveCloudRemote = useCallback(async () => {
+    const configToSave = {};
+    Object.entries(cloudRemoteFormData).forEach(([name, values]) => {
+      const key = name.toLowerCase().replace(/\s+/g, '_');
+      configToSave[`conf_cloud_${key}_target_dir`] = values.target_dir || '';
+      configToSave[`conf_cloud_${key}_sync_method`] = values.sync_method || 'rclone';
+      configToSave[`conf_cloud_${key}_files_stay`] = values.files_stay || 'false';
+    });
+    await updateConfig(configToSave);
+    cloudRemoteLastSaved.current = JSON.stringify(cloudRemoteFormData);
+    setCloudRemoteIsSaved(true);
+  }, [cloudRemoteFormData, updateConfig]);
+
+  const isAnyDirty =
+    !mailIsSaved ||
+    !rsyncIsSaved ||
+    !socialGeneralIsSaved ||
+    !cloudRemoteIsSaved ||
+    !cloudConfigState.isSaved ||
+    !socialMediaState.isSaved;
+
+  const handleSavePage = async () => {
+    setIsSaving(true);
+    const tasks = [];
+    if (!mailIsSaved) tasks.push(['Mail', handleSaveMail]);
+    if (!rsyncIsSaved) tasks.push(['Rsync', handleSaveRsync]);
+    if (!socialGeneralIsSaved) tasks.push(['Social', handleSaveSocialGeneral]);
+    if (!cloudRemoteIsSaved) tasks.push(['Cloud remotes', handleSaveCloudRemote]);
+    if (!cloudConfigState.isSaved && cloudConfigState.save) tasks.push(['Cloud', cloudConfigState.save]);
+    if (!socialMediaState.isSaved && socialMediaState.save) tasks.push(['Social media', socialMediaState.save]);
+    const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
+    const failures = results
+      .map((r, i) => (r.status === 'rejected' ? `${tasks[i][0]}: ${r.reason?.message || 'error'}` : null))
+      .filter(Boolean);
+    if (failures.length === 0 && tasks.length > 0) {
+      setMessage(t('config.message_settings_saved') || 'Settings saved');
+    } else if (failures.length > 0) {
+      setMessage(`${t('config.save_partial_error') || 'Some settings failed to save'}: ${failures.join('; ')}`);
+    }
+    setIsSaving(false);
+  };
+
+  // Track social-general dirty state (no autosave)
+  useEffect(() => {
+    if (Object.keys(socialGeneralFormData).length === 0) return;
+    const formDataString = JSON.stringify(socialGeneralFormData);
+    setSocialGeneralIsSaved(socialGeneralLastSaved.current === formDataString);
+  }, [socialGeneralFormData]);
+
+  // Load cloud remotes on mount; seed last-saved snapshot from current config so the page is clean on load
   useEffect(() => {
     const loadCloudRemotes = async () => {
       try {
@@ -248,6 +275,7 @@ function Connections() {
             };
           });
           setCloudRemoteFormData(formData);
+          cloudRemoteLastSaved.current = JSON.stringify(formData);
         }
       } catch (error) {
         console.error('Failed to load cloud remotes:', error);
@@ -256,36 +284,12 @@ function Connections() {
     loadCloudRemotes();
   }, [config]);
 
-  // Auto-save per-remote config
+  // Track cloud-remote dirty state (no autosave)
   useEffect(() => {
-    if (Object.keys(cloudRemoteFormData).length === 0) {
-      return;
-    }
-    if (cloudRemoteSaveTimeout.current) {
-      clearTimeout(cloudRemoteSaveTimeout.current);
-    }
-    cloudRemoteSaveTimeout.current = setTimeout(async () => {
-      try {
-        const configToSave = {};
-        Object.entries(cloudRemoteFormData).forEach(([name, values]) => {
-          const key = name.toLowerCase().replace(/\s+/g, '_');
-          configToSave[`conf_cloud_${key}_target_dir`] = values.target_dir || '';
-          configToSave[`conf_cloud_${key}_sync_method`] = values.sync_method || 'rclone';
-          configToSave[`conf_cloud_${key}_files_stay`] = values.files_stay || 'false';
-        });
-        await updateConfig(configToSave);
-        setMessage(t('config.message_settings_saved') || 'Settings saved');
-      } catch (error) {
-        console.error('Failed to save cloud remote settings:', error);
-        setMessage('Error saving cloud remote settings');
-      }
-    }, 500);
-    return () => {
-      if (cloudRemoteSaveTimeout.current) {
-        clearTimeout(cloudRemoteSaveTimeout.current);
-      }
-    };
-  }, [cloudRemoteFormData, updateConfig, t]);
+    if (Object.keys(cloudRemoteFormData).length === 0) return;
+    const formDataString = JSON.stringify(cloudRemoteFormData);
+    setCloudRemoteIsSaved(cloudRemoteLastSaved.current === formDataString);
+  }, [cloudRemoteFormData]);
 
   const validatePassword = (password) => {
     if (!password) {
@@ -361,35 +365,6 @@ function Connections() {
     );
   };
 
-  const handleSaveMail = async () => {
-    if (mailFormData.conf_MAIL_PASSWORD && !validatePassword(mailFormData.conf_MAIL_PASSWORD)) {
-      return;
-    }
-
-    try {
-      const mailConfigToSave = {
-        conf_MAIL_IP: mailFormData.conf_MAIL_IP || '0',
-        conf_MAIL_HTML: mailFormData.conf_MAIL_HTML || '0',
-        conf_SMTP_SERVER: mailFormData.conf_SMTP_SERVER || '',
-        conf_SMTP_PORT: mailFormData.conf_SMTP_PORT || '',
-        conf_MAIL_SECURITY: mailFormData.conf_MAIL_SECURITY || 'STARTTLS',
-        conf_MAIL_USER: mailFormData.conf_MAIL_USER || '',
-        conf_MAIL_PASSWORD: mailFormData.conf_MAIL_PASSWORD ? btoa(mailFormData.conf_MAIL_PASSWORD) : '',
-        conf_MAIL_FROM: mailFormData.conf_MAIL_FROM || '',
-        conf_MAIL_TO: mailFormData.conf_MAIL_TO || '',
-        conf_MAIL_TIMEOUT_SEC: mailFormData.conf_MAIL_TIMEOUT_SEC || '30',
-      };
-      
-      await updateConfig(mailConfigToSave);
-      mailLastSavedConfig.current = JSON.stringify(mailFormData);
-      setMailIsSaved(true);
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
-    } catch (error) {
-      console.error('Failed to save mail settings:', error);
-      setMessage('Error saving mail settings');
-    }
-  };
-
   const handleTestMail = async () => {
     try {
       await api.post('/setup/test-mail');
@@ -398,40 +373,6 @@ function Connections() {
       console.error('Failed to send test mail:', error);
       const errorMessage = error.response?.data?.error || error.message || t('config.mail.testmail_error') || 'Failed to send test mail';
       setMessage(errorMessage);
-    }
-  };
-
-  const handleSaveRsync = async () => {
-    if (rsyncFormData.conf_RSYNC_PASSWORD && !validateRsyncPassword(rsyncFormData.conf_RSYNC_PASSWORD)) {
-      return;
-    }
-
-    // Clear any pending auto-save timeout
-    if (rsyncSaveTimeoutRef.current) {
-      clearTimeout(rsyncSaveTimeoutRef.current);
-      rsyncSaveTimeoutRef.current = null;
-    }
-
-    rsyncIsSaving.current = true;
-    setRsyncSaving(true);
-    try {
-      const rsyncConfigToSave = {
-        conf_RSYNC_SERVER: rsyncFormData.conf_RSYNC_SERVER || '',
-        conf_RSYNC_PORT: rsyncFormData.conf_RSYNC_PORT || '',
-        conf_RSYNC_USER: rsyncFormData.conf_RSYNC_USER || '',
-        conf_RSYNC_PASSWORD: rsyncFormData.conf_RSYNC_PASSWORD ? btoa(rsyncFormData.conf_RSYNC_PASSWORD) : '',
-        conf_RSYNC_SERVER_MODULE: rsyncFormData.conf_RSYNC_SERVER_MODULE || '',
-      };
-      await updateConfig(rsyncConfigToSave);
-      rsyncLastSavedConfig.current = JSON.stringify(rsyncFormData);
-      setRsyncIsSaved(true);
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
-    } catch (error) {
-      console.error('Failed to save rsync settings:', error);
-      setMessage('Error saving rsync settings');
-    } finally {
-      rsyncIsSaving.current = false;
-      setRsyncSaving(false);
     }
   };
 
@@ -445,7 +386,7 @@ function Connections() {
   }
 
   return (
-    <Box>
+    <Box sx={{ pb: 10 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={currentTab}
@@ -643,45 +584,12 @@ function Connections() {
                     </FormControl>
                   </Stack>
 
-                  <Stack 
-                    direction="row" 
-                    spacing={2} 
-                    sx={{ 
-                      mt: 4,
-                      ...(currentTab === 2 && {
-                        position: 'fixed',
-                        bottom: 0,
-                        left: { xs: 0, md: `${currentDrawerWidth}px` },
-                        right: 0,
-                        zIndex: 1000,
-                        p: 2,
-                        backgroundColor: 'background.paper',
-                        borderTop: 1,
-                        borderColor: 'divider',
-                        justifyContent: 'center',
-                        transition: (theme) =>
-                          theme.transitions.create('left', {
-                            easing: theme.transitions.easing.sharp,
-                            duration: theme.transitions.duration.enteringScreen,
-                          }),
-                      }),
-                    }}
-                  >
-                    <Button
-                      variant="contained"
-                      startIcon={<SaveIcon />}
-                      onClick={handleSaveMail}
-                      disabled={mailIsSaved}
-                      size={currentTab === 2 ? 'large' : 'medium'}
-                    >
-                      {t('config.save_button') || 'Save'}
-                    </Button>
+                  <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
                     <Button
                       variant="outlined"
                       startIcon={<EmailIcon />}
                       onClick={handleTestMail}
                       disabled={!areAllMailFieldsFilled()}
-                      size={currentTab === 2 ? 'large' : 'medium'}
                     >
                       {t('config.mail.testmail_header') || 'Send Test Mail'}
                     </Button>
@@ -719,13 +627,7 @@ function Connections() {
                 />
               </Stack>
               <Divider sx={{ mb: 3 }} />
-              <SocialMediaConfig
-                onSavedStateChange={(isSaved, handleSave) => {
-                  socialMediaConfigRef.current = { isSaved, handleSave };
-                }}
-                isSticky={currentTab === 1}
-                drawerWidth={currentDrawerWidth}
-              />
+              <SocialMediaConfig onSavedStateChange={handleSocialMediaState} onMessage={setMessage} />
       </TabPanel>
 
       {/* Cloud panel — was index 2, now 0; absorbs the rsync panel */}
@@ -790,13 +692,7 @@ function Connections() {
                   <Divider sx={{ mt: 3, mb: 3 }} />
                 </Box>
               )}
-              <CloudConfig
-                onSavedStateChange={(isSaved, handleSave) => {
-                  cloudConfigRef.current = { isSaved, handleSave };
-                }}
-                isSticky={currentTab === 0}
-                drawerWidth={currentDrawerWidth}
-              />
+              <CloudConfig onSavedStateChange={handleCloudConfigState} onMessage={setMessage} />
 
               <Divider sx={{ my: 4 }} />
 
@@ -877,40 +773,6 @@ function Connections() {
                       sx={{ maxWidth: 400 }}
                     />
 
-                    <Stack 
-                      direction="row" 
-                      spacing={2} 
-                      sx={{ 
-                        mt: 2,
-                        ...(currentTab === 0 && {
-                          position: 'fixed',
-                          bottom: 0,
-                          left: { xs: 0, md: `${currentDrawerWidth}px` },
-                          right: 0,
-                          zIndex: 1000,
-                          p: 2,
-                          backgroundColor: 'background.paper',
-                          borderTop: 1,
-                          borderColor: 'divider',
-                          justifyContent: 'center',
-                          transition: (theme) =>
-                            theme.transitions.create('left', {
-                              easing: theme.transitions.easing.sharp,
-                              duration: theme.transitions.duration.enteringScreen,
-                            }),
-                        }),
-                      }}
-                    >
-                      <Button
-                        variant="contained"
-                        startIcon={rsyncSaving ? <CircularProgress size={16} /> : <SaveIcon />}
-                        onClick={handleSaveRsync}
-                        disabled={rsyncIsSaved || rsyncSaving}
-                        size={currentTab === 0 ? 'large' : 'medium'}
-                      >
-                        {t('config.save_button') || 'Save'}
-                      </Button>
-                    </Stack>
               </Stack>
       </TabPanel>
 
@@ -928,6 +790,13 @@ function Connections() {
           {message}
         </Alert>
       </Snackbar>
+
+      <PageSaveBar
+        isDirty={isAnyDirty}
+        isSaving={isSaving}
+        onSave={handleSavePage}
+        drawerWidth={currentDrawerWidth}
+      />
     </Box>
   );
 }

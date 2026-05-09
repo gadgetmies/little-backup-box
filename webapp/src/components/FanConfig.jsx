@@ -1,51 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Box, Stack, TextField } from '@mui/material';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Box, Stack, TextField } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 
-function FanConfig() {
+function FanConfig({ onSavedStateChange }) {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
-  const [fanTempValue, setFanTempValue] = useState('');
-  const [fanGpioValue, setFanGpioValue] = useState('');
+  const [formData, setFormData] = useState({});
   const [fanTempError, setFanTempError] = useState('');
-  const [fanGpioError, setFanGpioError] = useState('');
+  const lastSavedConfig = useRef(null);
 
   useEffect(() => {
     if (!config) return;
-    if (fanTempValue === '') setFanTempValue(config.conf_FAN_PWM_TEMP_C ?? '');
-    if (fanGpioValue === '') setFanGpioValue(config.conf_FAN_PWM_GPIO ?? '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const initial = {
+      conf_FAN_PWM_TEMP_C: config.conf_FAN_PWM_TEMP_C ?? '',
+      conf_FAN_GPIO_PIN: config.conf_FAN_GPIO_PIN ?? '',
+    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData(initial);
+    lastSavedConfig.current = JSON.stringify(initial);
   }, [config]);
 
   const handleFanTempChange = (value) => {
-    setFanTempValue(value);
+    setFormData((prev) => ({ ...prev, conf_FAN_PWM_TEMP_C: value }));
     const num = Number(value);
     if (value !== '' && (isNaN(num) || num < 0 || num > 100)) {
       setFanTempError(t('hardware.fan_temp_out_of_range'));
-      return;
+    } else {
+      setFanTempError('');
     }
-    setFanTempError('');
-    updateConfig({ ...config, conf_FAN_PWM_TEMP_C: value }).catch((err) => {
-      const errMsg =
-        err?.response?.data?.error === 'GPIO pin already in use'
-          ? 'GPIO pin already in use'
-          : 'Error saving fan settings';
-      setFanTempError(errMsg);
-    });
   };
 
   const handleFanGpioChange = (value) => {
-    setFanGpioValue(value);
-    setFanGpioError('');
-    updateConfig({ ...config, conf_FAN_GPIO_PIN: value }).catch((err) => {
-      const errMsg =
-        err?.response?.data?.error === 'GPIO pin already in use'
-          ? 'GPIO pin already in use'
-          : 'Error saving fan settings';
-      setFanGpioError(errMsg);
-    });
+    setFormData((prev) => ({ ...prev, conf_FAN_GPIO_PIN: value }));
   };
+
+  const [saveCount, setSaveCount] = useState(0);
+  const handleSave = useCallback(async () => {
+    await updateConfig(formData);
+    lastSavedConfig.current = JSON.stringify(formData);
+    setSaveCount((c) => c + 1);
+  }, [formData, updateConfig]);
+
+  useEffect(() => {
+    if (Object.keys(formData).length === 0) return;
+    const formDataString = JSON.stringify(formData);
+    const isSaved = lastSavedConfig.current === formDataString;
+    if (onSavedStateChange) {
+      onSavedStateChange(isSaved, handleSave);
+    }
+  }, [formData, saveCount, onSavedStateChange, handleSave]);
 
   return (
     <Stack spacing={3}>
@@ -56,32 +60,21 @@ function FanConfig() {
           error={!!fanTempError}
           type="number"
           sx={{ maxWidth: 400 }}
-          value={fanTempValue}
+          value={formData.conf_FAN_PWM_TEMP_C ?? ''}
           onChange={(e) => handleFanTempChange(e.target.value)}
           inputProps={{ min: 0, max: 100 }}
         />
-        {fanTempError && (
-          <Alert severity="error" sx={{ mt: 1, maxWidth: 400 }}>
-            {fanTempError}
-          </Alert>
-        )}
       </Box>
       <Box>
         <TextField
           label={t('hardware.fan_gpio_pin')}
-          helperText={fanGpioError || t('hardware.fan_gpio_pin_help')}
-          error={!!fanGpioError}
+          helperText={t('hardware.fan_gpio_pin_help')}
           type="number"
           sx={{ maxWidth: 400 }}
-          value={fanGpioValue}
+          value={formData.conf_FAN_GPIO_PIN ?? ''}
           onChange={(e) => handleFanGpioChange(e.target.value)}
           inputProps={{ min: 2, max: 27 }}
         />
-        {fanGpioError && (
-          <Alert severity="error" sx={{ mt: 1, maxWidth: 400 }}>
-            {fanGpioError}
-          </Alert>
-        )}
       </Box>
     </Stack>
   );

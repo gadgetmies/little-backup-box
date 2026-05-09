@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -17,7 +17,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,12 +32,21 @@ const FALLBACK_ACTIONS = [
   'reboot',
 ];
 
-function ButtonHardwareConfig() {
+const DEFAULTS = {
+  conf_MENU_ENABLED: '0',
+  conf_MENU_BUTTON_ROTATE: '2',
+  conf_MENU_BUTTON_BOUNCETIME: '200',
+  conf_MENU_BUTTON_EDGE_DETECTION: 'RISING',
+  conf_MENU_BUTTON_RESISTOR_PULL: 'DOWN',
+  conf_MENU_BUTTON_COMBINATION: '[]',
+};
+
+function ButtonHardwareConfig({ onSavedStateChange }) {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
   const [actions, setActions] = useState(FALLBACK_ACTIONS);
-  const [localCombinations, setLocalCombinations] = useState(null);
-  const [message, setMessage] = useState('');
+  const [formData, setFormData] = useState({});
+  const lastSavedConfig = useRef(null);
 
   useEffect(() => {
     api
@@ -53,11 +61,20 @@ function ButtonHardwareConfig() {
       });
   }, []);
 
-  // Derive combinations from config unless the user has made local edits
-  const combinations = useMemo(() => {
-    if (localCombinations !== null) return localCombinations;
+  useEffect(() => {
+    if (config) {
+      const initial = Object.fromEntries(
+        Object.entries(DEFAULTS).map(([k, def]) => [k, config[k] ?? def]),
+      );
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData(initial);
+      lastSavedConfig.current = JSON.stringify(initial);
+    }
+  }, [config]);
+
+  const combinations = (() => {
     try {
-      const raw = config?.conf_MENU_BUTTON_COMBINATION;
+      const raw = formData.conf_MENU_BUTTON_COMBINATION;
       if (raw && typeof raw === 'string' && raw.startsWith('[')) {
         return JSON.parse(raw);
       }
@@ -65,54 +82,53 @@ function ButtonHardwareConfig() {
       // ignore parse errors
     }
     return [];
-  }, [config, localCombinations]);
+  })();
 
   const handleChange = (key, value) => {
-    updateConfig({ ...config, [key]: value }).catch((err) => {
-      console.error('Failed to save button config:', err);
-      setMessage('Error saving button settings');
-      setTimeout(() => setMessage(''), 3000);
-    });
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const saveCombinations = (newCombinations) => {
-    setLocalCombinations(newCombinations);
+  const setCombinations = (newCombinations) => {
     handleChange('conf_MENU_BUTTON_COMBINATION', JSON.stringify(newCombinations));
   };
 
   const handleAddRow = () => {
-    saveCombinations([...combinations, { buttons: '', action: '' }]);
+    setCombinations([...combinations, { buttons: '', action: '' }]);
   };
 
   const handleDeleteRow = (index) => {
-    const updated = combinations.filter((_, i) => i !== index);
-    saveCombinations(updated);
+    setCombinations(combinations.filter((_, i) => i !== index));
   };
 
   const handleRowChange = (index, field, value) => {
-    const updated = combinations.map((row, i) =>
-      i === index ? { ...row, [field]: value } : row,
+    setCombinations(
+      combinations.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
     );
-    saveCombinations(updated);
   };
+
+  const [saveCount, setSaveCount] = useState(0);
+  const handleSave = useCallback(async () => {
+    await updateConfig(formData);
+    lastSavedConfig.current = JSON.stringify(formData);
+    setSaveCount((c) => c + 1);
+  }, [formData, updateConfig]);
+
+  useEffect(() => {
+    if (Object.keys(formData).length === 0) return;
+    const formDataString = JSON.stringify(formData);
+    const isSaved = lastSavedConfig.current === formDataString;
+    if (onSavedStateChange) {
+      onSavedStateChange(isSaved, handleSave);
+    }
+  }, [formData, saveCount, onSavedStateChange, handleSave]);
 
   return (
     <Box>
-      {message && (
-        <Alert
-          severity={message.includes('Error') ? 'error' : 'success'}
-          sx={{ mb: 2 }}
-          onClose={() => setMessage('')}
-        >
-          {message}
-        </Alert>
-      )}
-
       <Stack spacing={3}>
         <FormControlLabel
           control={
             <Checkbox
-              checked={config?.conf_MENU_ENABLED === '1' || config?.conf_MENU_ENABLED === true}
+              checked={formData.conf_MENU_ENABLED === '1' || formData.conf_MENU_ENABLED === true}
               onChange={(e) => handleChange('conf_MENU_ENABLED', e.target.checked ? '1' : '0')}
             />
           }
@@ -122,7 +138,7 @@ function ButtonHardwareConfig() {
         <FormControl sx={{ maxWidth: 400 }}>
           <InputLabel>{t('hardware.button_rotation')}</InputLabel>
           <Select
-            value={config?.conf_MENU_BUTTON_ROTATE || '2'}
+            value={formData.conf_MENU_BUTTON_ROTATE || '2'}
             onChange={(e) => handleChange('conf_MENU_BUTTON_ROTATE', e.target.value)}
             label={t('hardware.button_rotation')}
           >
@@ -136,7 +152,7 @@ function ButtonHardwareConfig() {
           helperText="ms"
           type="number"
           sx={{ maxWidth: 400 }}
-          value={config?.conf_MENU_BUTTON_BOUNCETIME || '200'}
+          value={formData.conf_MENU_BUTTON_BOUNCETIME || '200'}
           onChange={(e) => handleChange('conf_MENU_BUTTON_BOUNCETIME', e.target.value)}
           inputProps={{ min: 0 }}
         />
@@ -144,7 +160,7 @@ function ButtonHardwareConfig() {
         <FormControl sx={{ maxWidth: 400 }}>
           <InputLabel>{t('hardware.button_edge')}</InputLabel>
           <Select
-            value={config?.conf_MENU_BUTTON_EDGE_DETECTION || 'RISING'}
+            value={formData.conf_MENU_BUTTON_EDGE_DETECTION || 'RISING'}
             onChange={(e) => handleChange('conf_MENU_BUTTON_EDGE_DETECTION', e.target.value)}
             label={t('hardware.button_edge')}
           >
@@ -157,7 +173,7 @@ function ButtonHardwareConfig() {
         <FormControl sx={{ maxWidth: 400 }}>
           <InputLabel>{t('hardware.button_pull')}</InputLabel>
           <Select
-            value={config?.conf_MENU_BUTTON_RESISTOR_PULL || 'DOWN'}
+            value={formData.conf_MENU_BUTTON_RESISTOR_PULL || 'DOWN'}
             onChange={(e) => handleChange('conf_MENU_BUTTON_RESISTOR_PULL', e.target.value)}
             label={t('hardware.button_pull')}
           >
