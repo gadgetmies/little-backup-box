@@ -440,7 +440,14 @@ function Network() {
   return (
     <Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="network configuration tabs">
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="network configuration tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab 
             label={t('network.wifi_config.title') || 'WiFi Configuration'} 
             id="network-tab-0"

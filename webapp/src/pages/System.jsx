@@ -98,7 +98,14 @@ function System() {
   return (
     <Box sx={{ pb: 10 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="system tabs">
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="system tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab label={t('system.tab.device') || 'Device'} id="system-tab-0" aria-controls="system-tabpanel-0" />
           <Tab label={t('system.tab.cameras') || 'Cameras'} id="system-tab-1" aria-controls="system-tabpanel-1" />
           <Tab label={t('system.tab.updates') || 'Updates'} id="system-tab-2" aria-controls="system-tabpanel-2" />

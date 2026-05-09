@@ -566,37 +566,23 @@ const baseAwareNotFoundPlugin = () => {
 
 export default defineConfig(() => {
   const basePath = process.env.VITE_BASE_PATH || '/';
+  const devPort = parseInt(process.env.VITE_DEV_PORT, 10) || 5173;
+  const apiTarget = `http://localhost:${parseInt(process.env.VITE_DEV_API_PORT, 10) || 3000}`;
 
   return {
     base: basePath,
     plugins: [react(), scrapeAssetsPlugin(), baseAwareNotFoundPlugin()],
     server: {
-      port: 5173,
+      port: devPort,
+      strictPort: Boolean(process.env.VITE_DEV_PORT),
+      host: process.env.VITE_DEV_HOST || 'localhost',
       proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/css': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/js': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/img': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/lang': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/favicon.ico': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
+        '/api': { target: apiTarget, changeOrigin: true },
+        '/css': { target: apiTarget, changeOrigin: true },
+        '/js': { target: apiTarget, changeOrigin: true },
+        '/img': { target: apiTarget, changeOrigin: true },
+        '/lang': { target: apiTarget, changeOrigin: true },
+        '/favicon.ico': { target: apiTarget, changeOrigin: true },
       },
     },
     build: {

@@ -489,7 +489,14 @@ function Storage() {
       )}
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="filesystem tabs">
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="filesystem tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab 
             label={t('sysinfo.info') || 'Info'} 
             id="lbb-tabs-storage-0"

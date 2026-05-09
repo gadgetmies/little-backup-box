@@ -447,7 +447,14 @@ function Connections() {
   return (
     <Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="connections tabs">
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="connections tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab
             label={t('integrations.tab.cloud') || 'Cloud'}
             id="integrations-tab-0"
