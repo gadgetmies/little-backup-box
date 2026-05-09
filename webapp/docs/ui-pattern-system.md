@@ -162,6 +162,37 @@ function ConnectionsPage() {
 }
 ```
 
+## Destructive action controls carry a leading warning icon
+
+Every control that performs a *destructive action* — an operation that cannot be undone with a follow-up click in the UI, such as formatting storage, repairing a filesystem (`fsck` repair), resetting WiFi to AP mode, deleting rejected images, stopping the LBB service, rebooting the device, or powering off the device — gets a leading `<WarningAmberIcon />` immediately to the left of its text label, in addition to whatever colour it already uses (typically `color="error"`).
+
+For MUI `<Button>`, pass the icon via `startIcon`:
+
+```jsx
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+
+<Button color="error" variant="contained" startIcon={<WarningAmberIcon />} onClick={handleFormat}>
+  {t('tools.format_b')}
+</Button>
+```
+
+For MUI `<MenuItem>` (no `startIcon` prop), wrap the existing label in a flex `<Box>` with the icon as the first child:
+
+```jsx
+<MenuItem onClick={handleShutdown}>
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <WarningAmberIcon fontSize="small" color="warning" />
+    {t('main.shutdown_button')}
+  </Box>
+</MenuItem>
+```
+
+The icon is decorative — keep MUI's default `aria-hidden`, don't pass `titleAccess`. The button's text label remains the accessible name.
+
+This rule covers per-control affordances only. Section-level cues — a `<WarningAmberIcon>` on an `AccordionSummary` introducing a destructive section, or a `<WarningIcon>` inside an `<Alert severity="warning">` banner — are independent of the per-button rule and stay as they are.
+
+A red Cancel button or a "stop a single in-flight backup" button is *not* destructive in this sense (the user can immediately restart the operation), and does not need the icon.
+
 ## Things that aren't sections
 
 These do **not** use `PageSection`:

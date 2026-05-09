@@ -27,6 +27,7 @@ import {
   Tab,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
@@ -950,6 +951,7 @@ function Storage() {
               color="error"
               onClick={handleFsckRepair}
               disabled={fsckPartition === '-'}
+              startIcon={<WarningAmberIcon />}
             >
               {t('tools.fsck_autorepair_b') || 'Repair'}
             </Button>
@@ -1016,6 +1018,7 @@ function Storage() {
               color="error"
               onClick={handleFormat}
               disabled={formatPartition === '-' || formatFstype === '-'}
+              startIcon={<WarningAmberIcon />}
             >
               {t('tools.format_b') || 'format disc!'}
             </Button>

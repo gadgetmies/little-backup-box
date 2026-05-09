@@ -34,6 +34,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
@@ -684,6 +685,7 @@ export default function View() {
             variant="outlined"
             color="error"
             disabled={isLoading}
+            startIcon={<WarningAmberIcon />}
             onClick={() => {
               setDeleteDialogError(null);
               setDeleteDialogWarning(null);
@@ -1041,6 +1043,7 @@ export default function View() {
             variant="contained"
             onClick={handleDeleteRejectedConfirm}
             disabled={isDeletingRejected}
+            startIcon={<WarningAmberIcon />}
           >
             {isDeletingRejected ? '…' : (t('view.delete_rejected_button') || 'Delete rejected')}
           </Button>

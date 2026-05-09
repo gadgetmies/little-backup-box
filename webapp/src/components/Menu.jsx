@@ -33,6 +33,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import LanguageIcon from '@mui/icons-material/Language';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import PaletteIcon from '@mui/icons-material/Palette';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -675,17 +676,26 @@ function Menu() {
               }}
             >
               <MenuItem onClick={handleStopLbb}>
-                {t('main.stop_lbb_button') || 'Stop LBB'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.stop_lbb_button') || 'Stop LBB'}
+                </Box>
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 {t('main.logout_button') || 'Logout'}
               </MenuItem>
               <Divider />
               <MenuItem onClick={handleReboot}>
-                {t('main.reboot_button') || 'Reboot'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.reboot_button') || 'Reboot'}
+                </Box>
               </MenuItem>
               <MenuItem onClick={handleShutdown}>
-                {t('main.shutdown_button') || 'Power off'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.shutdown_button') || 'Power off'}
+                </Box>
               </MenuItem>
             </MuiMenu>
             <Dialog

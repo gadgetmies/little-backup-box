@@ -668,6 +668,7 @@ function Network() {
             variant="outlined"
             onClick={() => setComitupDialogOpen(true)}
             disabled={comitupResetDone}
+            startIcon={<WarningAmberIcon />}
           >
             {t('network.wifi_reset_button')}
           </Button>
