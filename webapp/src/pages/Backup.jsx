@@ -7,9 +7,6 @@ import {
   Button,
   Grid,
   Alert,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Checkbox,
   Select,
   MenuItem,
@@ -24,7 +21,6 @@ import {
   ListSubheader,
   Snackbar,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -32,6 +28,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import LogMonitor from '../components/LogMonitor';
+import PageSection from '../components/PageSection';
+import SectionHeader from '../components/SectionHeader';
 
 function Backup() {
   const { t } = useLanguage();
@@ -84,31 +82,18 @@ function Backup() {
     conf_POWER_OFF: 'false',
     conf_MAIL_NOTIFICATIONS: '0',
   });
-  const [optionsAccordionExpanded, setOptionsAccordionExpanded] = useState(false);
-
   useEffect(() => {
-    // Load accordion state from localStorage
-    const savedState = localStorage.getItem('accordion-home-options');
-    if (savedState !== null) {
-      setOptionsAccordionExpanded(JSON.parse(savedState));
-    }
-    
     loadServices();
     loadPartitions();
     loadRunningBackups();
     loadBackupHistory();
-    
+
     const interval = setInterval(() => {
       loadRunningBackups();
     }, 2000);
-    
+
     return () => clearInterval(interval);
   }, []);
-
-  const handleOptionsAccordionChange = (event, isExpanded) => {
-    setOptionsAccordionExpanded(isExpanded);
-    localStorage.setItem('accordion-home-options', JSON.stringify(isExpanded));
-  };
 
   useEffect(() => {
     defaultBackupConfigRef.current = defaultBackupConfig;
@@ -428,13 +413,6 @@ function Backup() {
       )}
 
       <Box>
-        <Typography variant="h2" gutterBottom>
-          {(() => {
-            const translation = t('main.backup.configuration');
-            return translation !== 'main.backup.configuration' ? translation : 'Backup Configuration';
-          })()}
-        </Typography>
-        
         <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
@@ -585,25 +563,19 @@ function Backup() {
             </Grid>
           </Grid>
 
-          <Accordion 
+          <PageSection
+            variant="accordion"
+            title={(() => {
+              const translation = t('main.backup.options');
+              return translation !== 'main.backup.options' ? translation : 'Options';
+            })()}
+            localStorageKey="lbb-accordion-backup-options"
+            legacyLocalStorageKey="accordion-home-options"
             sx={{ mt: 3 }}
-            expanded={optionsAccordionExpanded}
-            onChange={handleOptionsAccordionChange}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
-                {(() => {
-                  const translation = t('main.backup.options');
-                  return translation !== 'main.backup.options' ? translation : 'Options';
-                })()}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
               <Stack spacing={3}>
                 <Box>
-                  <Typography variant="h3" gutterBottom>
-                    {t('main.backup.general')}
-                  </Typography>
+                  <SectionHeader level={3} title={t('main.backup.general')} sx={{ mb: 1 }} />
                   <Box sx={{ mt: 1 }}>
                     <FormControlLabel
                       control={
@@ -618,9 +590,7 @@ function Backup() {
                 </Box>
 
                 <Box>
-                  <Typography variant="h3" gutterBottom>
-                    {t('main.backup.primary')}
-                  </Typography>
+                  <SectionHeader level={3} title={t('main.backup.primary')} sx={{ mb: 1 }} />
                   <Stack spacing={1} sx={{ mt: 1 }}>
                     <FormControl sx={{ maxWidth: 400 }}>
                       <FormLabel>{t('config.backup.file_operation_label') || 'File operation'}</FormLabel>
@@ -686,9 +656,7 @@ function Backup() {
                 </Box>
 
                 <Box>
-                  <Typography variant="h3" gutterBottom>
-                    {t('main.backup.secondary')}
-                  </Typography>
+                  <SectionHeader level={3} title={t('main.backup.secondary')} sx={{ mb: 1 }} />
                   <Box sx={{ mt: 1 }}>
                     <FormControl sx={{ maxWidth: 400 }}>
                     <FormLabel>{t('main.backup.secondary_label')}</FormLabel>
@@ -753,9 +721,7 @@ function Backup() {
                 </Box>
 
                 <Box>
-                  <Typography variant="h3" gutterBottom>
-                    {t('config.mail.section') || 'Email'}
-                  </Typography>
+                  <SectionHeader level={3} title={t('config.mail.section') || 'Email'} sx={{ mb: 1 }} />
                   <Box sx={{ mt: 1 }}>
                     {hasMissingEmailServerConfig() && (
                     <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>
@@ -784,8 +750,7 @@ function Backup() {
                   {t('main.backup.save_as_defaults') || 'Save as defaults'}
                 </Button>
               </Box>
-            </AccordionDetails>
-          </Accordion>
+          </PageSection>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
             <Button
@@ -802,9 +767,7 @@ function Backup() {
 
           {backupHistory.length > 0 && (
             <Box sx={{ mt: 3 }}>
-              <Typography variant="h2" gutterBottom>
-                {t('main.backup.previous_runs') || 'Previous Backup Runs'}
-              </Typography>
+              <SectionHeader level={2} title={t('main.backup.previous_runs') || 'Previous Backup Runs'} sx={{ mb: 2 }} />
               <List>
                 {backupHistory.map((backup, index) => (
                   <ListItem
@@ -898,9 +861,7 @@ function Backup() {
 
       {runningBackups.length > 0 && (
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h2" gutterBottom>
-            {t('main.backup.running') || 'Running Backups'}
-          </Typography>
+          <SectionHeader level={2} title={t('main.backup.running') || 'Running Backups'} sx={{ mb: 2 }} />
           <Box sx={{ mt: 2 }}>
             <List>
               {runningBackups.map((backup) => (
@@ -950,7 +911,15 @@ function Backup() {
           </Box>
         </Box>
       )}
-      <LogMonitor />
+      <Box sx={{ mt: 4 }}>
+        <PageSection
+          variant="accordion"
+          title={t('main.backup.logs') || 'Backup logs'}
+          localStorageKey="lbb-accordion-backup-logs"
+        >
+          <LogMonitor />
+        </PageSection>
+      </Box>
 
       <Snackbar
         open={!!toastMessage}

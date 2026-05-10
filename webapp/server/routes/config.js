@@ -15,11 +15,17 @@ router.get('/', (req, res) => {
   }
 });
 
+router.get('/button-actions', (req, res) => {
+  res.json({
+    actions: ['backup_start', 'backup_stop', 'view_next', 'view_prev', 'shutdown', 'reboot'],
+  });
+});
+
 router.post('/save', async (req, res) => {
   try {
     const configPath = path.join(req.WORKING_DIR, 'config.cfg');
     const currentConfig = parse(readFileSync(configPath, 'utf-8'));
-    
+
     Object.keys(req.body).forEach((key) => {
       if (key.startsWith('conf_')) {
         currentConfig[key] = req.body[key];
@@ -27,7 +33,15 @@ router.post('/save', async (req, res) => {
     });
 
     writeFileSync(configPath, stringify(currentConfig), 'utf-8');
-    
+
+    if (req.body.conf_timezone) {
+      try {
+        await execCommand(`timedatectl set-timezone ${req.body.conf_timezone}`, req.logger);
+      } catch (tzError) {
+        req.logger.warn('Failed to set timezone via timedatectl', { error: tzError.message });
+      }
+    }
+
     req.logger.info('Config saved');
     res.json({ success: true });
   } catch (error) {

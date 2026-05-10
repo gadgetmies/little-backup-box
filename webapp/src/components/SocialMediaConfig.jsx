@@ -29,12 +29,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 
-function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) {
+function SocialMediaConfig({ onSavedStateChange, onMessage }) {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
   const [formData, setFormData] = useState({});
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const setMessage = (m) => {
+    if (m && onMessage) onMessage(m);
+  };
   const [telegramDialogOpen, setTelegramDialogOpen] = useState(false);
   const [matrixDialogOpen, setMatrixDialogOpen] = useState(false);
   const [telegramChats, setTelegramChats] = useState([]);
@@ -88,22 +90,16 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
   }, [config]);
 
   const handleSave = useCallback(async () => {
-    try {
-      const configToSave = {
-        ...formData,
-        conf_SOCIAL_BLUESKY_APP_PASSWORD: formData.conf_SOCIAL_BLUESKY_APP_PASSWORD ? btoa(formData.conf_SOCIAL_BLUESKY_APP_PASSWORD) : '',
-      };
-      await updateConfig(configToSave);
-      lastSavedConfig.current = JSON.stringify(formData);
-      if (onSavedStateChange) {
-        onSavedStateChange(true, handleSave);
-      }
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
-    } catch (error) {
-      console.error('Failed to save social media settings:', error);
-      setMessage('Error saving social media settings');
+    const configToSave = {
+      ...formData,
+      conf_SOCIAL_BLUESKY_APP_PASSWORD: formData.conf_SOCIAL_BLUESKY_APP_PASSWORD ? btoa(formData.conf_SOCIAL_BLUESKY_APP_PASSWORD) : '',
+    };
+    await updateConfig(configToSave);
+    lastSavedConfig.current = JSON.stringify(formData);
+    if (onSavedStateChange) {
+      onSavedStateChange(true, handleSave);
     }
-  }, [formData, updateConfig, t, onSavedStateChange]);
+  }, [formData, updateConfig, onSavedStateChange]);
 
   // Track saved state
   useEffect(() => {
@@ -260,7 +256,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
 
   return (
     <>
-      <Stack spacing={3} sx={{ pb: isSticky ? 10 : 0 }}>
+      <Stack spacing={3}>
         <Typography variant="h2">
           {t('config.social.general.header') || 'General Settings'}
         </Typography>
@@ -292,7 +288,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
             onChange={(event, isExpanded) => handleAccordionChange('telegram', isExpanded)}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
+              <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
                 {t('config.social.telegram.header') || 'Telegram'}
               </Typography>
             </AccordionSummary>
@@ -339,7 +335,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('mastodon', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.mastodon.header') || 'Mastodon'}
             </Typography>
           </AccordionSummary>
@@ -376,7 +372,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('bluesky', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.bluesky.header') || 'Bluesky'}
             </Typography>
           </AccordionSummary>
@@ -420,7 +416,7 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
           onChange={(event, isExpanded) => handleAccordionChange('matrix', isExpanded)}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
               {t('config.social.matrix.header') || 'Matrix'}
             </Typography>
           </AccordionSummary>
@@ -467,42 +463,6 @@ function SocialMediaConfig({ onSavedStateChange, isSticky = false, drawerWidth =
             </Stack>
           </AccordionDetails>
         </Accordion>
-        </Box>
-
-        <Box
-          sx={{
-            ...(isSticky && {
-              position: 'fixed',
-              bottom: 0,
-              left: { md: `${drawerWidth}px` },
-              right: 0,
-              zIndex: 1000,
-              p: 2,
-              backgroundColor: 'background.paper',
-              borderTop: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              justifyContent: 'center',
-              transition: (theme) =>
-                theme.transitions.create('left', {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.enteringScreen,
-                }),
-            }),
-          }}
-        >
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={handleSave}
-            disabled={lastSavedConfig.current === JSON.stringify(formData)}
-            sx={{ 
-              alignSelf: 'flex-start',
-            }}
-            size={isSticky ? 'large' : 'medium'}
-          >
-            {t('config.save_button') || 'Save'}
-          </Button>
         </Box>
       </Stack>
 

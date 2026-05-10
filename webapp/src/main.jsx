@@ -12,7 +12,7 @@ import './index.css';
 function Root() {
   const [themeMode, setThemeMode] = React.useState(() => {
     const savedTheme = localStorage.getItem('lbb-theme');
-    if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark') {
+    if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'sepia') {
       return savedTheme;
     }
     return 'system';
@@ -24,7 +24,7 @@ function Root() {
     const handleStorageChange = (e) => {
       if (e.key === 'lbb-theme') {
         const newTheme = e.newValue;
-        if (newTheme === 'system' || newTheme === 'light' || newTheme === 'dark') {
+        if (newTheme === 'system' || newTheme === 'light' || newTheme === 'dark' || newTheme === 'sepia') {
           setThemeMode(newTheme);
         }
       }
@@ -37,7 +37,7 @@ function Root() {
   React.useEffect(() => {
     const handleCustomStorageChange = () => {
       const savedTheme = localStorage.getItem('lbb-theme');
-      if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark') {
+      if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'sepia') {
         setThemeMode(savedTheme);
       }
     };
@@ -85,7 +85,7 @@ function ThemeSync({ setThemeMode }) {
     
     if (!savedTheme && config?.conf_THEME) {
       const configTheme = config.conf_THEME;
-      if (configTheme === 'system' || configTheme === 'light' || configTheme === 'dark') {
+      if (configTheme === 'system' || configTheme === 'light' || configTheme === 'dark' || configTheme === 'sepia') {
         setThemeMode(configTheme);
         localStorage.setItem('lbb-theme', configTheme);
       }
@@ -101,7 +101,10 @@ function ThemeSync({ setThemeMode }) {
   return null;
 }
 
-const basename = import.meta.env.BASE_URL || '/';
+// React Router expects basename without a trailing slash. Vite's BASE_URL
+// always ends in '/', so strip it (but keep '/' for root-served deploys).
+const rawBase = import.meta.env.BASE_URL || '/';
+const basename = rawBase.length > 1 && rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

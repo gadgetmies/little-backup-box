@@ -2,13 +2,16 @@ import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Backup from './pages/Backup';
-import UserInterface from './pages/UserInterface';
-import Filesystem from './pages/Filesystem';
+import Preferences from './pages/Preferences';
+import Storage from './pages/Storage';
 import System from './pages/System';
 import Maintenance from './pages/Maintenance';
-import ServiceConnections from './pages/ServiceConnections';
+import Connections from './pages/Connections';
 import Network from './pages/Network';
+import Hardware from './pages/Hardware';
 import ScrapedUI from './pages/ScrapedUI';
+import MockControls from './components/MockControls';
+import View from './pages/View';
 
 function RedirectHandler() {
   const navigate = useNavigate();
@@ -29,22 +32,25 @@ function RedirectHandler() {
 
 function App() {
   return (
-    <Layout>
-      <RedirectHandler />
-      <Routes>
-        <Route path="/" element={<Backup />} />
-        <Route path="/setup" element={<UserInterface />} />
-        <Route path="/tools" element={<Filesystem />} />
-        <Route path="/sysinfo" element={<System />} />
-        <Route path="/network" element={<Network />} />
-        <Route path="/maintenance" element={<Maintenance />} />
-        <Route path="/integrations" element={<ServiceConnections />} />
-        <Route path="/scrape" element={<ScrapedUI />} />
-      </Routes>
-    </Layout>
+    <>
+      <Layout>
+        <RedirectHandler />
+        <Routes>
+          <Route path="/" element={<Backup />} />
+          <Route path="/view" element={<View />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/integrations" element={<Connections />} />
+          <Route path="/hardware" element={<Hardware />} />
+          <Route path="/storage" element={<Storage />} />
+          <Route path="/network" element={<Network />} />
+          <Route path="/system" element={<System />} />
+          <Route path="/preferences" element={<Preferences />} />
+          <Route path="/scrape" element={<ScrapedUI />} />
+        </Routes>
+      </Layout>
+      <MockControls />
+    </>
   );
 }
 
 export default App;
-
-

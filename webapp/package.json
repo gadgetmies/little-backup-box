@@ -14,6 +14,7 @@
     "start": "node server/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "check:i18n": "node scripts/check-i18n-parity.mjs",
     "lint:frontend": "eslint src",
     "lint:backend": "eslint server",
     "test:e2e": "playwright test",

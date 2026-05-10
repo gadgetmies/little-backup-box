@@ -542,39 +542,47 @@ const scrapeAssetsPlugin = () => {
   };
 };
 
+// Bakes the deployed base path into public/404.html so the SPA-on-GitHub-Pages
+// redirect knows where the app's index.html actually lives. Without this, a PR
+// preview at /repo/pr-N/ would fall back to /repo/index.html and trigger a
+// path-doubling redirect loop on every refresh.
+const baseAwareNotFoundPlugin = () => {
+  let baseValue = '/';
+  return {
+    name: 'base-aware-404-plugin',
+    configResolved(config) {
+      baseValue = ensureTrailingSlash(config.base || '/');
+    },
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist');
+      const targetFile = path.join(outDir, '404.html');
+      if (!fs.existsSync(targetFile)) return;
+      const content = fs.readFileSync(targetFile, 'utf-8');
+      const replaced = content.replace(/__BASE_PATH__/g, baseValue);
+      fs.writeFileSync(targetFile, replaced, 'utf-8');
+    },
+  };
+};
+
 export default defineConfig(() => {
   const basePath = process.env.VITE_BASE_PATH || '/';
+  const devPort = parseInt(process.env.VITE_DEV_PORT, 10) || 5173;
+  const apiTarget = `http://localhost:${parseInt(process.env.VITE_DEV_API_PORT, 10) || 3000}`;
 
   return {
     base: basePath,
-    plugins: [react(), scrapeAssetsPlugin()],
+    plugins: [react(), scrapeAssetsPlugin(), baseAwareNotFoundPlugin()],
     server: {
-      port: 5173,
+      port: devPort,
+      strictPort: Boolean(process.env.VITE_DEV_PORT),
+      host: process.env.VITE_DEV_HOST || 'localhost',
       proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/css': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/js': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/img': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/lang': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/favicon.ico': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
+        '/api': { target: apiTarget, changeOrigin: true },
+        '/css': { target: apiTarget, changeOrigin: true },
+        '/js': { target: apiTarget, changeOrigin: true },
+        '/img': { target: apiTarget, changeOrigin: true },
+        '/lang': { target: apiTarget, changeOrigin: true },
+        '/favicon.ico': { target: apiTarget, changeOrigin: true },
       },
     },
     build: {

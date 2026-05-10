@@ -17,18 +17,16 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 
-function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) {
+function CloudConfig({ onSavedStateChange, onMessage }) {
   const { t } = useLanguage();
   const { config, updateConfig, constants } = useConfig();
   const [cloudServices, setCloudServices] = useState([]);
   const [formData, setFormData] = useState({});
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const lastSavedConfig = useRef(null);
 
@@ -49,32 +47,26 @@ function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) 
   };
 
   const handleSave = useCallback(async () => {
-    try {
-      const basedirsArray = Object.entries(formData.basedirs || {})
-        .filter(([_, value]) => value)
-        .map(([service, basedir]) => `${service}|=|${basedir}`);
-      const syncMethodsArray = Object.entries(formData.syncMethods || {})
-        .map(([service, method]) => `${service}|=|${method || 'rclone'}`);
-      const filesStayInPlaceArray = Object.entries(formData.filesStayInPlace || {})
-        .map(([service, value]) => `${service}|=|${value ? 'true' : 'false'}`);
+    const basedirsArray = Object.entries(formData.basedirs || {})
+      .filter(([_, value]) => value)
+      .map(([service, basedir]) => `${service}|=|${basedir}`);
+    const syncMethodsArray = Object.entries(formData.syncMethods || {})
+      .map(([service, method]) => `${service}|=|${method || 'rclone'}`);
+    const filesStayInPlaceArray = Object.entries(formData.filesStayInPlace || {})
+      .map(([service, value]) => `${service}|=|${value ? 'true' : 'false'}`);
 
-      const configToSave = {
-        conf_BACKUP_CLOUDS_TARGET_BASEDIR: basedirsArray.join('|;|'),
-        conf_BACKUP_SYNC_METHOD_CLOUDS: syncMethodsArray.join('|;|'),
-        conf_BACKUP_CLOUDS_TARGET_FILES_STAY_IN_PLACE: filesStayInPlaceArray.join('|;|'),
-      };
+    const configToSave = {
+      conf_BACKUP_CLOUDS_TARGET_BASEDIR: basedirsArray.join('|;|'),
+      conf_BACKUP_SYNC_METHOD_CLOUDS: syncMethodsArray.join('|;|'),
+      conf_BACKUP_CLOUDS_TARGET_FILES_STAY_IN_PLACE: filesStayInPlaceArray.join('|;|'),
+    };
 
-      await updateConfig(configToSave);
-      lastSavedConfig.current = JSON.stringify(formData);
-      if (onSavedStateChange) {
-        onSavedStateChange(true, handleSave);
-      }
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
-    } catch (error) {
-      console.error('Failed to save cloud settings:', error);
-      setMessage('Error saving cloud settings');
+    await updateConfig(configToSave);
+    lastSavedConfig.current = JSON.stringify(formData);
+    if (onSavedStateChange) {
+      onSavedStateChange(true, handleSave);
     }
-  }, [formData, updateConfig, t, onSavedStateChange]);
+  }, [formData, updateConfig, onSavedStateChange]);
 
   const loadFormData = useCallback(() => {
     const basedirsRaw = (config.conf_BACKUP_CLOUDS_TARGET_BASEDIR || '').split('|;|');
@@ -146,9 +138,9 @@ function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) 
     setLoading(true);
     try {
       await api.post('/cloud/rclone-gui/restart');
-      setMessage(t('config.cloud.rclone.gui.restarted') || 'Rclone GUI restarted');
+      onMessage?.(t('config.cloud.rclone.gui.restarted') || 'Rclone GUI restarted');
     } catch (error) {
-      setMessage('Error restarting rclone GUI');
+      onMessage?.('Error restarting rclone GUI');
     } finally {
       setLoading(false);
     }
@@ -163,7 +155,7 @@ function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) 
   }
 
   return (
-    <Stack spacing={3} sx={{ pb: isSticky ? 10 : 0 }}>
+    <Stack spacing={3}>
           {cloudServices.length === 0 && (
             <Alert severity="info">
               {t('integrations.cloud_services.no_services') || 'No cloud services configured. Please configure rclone first.'}
@@ -295,42 +287,6 @@ function CloudConfig({ onSavedStateChange, isSticky = false, drawerWidth = 0 }) 
           >
             {t('config.cloud.rclone.gui.restart_label') || 'Update and restart rclone GUI'}
           </Button>
-
-          <Box
-            sx={{
-              ...(isSticky && {
-                position: 'fixed',
-                bottom: 0,
-                left: { md: `${drawerWidth}px` },
-                right: 0,
-                zIndex: 1000,
-                p: 2,
-                backgroundColor: 'background.paper',
-                borderTop: 1,
-                borderColor: 'divider',
-                display: 'flex',
-                justifyContent: 'center',
-                transition: (theme) =>
-                  theme.transitions.create('left', {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.enteringScreen,
-                  }),
-              }),
-            }}
-          >
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSave}
-              disabled={cloudServices.length === 0 || lastSavedConfig.current === JSON.stringify(formData)}
-              sx={{ 
-                alignSelf: 'flex-start',
-              }}
-              size={isSticky ? 'large' : 'medium'}
-            >
-              {t('config.save_button') || 'Save'}
-            </Button>
-          </Box>
         </Stack>
   );
 }

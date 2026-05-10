@@ -58,7 +58,7 @@ function LogMonitor() {
     <Card sx={{ mt: 3, mb: 2 }}>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
+          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
             {t('log.logmonitor')}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">

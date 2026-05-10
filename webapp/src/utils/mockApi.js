@@ -1,3 +1,5 @@
+import { getActiveMockSettings } from './mockFailures.js';
+
 let runningBackups = [];
 let backupHistory = [];
 
@@ -39,6 +41,9 @@ const mockData = {
     conf_POWER_OFF: 'false',
     conf_TIME_ZONE: 'UTC',
     conf_WIFI_COUNTRY: 'US',
+    conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
+    conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
+    conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
   },
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
@@ -97,25 +102,134 @@ const mockData = {
   },
   displayStatus: {
     status: 'Ready',
+    severity: 'ready',
   },
   log: '',
   viewImages: {
-    images: [],
-    count: 0,
+    images: [
+      {
+        ID: 1,
+        File_Name: 'IMG_001.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-01',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: -1,
+        comment: 'Blurry shot',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
+      },
+      {
+        ID: 2,
+        File_Name: 'IMG_002.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-05',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 0,
+        comment: '',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
+      },
+      {
+        ID: 3,
+        File_Name: 'IMG_003.jpg',
+        Directory: '2024/01',
+        Create_Date: '2024-01-10',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 3,
+        comment: 'Nice composition',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'JPEG',
+        publish_telegram: true,
+        publish_mastodon: false,
+      },
+      {
+        ID: 4,
+        File_Name: 'IMG_004.RAF',
+        Directory: '2024/01',
+        Create_Date: '2024-01-15',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 5,
+        comment: 'Best shot of the day',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'RAF',
+        publish_telegram: false,
+        publish_mastodon: true,
+      },
+      {
+        ID: 5,
+        File_Name: 'IMG_005.jpg',
+        Directory: '2024/02',
+        Create_Date: '2024-02-01',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: 1,
+        comment: '',
+        Camera_Model_Name: 'Canon EOS R5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
+      },
+      {
+        ID: 6,
+        File_Name: 'IMG_006.jpg',
+        Directory: '2024/02',
+        Create_Date: '2024-02-05',
+        thumbnail_path: '/img/unknown.JPG',
+        rating: -1,
+        comment: 'Out of focus',
+        Camera_Model_Name: 'Fujifilm X-T5',
+        File_Type: 'JPEG',
+        publish_telegram: false,
+        publish_mastodon: false,
+      },
+    ],
+    count: 6,
   },
   viewStats: {
-    imagesAll: 0,
-    directories: [],
-    ratings: [],
-    dates: [],
-    fileTypes: [],
-    fileTypeExtensions: [],
-    cameraModelNames: [],
+    imagesAll: 4,
+    directories: ['2024/01', '2024/02'],
+    ratings: [
+      { LbbRating: -1, count: 1 },
+      { LbbRating: 0, count: 1 },
+      { LbbRating: 3, count: 1 },
+      { LbbRating: 5, count: 1 },
+    ],
+    dates: ['2024-01-15', '2024-01-16', '2024-02-10', '2024-02-11'],
+    fileTypes: ['JPEG', 'RAF'],
+    fileTypeExtensions: ['jpg', 'RAF'],
+    cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5'],
   },
 };
 
 function delay(ms = 100) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function resolveDisplayStatus() {
+  // Reads MockControls' display-status setting from localStorage. Mirrors the
+  // backend severity rule (ready when status is empty or === "Ready", else info).
+  let mode = 'ready';
+  let custom = '';
+  try {
+    const raw = typeof window !== 'undefined' && window.localStorage.getItem('lbb-mock-controls');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const ds = parsed && parsed.displayStatus;
+      if (ds && ['ready', 'info', 'custom'].includes(ds.mode)) mode = ds.mode;
+      if (ds && typeof ds.custom === 'string') custom = ds.custom;
+    }
+  } catch {
+    // localStorage unavailable or malformed; fall through to defaults.
+  }
+  let status;
+  if (mode === 'ready') status = 'Ready';
+  else if (mode === 'info') status = 'Working';
+  else status = (custom || '').trim();
+  const severity = status === '' || status === 'Ready' ? 'ready' : 'info';
+  return { status, severity };
 }
 
 function generateBackupId() {
@@ -126,8 +240,11 @@ export function createMockApiInterceptor() {
   return async (config) => {
     const url = config.url || '';
     const method = config.method?.toLowerCase() || 'get';
-    
-    await delay(50);
+
+    // Apply configurable delay and failure mode from MockControls
+    const mockSettings = getActiveMockSettings();
+    const totalDelay = 50 + (mockSettings.delay || 0);
+    await delay(totalDelay);
     
     if (url === '/backup/services') {
       return { data: mockData.services };
@@ -209,15 +326,57 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/backup/function' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'disk_full') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Not enough disk space' } },
+        });
+      }
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Database is locked' } },
+        });
+      }
+      if (failureMode === 'permission_denied') {
+        return Promise.reject({
+          response: { status: 500, data: { error: 'Permission denied' } },
+        });
+      }
+      if (failureMode === 'partial_failure') {
+        return { data: { success: true, warnings: ['Some files could not be processed'] } };
+      }
       return { data: { success: true, message: 'Backup function initiated (mock)' } };
     }
     
+    if (url === '/config/button-actions') {
+      return {
+        data: {
+          actions: ['backup_start', 'backup_stop', 'view_next', 'view_prev', 'shutdown', 'reboot'],
+        },
+      };
+    }
+
     if (url === '/config' || url === '/config/') {
       return { data: { config: mockData.config, constants: mockData.constants } };
     }
     
     if (url === '/config/save' && method === 'post') {
-      Object.assign(mockData.config, config.data);
+      const saveData = config.data || {};
+      const saveFailureMode = mockSettings.failureMode;
+      if (saveFailureMode === 'invalid_timezone' && saveData.conf_timezone !== undefined) {
+        return Promise.reject({
+          response: { status: 400, data: { error: 'Unknown timezone identifier' } },
+        });
+      }
+      if (
+        saveFailureMode === 'gpio_conflict' &&
+        ('conf_MENU_BUTTON_COMBINATION' in saveData || 'conf_FAN_GPIO_PIN' in saveData)
+      ) {
+        return Promise.reject({
+          response: { status: 422, data: { error: 'GPIO pin already in use' } },
+        });
+      }
+      Object.assign(mockData.config, saveData);
       return { data: { success: true } };
     }
     
@@ -293,6 +452,11 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/update/install' && method === 'post') {
+      const body = config.data || {};
+      if (body.branch === 'development') {
+        await delay(2000);
+        return { data: { success: true, message: 'Development update installation started (mock)' } };
+      }
       return { data: { success: true, message: 'Update installation started (mock)' } };
     }
     
@@ -309,28 +473,243 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'Settings uploaded (mock)' } };
     }
     
+    if (url === '/view/image') {
+      const params = config.params || {};
+      if (params.id === 'missing') {
+        return Promise.reject({
+          response: {
+            status: 404,
+            data: { error: 'file_missing' },
+          },
+        });
+      }
+      return {
+        data: { url: `https://placehold.co/800x600/333/fff?text=Full+Resolution+${params.id || ''}` },
+      };
+    }
+
     if (url === '/view/init') {
       return { data: { success: true } };
     }
-    
-    if (url === '/view/images') {
-      return { data: mockData.viewImages };
+
+    if (url === '/view/media') {
+      if (mockSettings.failureMode === 'not_mounted') {
+        return Promise.reject({
+          response: { status: 503, data: { error: 'not_mounted' } },
+        });
+      }
+      return {
+        data: {
+          media: ['usb', 'nvme', 'internal'],
+          available: { usb: true, nvme: false, internal: true },
+        },
+      };
     }
-    
+
+    if (url === '/view/images') {
+      if (mockSettings.failureMode === 'not_mounted') {
+        return Promise.reject({
+          response: { status: 503, data: { error: 'not_mounted' } },
+        });
+      }
+
+      const params = config.params || {};
+      const medium = params.medium;
+
+      // Legacy storagePath-based mock
+      if (!medium) {
+        return { data: mockData.viewImages };
+      }
+
+      if (mockSettings.failureMode === 'no_results') {
+        return { data: { images: [], total: 0, dbExists: true } };
+      }
+      if (mockSettings.failureMode === 'db_not_initialised') {
+        return { data: { images: [], total: 0, dbExists: false } };
+      }
+
+      const TOTAL = 120;
+      const page = parseInt(params.page || '1', 10);
+      const perPage = parseInt(params.per_page || '25', 10);
+      const cameras = ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'];
+      const fileTypes = ['JPEG', 'RAF', 'NEF', 'MP4'];
+      const fileExtensions = ['JPG', 'RAF', 'NEF', 'MP4'];
+      const directories = ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'];
+      // Mirrors webapp/server/utils/socialServiceBits.js. Keep in sync.
+      const SOCIAL_BITS = { telegram: 0, mastodon: 1, bluesky: 2, matrix: 3 };
+      const SERVICE_NAMES = Object.keys(SOCIAL_BITS);
+
+      let allImages = [];
+      for (let i = 0; i < TOTAL; i++) {
+        const id = i + 1;
+        const ftIdx = i % fileTypes.length;
+        const ext = fileExtensions[ftIdx];
+        const filename = `IMG_${String(id).padStart(4, '0')}.${ext}`;
+        const dir = directories[i % directories.length];
+        const publishService = i % 3 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
+        const publishedService = i % 7 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
+        allImages.push({
+          ID: id,
+          File_Name: filename,
+          Directory: dir,
+          Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+          thumbnail_path: `/thumbnails/${medium}/${filename}`,
+          rating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
+          LbbRating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
+          comment: '',
+          Camera_Model_Name: cameras[i % cameras.length],
+          File_Type: fileTypes[ftIdx],
+          File_Type_Extension: ext,
+          social_publish: publishService ? 1 << SOCIAL_BITS[publishService] : 0,
+          social_published: publishedService ? 1 << SOCIAL_BITS[publishedService] : 0,
+        });
+      }
+
+      // Apply filters — mirrors the SQL builder in webapp/server/routes/view.js.
+      if (params.rating) {
+        const ratingValues = params.rating.split(',').map((r) => parseInt(r, 10));
+        allImages = allImages.filter((img) => ratingValues.includes(img.LbbRating));
+      }
+      if (params.date_from) allImages = allImages.filter((img) => img.Create_Date >= params.date_from);
+      if (params.date_to) allImages = allImages.filter((img) => img.Create_Date <= params.date_to);
+      if (params.filename) {
+        const fn = params.filename.toLowerCase();
+        allImages = allImages.filter((img) => img.File_Name.toLowerCase().includes(fn));
+      }
+      if (params.camera) allImages = allImages.filter((img) => img.Camera_Model_Name === params.camera);
+      if (params.file_type) {
+        const ftValues = params.file_type.split(',').map((f) => f.trim());
+        allImages = allImages.filter((img) => ftValues.includes(img.File_Type));
+      }
+      if (params.directory) {
+        allImages = allImages.filter((img) => img.Directory === params.directory);
+      }
+      if (params.extension) {
+        const extValues = params.extension.split(',').map((e) => e.trim());
+        allImages = allImages.filter((img) => extValues.includes(img.File_Type_Extension));
+      }
+      if (params.social_publish) {
+        const masks = params.social_publish.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
+        allImages = allImages.filter((img) => masks.some((m) => (img.social_publish & m) !== 0));
+      }
+      if (params.social_published) {
+        const masks = params.social_published.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
+        allImages = allImages.filter((img) => masks.some((m) => (img.social_published & m) !== 0));
+      }
+
+      const total = allImages.length;
+      const start = (page - 1) * perPage;
+      const images = allImages.slice(start, start + perPage);
+
+      return { data: { images, total, dbExists: true } };
+    }
+
+
     if (url === '/view/stats') {
-      return { data: mockData.viewStats };
+      const params = config.params || {};
+      const medium = params.medium;
+      // Legacy storagePath-based callers get the static fixture.
+      if (!medium) {
+        return { data: mockData.viewStats };
+      }
+      // Counts that mirror the medium-based generator above (TOTAL=120, every
+      // 3rd marked-for-publish, every 7th already-published, rotating service).
+      const SERVICE_NAMES = ['telegram', 'mastodon', 'bluesky', 'matrix'];
+      const buildCounts = (modulo) => {
+        const counts = Object.fromEntries(SERVICE_NAMES.map((s) => [s, 0]));
+        for (let i = 0; i < 120; i++) {
+          if (i % modulo === 0) counts[SERVICE_NAMES[i % SERVICE_NAMES.length]] += 1;
+        }
+        return SERVICE_NAMES.map((service) => ({ service, count: counts[service] }));
+      };
+      return {
+        data: {
+          ...mockData.viewStats,
+          directories: ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'],
+          fileTypes: ['JPEG', 'RAF', 'NEF', 'MP4'],
+          fileTypeExtensions: ['JPG', 'RAF', 'NEF', 'MP4'],
+          cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'],
+          socialPublishPending: buildCounts(3),
+          socialPublished: buildCounts(7),
+        },
+      };
+    }
+
+    if (url === '/social/publish' && method === 'post') {
+      const { platforms } = config.data || {};
+      const results = {};
+      if (Array.isArray(platforms)) {
+        platforms.forEach((p) => {
+          results[p] = true;
+        });
+      }
+      return { data: { success: true, results } };
     }
     
     if (url === '/view/update-metadata' && method === 'post') {
       return { data: { success: true } };
     }
-    
+
     if (url === '/view/delete-image' && method === 'post') {
       return { data: { success: true } };
     }
+
+    if (url === '/view/rating' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'DB locked by another process' },
+          },
+        });
+      }
+      if (failureMode === 'permission_denied') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'EXIF write failed: file is read-only' },
+          },
+        });
+      }
+      const { imageId, rating, comment } = config.data || {};
+      const img = mockData.viewImages.images.find(i => i.ID === imageId);
+      if (img) {
+        if (rating !== undefined) img.rating = rating;
+        if (comment !== undefined) img.comment = comment;
+      }
+      return { data: { success: true } };
+    }
+
+    if (url === '/view/delete-rejected' && method === 'post') {
+      const failureMode = mockSettings.failureMode;
+      if (failureMode === 'db_locked') {
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: { error: 'DB locked' },
+          },
+        });
+      }
+      if (failureMode === 'partial_failure') {
+        mockData.viewImages.images = mockData.viewImages.images.filter(
+          i => i.rating !== -1
+        );
+        mockData.viewImages.count = mockData.viewImages.images.length;
+        return {
+          data: { success: false, deleted: 2, error: '1 file could not be deleted' },
+        };
+      }
+      const rejectedCount = mockData.viewImages.images.filter(i => i.rating === -1).length;
+      mockData.viewImages.images = mockData.viewImages.images.filter(
+        i => i.rating !== -1
+      );
+      mockData.viewImages.count = mockData.viewImages.images.length;
+      return { data: { success: true, deleted: rejectedCount } };
+    }
     
     if (url === '/display/status') {
-      return { data: mockData.displayStatus };
+      return { data: resolveDisplayStatus() };
     }
     
     if (url === '/log' || url === '/log/') {
@@ -342,6 +721,33 @@ export function createMockApiInterceptor() {
       return { data: { success: true } };
     }
     
+    if (url === '/cloud/remotes') {
+      return { data: { remotes: ['Dropbox', 'Google Drive'] } };
+    }
+
+    if (url === '/setup/update/libraw' && method === 'post') {
+      await delay(4000);
+      return { data: { success: true, message: 'LibRaw update completed (mock)' } };
+    }
+
+    if (url === '/network/comitup/reset' && method === 'post') {
+      await delay(1000);
+      return { data: {} };
+    }
+
+    if (url === '/network/wifi/info') {
+      return {
+        data: {
+          interface: 'wlan0',
+          ssid: 'HomeNetwork',
+          frequency: 5.18,
+          signal_level: -52,
+          bit_rate: 300,
+          connected: true,
+        },
+      };
+    }
+
     if (url === '/system') {
       return { data: { useMocks: true, platform: 'mock' } };
     }

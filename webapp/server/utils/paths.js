@@ -56,6 +56,11 @@ export function getDisplayContentPath(workingDir, constants) {
   return path.join(tempDir, 'display-content');
 }
 
+export function getDisplayContentOldFilePath(workingDir, constants) {
+  const tempDir = getTempDir(workingDir, constants);
+  return path.join(tempDir, 'display-content-old.txt');
+}
+
 export function getIdletimeLockfile(workingDir, constants) {
   const tempDir = getTempDir(workingDir, constants);
   return path.join(tempDir, 'idletime.lock');

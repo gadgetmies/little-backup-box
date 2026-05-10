@@ -33,9 +33,9 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import LanguageIcon from '@mui/icons-material/Language';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import PaletteIcon from '@mui/icons-material/Palette';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import StorageIcon from '@mui/icons-material/Storage';
 import InfoIcon from '@mui/icons-material/Info';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
@@ -51,6 +51,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import api from '../utils/api';
+import StatusIndicator from './StatusIndicator';
 
 export const drawerWidth = 240;
 export const drawerCollapsedWidth = 64;
@@ -75,8 +76,8 @@ function Menu() {
   const [shutdownHasRunningBackups, setShutdownHasRunningBackups] = React.useState(false);
   const [currentTheme, setCurrentTheme] = React.useState(() => {
     const saved = localStorage.getItem('lbb-theme');
-    return saved && (saved === 'system' || saved === 'light' || saved === 'dark') 
-      ? saved 
+    return saved && (saved === 'system' || saved === 'light' || saved === 'dark' || saved === 'sepia')
+      ? saved
       : (config?.conf_THEME || 'system');
   });
   const [currentLanguage, setCurrentLanguage] = React.useState(() => {
@@ -93,18 +94,20 @@ function Menu() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Sidebar order matches webapp/docs/page-map.md (task-frequency descending).
   const menuItems = [
     { path: '/', key: 'main', icon: <ArchiveIcon /> },
-    { path: '/tools', key: 'filesystem', icon: <StorageIcon /> },
-    { path: '/integrations', key: 'integrations', icon: <LinkIcon /> },
+    { path: '/view', key: 'gallery', icon: <PhotoLibraryIcon /> },
+    { path: '/storage', key: 'storage', icon: <StorageIcon /> },
     { path: '/maintenance', key: 'maintenance', icon: <BuildCircleIcon /> },
-    { path: '/sysinfo', key: 'sysinfo', icon: <InfoIcon /> },
+    { path: '/integrations', key: 'integrations', icon: <LinkIcon /> },
     { path: '/network', key: 'network', icon: <RouterIcon /> },
-    { path: '/setup', key: 'config', icon: <PaletteIcon /> },
-    { path: '/view.php', key: 'gallery', icon: <PhotoLibraryIcon />, external: true },
+    { path: '/hardware', key: 'hardware', icon: <PaletteIcon /> },
+    { path: '/preferences', key: 'preferences', icon: <SettingsBrightnessIcon /> },
+    { path: '/system', key: 'system', icon: <InfoIcon /> },
+    { path: '/scrape', key: 'scrape', icon: <PublicIcon /> },
     { path: '/files', key: 'filebrowser', icon: <FolderOpenIcon />, external: true },
     { path: '/frame.php?page=rclone_gui', key: 'rclone_gui', icon: <AppsIcon />, external: true, hasInfo: true },
-    { path: '/scrape', key: 'scrape', icon: <PublicIcon />},
   ];
 
   const handleDrawerToggle = () => {
@@ -329,7 +332,7 @@ function Menu() {
   React.useEffect(() => {
     const handleThemeChange = () => {
       const saved = localStorage.getItem('lbb-theme');
-      if (saved && (saved === 'system' || saved === 'light' || saved === 'dark')) {
+      if (saved && (saved === 'system' || saved === 'light' || saved === 'dark' || saved === 'sepia')) {
         setCurrentTheme(saved);
       }
     };
@@ -419,20 +422,24 @@ function Menu() {
     if (currentTheme === 'system') {
       return <SettingsBrightnessIcon />;
     }
+    if (currentTheme === 'sepia') {
+      return <PaletteIcon />;
+    }
     return currentTheme === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />;
   };
 
   const getPageTitle = () => {
     const routeMap = {
       '/': { key: 'mainmenue.main', fallback: 'Backup' },
-      '/setup': { key: 'mainmenue.config', fallback: 'User Interface' },
-      '/view': { key: 'mainmenue.view', fallback: 'View' },
-      '/integrations': { key: 'mainmenue.integrations', fallback: 'Service Connections' },
-      '/tools': { key: 'mainmenue.filesystem', fallback: 'Filesystem' },
-      '/sysinfo': { key: 'mainmenue.sysinfo', fallback: 'System' },
-      '/network': { key: 'mainmenue.network', fallback: 'Network' },
+      '/view': { key: 'mainmenue.gallery', fallback: 'Library' },
+      '/storage': { key: 'mainmenue.storage', fallback: 'Storage' },
       '/maintenance': { key: 'mainmenue.maintenance', fallback: 'Maintenance' },
-      '/scrape': { key: 'mainmenue.scrape', fallback: 'Scraped UI' },
+      '/integrations': { key: 'mainmenue.integrations', fallback: 'Connections' },
+      '/network': { key: 'mainmenue.network', fallback: 'Network' },
+      '/hardware': { key: 'mainmenue.hardware', fallback: 'Hardware' },
+      '/preferences': { key: 'mainmenue.preferences', fallback: 'Preferences' },
+      '/system': { key: 'mainmenue.system', fallback: 'System' },
+      '/scrape': { key: 'mainmenue.scrape', fallback: 'Legacy UI' },
     };
     const routeInfo = routeMap[location.pathname] || routeMap['/'];
     const translation = t(routeInfo.key);
@@ -561,7 +568,7 @@ function Menu() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 0, mr: 2 }}>
+          <Typography variant="h6" component="h1" sx={{ flexGrow: 0, mr: 2, fontWeight: 'inherit' }}>
             {getPageTitle()}
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
@@ -598,6 +605,7 @@ function Menu() {
                 </MenuItem>
               ))}
             </MuiMenu>
+            <StatusIndicator />
             <Tooltip title={t('config.view_theme_header') || 'Theme'}>
               <IconButton
                 color="inherit"
@@ -638,6 +646,12 @@ function Menu() {
               >
                 {t('config.view_theme_system') || 'System'}
               </MenuItem>
+              <MenuItem
+                onClick={() => handleThemeChange('sepia')}
+                selected={currentTheme === 'sepia'}
+              >
+                {t('config.view_theme_sepia') || 'Sepia'}
+              </MenuItem>
             </MuiMenu>
             <Tooltip title="Power">
               <IconButton
@@ -662,17 +676,26 @@ function Menu() {
               }}
             >
               <MenuItem onClick={handleStopLbb}>
-                {t('main.stop_lbb_button') || 'Stop LBB'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.stop_lbb_button') || 'Stop LBB'}
+                </Box>
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 {t('main.logout_button') || 'Logout'}
               </MenuItem>
               <Divider />
               <MenuItem onClick={handleReboot}>
-                {t('main.reboot_button') || 'Reboot'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.reboot_button') || 'Reboot'}
+                </Box>
               </MenuItem>
               <MenuItem onClick={handleShutdown}>
-                {t('main.shutdown_button') || 'Power off'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon fontSize="small" color="warning" />
+                  {t('main.shutdown_button') || 'Power off'}
+                </Box>
               </MenuItem>
             </MuiMenu>
             <Dialog

@@ -328,6 +328,11 @@ Canon EOS Rebel T7i              usb:001,005`,
       stderr: '',
     };
   }
+
+  // lib_view.py --action list was a dead branch — no such action ever existed
+  // in lib_view.py (only --action init). The /api/view/images route now does
+  // SQL inline against an in-memory fixture in mock mode (server/utils/viewMockDb.js),
+  // mirroring how scripts/view.php does inline SQL on the device.
   
   if (command.includes('lib_metadata.py')) {
     return {

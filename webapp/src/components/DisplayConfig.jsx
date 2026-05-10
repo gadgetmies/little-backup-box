@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,7 +14,6 @@ import {
   Radio,
   FormLabel,
   Button,
-  Alert,
   CircularProgress,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -22,44 +21,49 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 
-function DisplayConfig() {
+const DEFAULTS = {
+  conf_DISP: '0',
+  conf_DISP_FONT_SIZE: '12',
+  conf_DISP_FRAME_TIME: '1',
+  conf_DISP_CONTRAST: '255',
+  conf_DISP_IP_REPEAT: '0',
+  conf_DISP_SHOW_STATUSBAR: '0',
+  conf_DISP_FRAME_TIME_IP: '2.0',
+  conf_DISP_COLOR_TEXT: 'grey',
+  conf_DISP_COLOR_HIGH: 'white',
+  conf_DISP_COLOR_ALERT: 'orange',
+  conf_DISP_COLOR_BACKGROUND: 'black',
+  conf_DISP_BACKLIGHT_ENABLED: '0',
+  conf_DISP_BACKLIGHT_PIN: '0',
+  conf_DISP_ROTATE: '0',
+  conf_DISP_DRIVER: 'SSD1306',
+  conf_DISP_CONNECTION: 'I2C',
+  conf_DISP_I2C_ADDRESS: '0x3c',
+  conf_DISP_SPI_PORT: '0',
+  conf_DISP_RESOLUTION_X: '128',
+  conf_DISP_RESOLUTION_Y: '64',
+  conf_DISP_OFFSET_X: '0',
+  conf_DISP_OFFSET_Y: '0',
+  conf_DISP_COLOR_MODEL: '1',
+  conf_DISP_COLOR_BGR: '0',
+  conf_DISP_COLOR_INVERSE: '0',
+};
+
+function DisplayConfig({ onSavedStateChange }) {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
   const [formData, setFormData] = useState({});
   const [i2cDevices, setI2cDevices] = useState('');
   const [loadingI2c, setLoadingI2c] = useState(false);
-  const [message, setMessage] = useState('');
+  const lastSavedConfig = useRef(null);
 
   useEffect(() => {
     if (config) {
-      const displayConfig = {
-        conf_DISP: config.conf_DISP || '0',
-        conf_DISP_FONT_SIZE: config.conf_DISP_FONT_SIZE || '12',
-        conf_DISP_FRAME_TIME: config.conf_DISP_FRAME_TIME || '1',
-        conf_DISP_CONTRAST: config.conf_DISP_CONTRAST || '255',
-        conf_DISP_IP_REPEAT: config.conf_DISP_IP_REPEAT || '0',
-        conf_DISP_SHOW_STATUSBAR: config.conf_DISP_SHOW_STATUSBAR || '0',
-        conf_DISP_FRAME_TIME_IP: config.conf_DISP_FRAME_TIME_IP || '2.0',
-        conf_DISP_COLOR_TEXT: config.conf_DISP_COLOR_TEXT || 'grey',
-        conf_DISP_COLOR_HIGH: config.conf_DISP_COLOR_HIGH || 'white',
-        conf_DISP_COLOR_ALERT: config.conf_DISP_COLOR_ALERT || 'orange',
-        conf_DISP_COLOR_BACKGROUND: config.conf_DISP_COLOR_BACKGROUND || 'black',
-        conf_DISP_BACKLIGHT_ENABLED: config.conf_DISP_BACKLIGHT_ENABLED || '0',
-        conf_DISP_BACKLIGHT_PIN: config.conf_DISP_BACKLIGHT_PIN || '0',
-        conf_DISP_ROTATE: config.conf_DISP_ROTATE || '0',
-        conf_DISP_DRIVER: config.conf_DISP_DRIVER || 'SSD1306',
-        conf_DISP_CONNECTION: config.conf_DISP_CONNECTION || 'I2C',
-        conf_DISP_I2C_ADDRESS: config.conf_DISP_I2C_ADDRESS || '0x3c',
-        conf_DISP_SPI_PORT: config.conf_DISP_SPI_PORT || '0',
-        conf_DISP_RESOLUTION_X: config.conf_DISP_RESOLUTION_X || '128',
-        conf_DISP_RESOLUTION_Y: config.conf_DISP_RESOLUTION_Y || '64',
-        conf_DISP_OFFSET_X: config.conf_DISP_OFFSET_X || '0',
-        conf_DISP_OFFSET_Y: config.conf_DISP_OFFSET_Y || '0',
-        conf_DISP_COLOR_MODEL: config.conf_DISP_COLOR_MODEL || '1',
-        conf_DISP_COLOR_BGR: config.conf_DISP_COLOR_BGR || '0',
-        conf_DISP_COLOR_INVERSE: config.conf_DISP_COLOR_INVERSE || '0',
-      };
+      const displayConfig = Object.fromEntries(
+        Object.entries(DEFAULTS).map(([k, def]) => [k, config[k] ?? def]),
+      );
       setFormData(displayConfig);
+      lastSavedConfig.current = JSON.stringify(displayConfig);
     }
   }, [config]);
 
@@ -83,20 +87,24 @@ function DisplayConfig() {
   };
 
   const handleChange = (key, value) => {
-    const newFormData = { ...formData, [key]: value };
-    setFormData(newFormData);
-    
-    const updatedConfig = { ...config };
-    Object.keys(newFormData).forEach(k => {
-      updatedConfig[k] = newFormData[k];
-    });
-    
-    updateConfig(updatedConfig).catch(error => {
-      console.error('Failed to save display config:', error);
-      setMessage('Error saving display settings');
-      setTimeout(() => setMessage(''), 3000);
-    });
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
+
+  const [saveCount, setSaveCount] = useState(0);
+  const handleSave = useCallback(async () => {
+    await updateConfig(formData);
+    lastSavedConfig.current = JSON.stringify(formData);
+    setSaveCount((c) => c + 1);
+  }, [formData, updateConfig]);
+
+  useEffect(() => {
+    if (Object.keys(formData).length === 0) return;
+    const formDataString = JSON.stringify(formData);
+    const isSaved = lastSavedConfig.current === formDataString;
+    if (onSavedStateChange) {
+      onSavedStateChange(isSaved, handleSave);
+    }
+  }, [formData, saveCount, onSavedStateChange, handleSave]);
 
   const displayColors = ['blue', 'green', 'red', 'white', 'yellow', 'orange', 'lightgrey', 'grey', 'black'];
   const fontSizes = [10, 12, 14, 16];
@@ -127,12 +135,6 @@ function DisplayConfig() {
 
   return (
     <Box>
-      {message && (
-        <Alert severity={message.includes('Error') ? 'error' : 'success'} sx={{ mb: 2 }} onClose={() => setMessage('')}>
-          {message}
-        </Alert>
-      )}
-
       <Stack spacing={3}>
         <Box>
           <Typography variant="h3" gutterBottom>
