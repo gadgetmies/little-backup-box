@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-03T14:54:11.566Z",
+  "generatedAt": "2026-05-10T17:03:00.768Z",
   "sites": [
     {
       "id": "lbb.local",
       "name": "lbb.local",
       "index": "scrape/lbb.local/index.html",
-      "lastModified": "2026-04-03T14:53:48.990Z"
+      "lastModified": "2026-05-10T17:02:35.117Z"
     }
   ]
 }
