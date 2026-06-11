@@ -4,6 +4,7 @@
     "refresh_button": "Rafraîchir"
   },
   "mainmenue": {
+    "welcome": "Bienvenue",
     "main": "Sauvegarde",
     "network": "Réseau",
     "integrations": "Connections",
@@ -634,5 +635,24 @@
   "status": {
     "tooltip": "Device status",
     "ready": "Ready"
+  }
+  ,
+  "welcome": {
+    "title": "Welcome to Little Backup Box",
+    "about_title": "About",
+    "about_text": "Little Backup Box turns a Raspberry Pi into a powerful, mobile backup and media management hub - ideal for photographers, travelers, and professionals working on the go.",
+    "about_text_2": "It can automatically back up files from cameras, smartphones, and storage devices to local drives, or a wide range of cloud services. Acting as a central hub, Little Backup Box aggregates media from multiple sources and can automatically forward them for further processing, archiving, or publishing.",
+    "features_title": "Features",
+    "features_backup_from": "Automate backup from:",
+    "features_backup_from_list": "USB storage, camera, internal storage, NVMe SSD storage, cloud storage",
+    "features_backup_to": "Automate backup to:",
+    "features_backup_to_list": "USB storage, internal storage, NVMe SSD storage, rsync server, cloud storage, social media",
+    "features_tools": "Tools for memory management:",
+    "features_tools_list": "Manual mount, check disk integrity, format disks, verify USB capacity",
+    "features_other": "Other features:",
+    "features_other_list": "Email notifications, preview and rate images, file manager, convenient web interface",
+    "status_title": "Development Status",
+    "status_text": "Little Backup Box has reached a largely stable and functional stage. While new features are still being added from time to time, the established core functions are now highly reliable.",
+    "status_text_2": "Regular updates are strongly recommended to benefit from ongoing refinements and fixes."
   }
 }

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import Welcome from './pages/Welcome';
 import Backup from './pages/Backup';
 import Preferences from './pages/Preferences';
 import Storage from './pages/Storage';
@@ -36,7 +37,8 @@ function App() {
       <Layout>
         <RedirectHandler />
         <Routes>
-          <Route path="/" element={<Backup />} />
+          <Route path="/" element={<Welcome />} />
+          <Route path="/backup" element={<Backup />} />
           <Route path="/view" element={<View />} />
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/integrations" element={<Connections />} />

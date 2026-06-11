@@ -714,7 +714,7 @@ export default function View() {
       {!isLoading && dbNotInitialised && medium && (
         <Alert severity="info">
           {t('view.no_database')}{' '}
-          <Link component={RouterLink} to="/">
+          <Link component={RouterLink} to="/backup">
             {t('view.go_to_backup')}
           </Link>
         </Alert>

@@ -4,6 +4,7 @@
     "refresh_button": "aktualisieren"
   },
   "mainmenue": {
+    "welcome": "Willkommen",
     "main": "Backup",
     "network": "Netzwerk",
     "integrations": "Connections",
@@ -634,5 +635,24 @@
   "status": {
     "tooltip": "Device status",
     "ready": "Ready"
+  }
+  ,
+  "welcome": {
+    "title": "Willkommen bei Little Backup Box",
+    "about_title": "Über das Projekt",
+    "about_text": "Little Backup Box verwandelt einen Raspberry Pi in einen leistungsstarken, mobilen Backup- und Medienverwaltungs-Hub - ideal für Fotografen, Reisende und Profis, die viel unterwegs sind.",
+    "about_text_2": "Es kann automatisch Dateien von Kameras, Smartphones und Speichergeräten auf lokale Laufwerke oder eine Vielzahl von Cloud-Diensten sichern. Als zentraler Knotenpunkt fasst Little Backup Box Medien aus mehreren Quellen zusammen und kann sie automatisch zur weiteren Verarbeitung, Archivierung oder Veröffentlichung weiterleiten.",
+    "features_title": "Funktionen",
+    "features_backup_from": "Automatisches Backup von:",
+    "features_backup_from_list": "USB-Speicher, Kamera, interner Speicher, NVMe SSD-Speicher, Cloud-Speicher",
+    "features_backup_to": "Automatisches Backup nach:",
+    "features_backup_to_list": "USB-Speicher, interner Speicher, NVMe SSD-Speicher, rsync-Server, Cloud-Speicher, soziale Medien",
+    "features_tools": "Werkzeuge zur Speicherverwaltung:",
+    "features_tools_list": "Manuelles Einhängen, Prüfung der Datenträgerintegrität, Formatieren von Festplatten, Überprüfung der USB-Kapazität",
+    "features_other": "Weitere Funktionen:",
+    "features_other_list": "E-Mail-Benachrichtigungen, Vorschau und Bewertung von Bildern, Dateimanager, komfortable Web-Oberfläche",
+    "status_title": "Entwicklungsstatus",
+    "status_text": "Little Backup Box hat ein weitgehend stabiles und funktionales Stadium erreicht. Während von Zeit zu Zeit immer noch neue Funktionen hinzugefügt werden, sind die etablierten Kernfunktionen nun sehr zuverlässig.",
+    "status_text_2": "Regelmäßige Updates werden dringend empfohlen, um von laufenden Verfeinerungen und Korrekturen zu profitieren."
   }
 }
