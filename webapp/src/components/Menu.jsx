@@ -34,6 +34,7 @@ import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import LanguageIcon from '@mui/icons-material/Language';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import HomeIcon from '@mui/icons-material/Home';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import PaletteIcon from '@mui/icons-material/Palette';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -96,7 +97,8 @@ function Menu() {
 
   // Sidebar order matches webapp/docs/page-map.md (task-frequency descending).
   const menuItems = [
-    { path: '/', key: 'main', icon: <ArchiveIcon /> },
+    { path: '/', key: 'welcome', icon: <HomeIcon /> },
+    { path: '/backup', key: 'main', icon: <ArchiveIcon /> },
     { path: '/view', key: 'gallery', icon: <PhotoLibraryIcon /> },
     { path: '/storage', key: 'storage', icon: <StorageIcon /> },
     { path: '/maintenance', key: 'maintenance', icon: <BuildCircleIcon /> },
@@ -430,7 +432,8 @@ function Menu() {
 
   const getPageTitle = () => {
     const routeMap = {
-      '/': { key: 'mainmenue.main', fallback: 'Backup' },
+      '/': { key: 'mainmenue.welcome', fallback: 'Welcome' },
+      '/backup': { key: 'mainmenue.main', fallback: 'Backup' },
       '/view': { key: 'mainmenue.gallery', fallback: 'Library' },
       '/storage': { key: 'mainmenue.storage', fallback: 'Storage' },
       '/maintenance': { key: 'mainmenue.maintenance', fallback: 'Maintenance' },
