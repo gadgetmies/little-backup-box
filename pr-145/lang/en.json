@@ -1,0 +1,657 @@
+{
+  "seconds_short": "s",
+  "log": {
+    "logmonitor": "Log monitor",
+    "refresh_button": "Refresh"
+  },
+  "box": {
+    "backup": {
+      "complete": "Backup complete",
+      "mode": {
+        "anyusb": "any USB",
+        "cameras": "Cameras",
+        "cloud": "Cloud",
+        "cloud_rsync": "rsync server",
+        "internal": "On-board storage (SD card / eMMC)",
+        "usb": "USB storage",
+        "nvme": "NVMe SSD",
+        "rename": "Rename",
+        "ftp": "FTP storage",
+        "social": "SoMe",
+        "bluesky": "Bluesky",
+        "mastodon": "Mastodon",
+        "matrix": "Matrix",
+        "telegram": "Telegram"
+      }
+    }
+  },
+  "network": {
+    "wifi_config": {
+      "title": "WiFi"
+    },
+    "rsync_config": {
+      "title": "rsync Server"
+    },
+    "network_info": {
+      "title": "Network Information"
+    },
+    "internet_status": "Internet Status",
+    "online": "Online",
+    "offline": "Offline",
+    "ip_addresses": "IP Addresses",
+    "refresh": "Refresh",
+    "no_ips": "No IP addresses found",
+    "qr_codes": "QR Codes",
+    "wifi_reset_section": "Reset WiFi Credentials",
+    "wifi_reset_description": "This will erase stored WiFi credentials and reboot the device into access point mode.",
+    "wifi_reset_button": "Reset WiFi credentials",
+    "wifi_reset_confirm_title": "Reset WiFi Credentials?",
+    "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
+    "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
+    "wifi_reset_error": "Comitup is not installed on this device"
+  },
+  "mainmenue": {
+    "welcome": "Welcome",
+    "main": "Backup",
+    "network": "Network",
+    "integrations": "Connections",
+    "filebrowser": "File browser",
+    "gallery": "Gallery",
+    "maintenance": "Maintenance",
+    "rclone_gui": "rclone GUI",
+    "scrape": "Scraped UI",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System",
+    "hardware": "Hardware"
+  },
+  "scrape": {
+    "title": "Scraped Pages",
+    "description": "Explore the static snapshots of the Little Backup Box interface that were scraped from a running device. Each snapshot opens in a new tab and can be browsed without the backend.",
+    "open": "Open snapshot",
+    "empty": "No scraped pages are available right now.",
+    "error": "Failed to load the list of scraped pages.",
+    "updated": "Last updated:",
+    "generated": "Manifest generated:"
+  },
+  "main": {
+    "internal_button": "Internal storage",
+    "rsync_button": "rsync-server",
+    "reboot_button": "Reboot",
+    "shutdown_button": "Power off",
+    "cancel_button": "Cancel",
+    "reboot_confirm_title": "Reboot the device?",
+    "reboot_confirm_message": "Warning: Backup processes are currently running. They will be interrupted if you proceed. Are you sure you want to reboot?",
+    "reboot_confirm_message_no_backup": "Are you sure you want to reboot the device?",
+    "shutdown_confirm_title": "Shutdown the device?",
+    "shutdown_confirm_message": "Warning: Backup processes are currently running. They will be interrupted if you proceed. Are you sure you want to shutdown?",
+    "shutdown_confirm_message_no_backup": "Are you sure you want to shutdown the device?",
+    "stop_lbb_button": "Stop LBB",
+    "stop_lbb_confirm_title": "Stop Little Backup Box?",
+    "stop_lbb_confirm_message": "Backup processes are currently running. Do you want to stop them and terminate Little Backup Box?",
+    "stop_lbb_confirm_message_no_backup": "Are you sure you want to terminate Little Backup Box?",
+    "stopbackup_m": "Stopping backup.",
+    "reboot_m": "The device reboots. Refresh this page in a few moments.",
+    "shutdown_m": "The device is powered off. You can close this page.",
+    "usb_button": "USB storage",
+    "source": "Source",
+    "target": "Target",
+    "backup": {
+      "options": "Options",
+      "generate_thumbnails_checkbox_label": "Generate thumbnails and read into database (only for local storage)",
+      "initiated": "initiated",
+      "power_off_checkbox_label": "Turn off after run",
+      "update_exif_checkbox_label": "Write EXIF data to the original files (only for local storage)",
+      "preset_target_label": "Set target partition",
+      "preset_source_label": "Set source partition",
+      "preset_partition_auto": "automatic selection",
+      "selected_partition": "Selected partition",
+      "running": "Running Backups",
+      "primary": "Primary backup",
+      "secondary": "Secondary backup",
+      "general": "General",
+      "secondary_label": "Should a cloud backup be performed after the primary backup?",
+      "rename_checkbox_label": "Rename files (only for local storage)",
+      "comparison_method_label": "Comparison method",
+      "comparison_file_size_timestamp": "File size and timestamp",
+      "comparison_checksum": "Checksum",
+      "previous_runs": "Previous Backup Runs",
+      "rerun": "Rerun",
+      "save_as_defaults": "Save as defaults",
+      "defaults_saved": "Defaults saved successfully",
+      "defaults_save_error": "Failed to save defaults",
+      "start": "Start Backup",
+      "usb_devices": "USB Devices",
+      "internal_storage": "Internal Storage",
+      "partitions": "Partitions",
+      "local_storage": "Local Storage",
+      "logs": "Backup logs"
+    },
+    "logout_button": "Logout",
+    "nvme_button": "NVMe SSD",
+    "file_operations": "File operations",
+    "backup_error": "Backup error"
+  },
+  "sysinfo": {
+    "temp": "Temperature",
+    "cpuload": "CPU Load",
+    "conditions": "Conditions",
+    "devices": "Devices",
+    "diskspace": "Disk space",
+    "memory_ram": "RAM used",
+    "memory_swap": "SWAP used",
+    "refresh_button": "Refresh",
+    "camera_serial": "Serial number",
+    "cameras": "Cameras/smartphones",
+    "system": "System",
+    "model": "Model",
+    "device_states": "Device status",
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
+  },
+  "system": {
+    "logs_section": "Logs",
+    "tab": {
+      "device": "Device",
+      "cameras": "Cameras",
+      "updates": "Updates",
+      "logs": "Logs"
+    }
+  },
+  "config": {
+    "alert_password_too_short": "Password must be at least 5 characters long.",
+    "message_settings_saved": "config.cfg was written successfully.",
+    "lang_header": "Select language",
+    "lang_browser_detect": "Auto-detect",
+    "view_theme_header": "Theme",
+    "view_theme_light": "light",
+    "view_theme_dark": "dark",
+    "view_theme_sepia": "sepia",
+    "view_theme_system": "System",
+    "popup_messages": "Show popup notifications",
+    "camera_folder_mask": "Camera folder mask",
+    "camera_folder_mask_help": "Folder name pattern to back up from cameras (e.g. DCIM)",
+    "camera_folder_mask_no_slash": "Folder mask must not contain /",
+    "target_size_minimum": "Target size minimum",
+    "target_size_minimum_help": "GB · 0 = disabled",
+    "idle_power_off": "Idle power-off",
+    "idle_power_off_help": "Minutes · 0 = disabled",
+    "write_rating_to_exif": "Write rating to EXIF",
+    "timezone": "Timezone",
+    "background_image": "Background image",
+    "background_image_help": "Path to an image file on the device",
+    "background_image_path_traversal": "Path traversal not allowed",
+    "log_level": "Log level",
+    "log_sync": "Log sync protocol",
+    "display_images_keep": "Keep display images",
+    "default_backup_mode_section": "Default backup modes",
+    "backup_mode_copy": "Copy",
+    "backup_mode_move": "Move",
+    "source_camera": "Camera",
+    "source_usb": "USB",
+    "source_internal": "Internal",
+    "source_nvme": "NVMe",
+    "target_usb": "USB",
+    "target_internal": "Internal",
+    "target_nvme": "NVMe",
+    "target_cloud": "Cloud",
+    "target_rsync": "Rsync",
+    "rsync_server_label": "Address of the rsync-server",
+    "rsync_port_label": "Port of the rsync-server (default:",
+    "rsync_user_label": "Username for the rsync-server",
+    "rsync_password_label": "Password for the rsync-server",
+    "save_button": "Save",
+    "username": "Username",
+    "save_settings_section": "Backup / Restore Settings",
+    "save_settings_download_header": "Download",
+    "save_settings_download_text": "Get a zip-archive with your settings",
+    "save_settings_download_link_text": "Download settings",
+    "save_settings_upload_header": "Upload",
+    "save_settings_upload_button": "Upload settings",
+    "rsync_module_label1": "Module name on the rsync server, e.g. 'little-backup-box' (default:",
+    "wifi_country_label": "Select the country in which this Little Backup Box is to be used",
+    "wifi_country_header": "WiFi country",
+    "backup": {
+      "none": "no automatic backup",
+      "section": "Backup",
+      "general_settings_header": "Defaults",
+      "file_operation_label": "File operation",
+      "file_operation_copy": "Copy files",
+      "file_operation_move": "Move files",
+      "rename": {
+        "warning": "Attention! The files should then be deleted from the source. Otherwise they will be transferred again during the next backup, renamed and replacing the version from the previous backup.",
+        "desc": "An attempt is made to read the creation date from all media files on local storage devices. If this is possible, the file is renamed according to the following pattern: for example, \"Image0123.jpg\" becomes \"2024-10-18_23-47-26_-_Image.jpg\"."
+      }
+    },
+    "mail": {
+      "password_label": "Password for the mail server",
+      "port_label": "Port of the SMTP mail server",
+      "recipient_label": "Email address of the recipient",
+      "section": "Email",
+      "server_settings_notice": "Server settings must be configured before email notifications can be sent.",
+      "smtp_header": "Email Server",
+      "smtp_label": "Address of the SMTP mail server",
+      "user_label": "Username for the mail server",
+      "testmail_header": "Send test mail",
+      "testmail_sent": "Test mail was sent",
+      "testmail_error": "Failed to send test mail",
+      "sender_label": "Email address of the sender",
+      "security_header": "Connection security",
+      "timeout_header": "Mail timeout",
+      "notify_backup_label": "Send backup completion summary via email",
+      "notify_ip_label": "Email access links when network IP address changes",
+      "html_label": "Format emails in HTML"
+    },
+    "vpn": {
+      "upload_header": "Upload configuration file",
+      "upload_type_label": "For which VPN variant should the configuration file be used?",
+      "upload_type_none": "Please select",
+      "type_none": "Don't use VPN",
+      "type_header": "Which VPN to activate?",
+      "upload_file_label": "Upload configuration file",
+      "remove_header": "Delete VPN file",
+      "timeout_header": "Connection timeout",
+      "timeout_label": "What is the maximum time to wait for the VPN connection to be established?",
+      "type_cloud_label": "For cloud services",
+      "type_rsync_label": "For rsync server backup",
+      "type_desc": "Which VPN should be activated before transferring data to a network service? Caution: The Little Backup Box interface may not be accessible while the backup is running. You may be able to reach the box under the VPN IP if your end device is also registered in the same VPN."
+    },
+    "display": {
+      "section": "GPIO mounted display",
+      "activate_label": "Enable display",
+      "connection_label": "Display interface",
+      "i2c_address_label": "i2c address of the display",
+      "i2c_header": "I2C display",
+      "ip_label": "Print IP every minute.",
+      "device_available": "Device detected",
+      "behavior_header": "Display behavior",
+      "spi_header": "SPI display",
+      "spi_port_label": "SPI port",
+      "driver_label": "Display driver",
+      "resolution_x_label": "Horizontal resolution (pixels)",
+      "resolution_y_label": "Vertical resolution (pixels)",
+      "font_size_label": "Font size",
+      "frame_time_label": "Minimum display time per frame in seconds",
+      "colors_header": "Color selection when using a color display",
+      "color": {
+        "white": "white",
+        "yellow": "yellow",
+        "green": "green",
+        "blue": "blue",
+        "red": "red",
+        "grey": "grey",
+        "lightgrey": "light grey",
+        "orange": "orange",
+        "black": "black",
+        "alert_label": "Font color for warnings",
+        "high_label": "Font color for highlighted text",
+        "model_1": "Black-and-white",
+        "model_RGB": "RGB",
+        "model_RGBA": "RGBA (RGB with transparency)",
+        "model_label": "Color",
+        "text_label": "Default font color",
+        "background_label": "Background color",
+        "notation_label": "Color notation",
+        "notation_RGB": "RGB (red-green-blue)",
+        "notation_BGR": "BGR (blue-green-red)",
+        "inverse_label": "Inverted colors"
+      },
+      "contrast_label": "Contrast",
+      "rotate_label": "Display rotation",
+      "rotate_header": "Rotate screen",
+      "offset_x_label": "Display shift horizontally (in pixels)",
+      "offset_y_label": "Display shift vertically (in pixels)",
+      "frame_time_ip_label": "Minimum display time of the IP in seconds",
+      "statusbar": {
+        "label": "Show status bar"
+      },
+      "backlight_header": "Display backlight",
+      "backlight_enabled_label": "Activate display backlight (if available)",
+      "backlight_pin_label": "Backlight GPIO pin (BCM notation)",
+      "additional_settings_header": "Additional display",
+      "detect_devices": "Detect devices"
+    },
+    "hardware": {
+      "section": "Hardware"
+    },
+    "update": {
+      "linktext": "Update now",
+      "text": "<h3>Update Little Backup Box</h3><p>Caution:<ul><li>The update can render the system unusable.</li><li>The update can cause a considerable download volume and thus possibly costs.</li><li>The update can take several minutes or longer, depending on the Internet speed.</li></ul><br>Only perform the update if you ...<ul><li>could also perform a new installation if necessary</li><li>have a stable internet connection</li><li>have a stable power supply</li></ul></p>",
+      "section": "Update",
+      "available": "Update available",
+      "not_available": "System up to date",
+      "check_label": "Check for updates"
+    },
+    "screen": {
+      "virtual_keyboard_enable_label": "Enable virtual keyboard"
+    },
+    "social": {
+      "bluesky": {
+        "header": "Bluesky",
+        "install_desc": "Please refer to the preparations in the <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04f_Bluesky\">Wiki: Bluesky</a>",
+        "base_url_label": "API Base URL",
+        "identifier_label": "Identifier (Email or Handle)",
+        "app_password_label": "App Password",
+        "test_success": "Bluesky connection test successful"
+      },
+      "telegram": {
+        "header": "Telegram",
+        "install_desc": "Please refer to the preparations in the <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04c_Telegram\">Wiki: Telegram</a>",
+        "token_label": "Token",
+        "chat_id_label": "Chat ID",
+        "error_invalid_token": "Invalid token",
+        "select_chat_first": "Please select a chat first.",
+        "test_message": "Test message from Little-Backup-Box via bot",
+        "test_message_sent_to": "Test message sent to",
+        "test_message_error": "Error sending",
+        "select_chat": "Select chat",
+        "table_headers": "Display: Name (Type) — <code>chat_id",
+        "close": "Close",
+        "accept": "Accept",
+        "test_message_send": "Send test message",
+        "button_select_chat": "Select chat",
+        "test_success": "Telegram connection test successful"
+      },
+      "mastodon": {
+        "header": "Mastodon",
+        "install_desc": "Please refer to the preparations in the <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04e_Mastodon\">Wiki: Mastodon</a>",
+        "token_label": "Access token",
+        "base_url_label": "Mastodon base URL",
+        "test_success": "Mastodon connection test successful"
+      },
+      "general": {
+        "header": "Common settings",
+        "services": "Services",
+        "date_label": "Publish recording date",
+        "filename_label": "Publish file name"
+      },
+      "matrix": {
+        "header": "Matrix",
+        "install_desc": "Please refer to the preparations in the <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04d_Matrix\">Wiki: Matrix</a>",
+        "homeserver_label": "Matrix homeserver (e.g. https://matrix.example.org)",
+        "token_label": "Access token of the bot account",
+        "error": {
+          "not_set_token": "Please enter the Matrix access token first.",
+          "not_set_homeserver": "Please enter the Matrix homeserver first."
+        },
+        "select_room": "Select Matrix room",
+        "table_headers": "Name — Alias — Room ID",
+        "close": "Close",
+        "accept": "Apply",
+        "test_message_send": "Send test message",
+        "without_name": "without name",
+        "select_room_first": "Please select a room first.",
+        "test_message": "Matrix test message from Little Backup Box",
+        "test_message_sent_to": "Test message sent to",
+        "test_message_error": "Error sending test message",
+        "button_select_room": "Select room",
+        "room_id_label": "Matrix room ID",
+        "test_success": "Matrix connection test successful"
+      }
+    },
+    "cloud": {
+      "target_basedir_header": "Base folder on cloud servers",
+      "target_basedir_label": "The backup on the cloud server is carried out under this directory.",
+      "sync_method_header": "Sync Method",
+      "sync_parameter_header": "Sync Parameters",
+      "files_stay_in_place_header": "Files Stay In Place",
+      "rclone": {
+        "gui": {
+          "header": "rclone GUI",
+          "restart_label": "Update and restart rclone GUI",
+          "restarted": "The rclone UI has been restarted.",
+          "password_hint": "Use the global password set in the Password section"
+        },
+        "desc": "Depending on your cloud service, this configuration may only be valid for a limited time."
+      }
+    },
+    "save_settings_upload_text": "Upload a zip-archive with your settings"
+  },
+  "tools": {
+    "umount_b": "Remove",
+    "repair": "Repair",
+    "format_b": "format disc!",
+    "select_format_fstype": "file system type",
+    "select_partition": "Select partition",
+    "fsck_check_b": "Check",
+    "fsck_autorepair_b": "Repair",
+    "fsck_check_m": "check initiated",
+    "fsck_autorepair_m": " repair initiated",
+    "f3": {
+      "select_action": "Select test",
+      "probe_non_destructive": "try to preserve data (slow)",
+      "probe_destructive": "ERASE data (faster)",
+      "b": "start test"
+    },
+    "mount": {
+      "b": "Mount",
+      "header": "Mount storage",
+      "target": "target",
+      "source": "source",
+      "usb": "USB",
+      "select_partition_label": "Partition",
+      "nvme": "NVMe SSD",
+      "mounted": "mounted"
+    }
+  },
+  "cmd": {
+    "format": {
+      "header": "Format device",
+      "warning": "Danger! This will erase all data on the selected device!"
+    },
+    "f3": {
+      "header": "Verify USB drive capacity",
+      "warning_non_destructive": "Attention, ALL DATA on the data medium could be deleted!",
+      "warning_destructive": "Attention, ALL DATA on the data medium will be deleted!"
+    },
+    "fsck": {
+      "header": "File system check",
+      "warning": "The file system could be damaged!"
+    }
+  },
+  "view": {
+    "filter": {
+      "section": "Filter",
+      "date": "Date",
+      "order_by_filename": "Filename",
+      "rating_all": "All",
+      "order_by_id": "ID",
+      "file_type": "File type",
+      "rejected": "Rejected (−1)",
+      "unrated": "Unrated (0)",
+      "date_from": "Date from",
+      "date_to": "Date to",
+      "filename": "Filename",
+      "camera": "Camera",
+      "reset": "Reset filters",
+      "directory": "Directory",
+      "extension": "File extension",
+      "social_publish": "Marked for publish",
+      "social_published": "Already published"
+    },
+    "images": {
+      "back_to_grid": "Back to overview",
+      "comment": "Comment"
+    },
+    "footer": {
+      "footer": "Warning, only images that have thumbnails are displayed here. Generate them either automatically (Settings, Backup) or via the Backup page.<br>\nSee the <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/05a.-view-image-viewer\">Wiki</a> for more information."
+    },
+    "social": {
+      "publish": "Publish",
+      "published": "Published",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Publish failed",
+      "auth_failed": "Authentication failed",
+      "rate_limit": "Rate limit reached"
+    },
+    "medium_selector": "Storage medium",
+    "columns": "Columns",
+    "sort_by": "Sort by",
+    "per_page": "Per page",
+    "not_mounted": "Storage medium is not mounted",
+    "no_images": "No images found on this medium",
+    "no_database": "No database found. Generate thumbnails from the Backup page first.",
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Add a comment...",
+    "rating_save_error": "Failed to save rating. Please try again.",
+    "delete_rejected_button": "Delete rejected",
+    "delete_rejected_title": "Delete rejected images",
+    "delete_rejected_confirm": "Delete all {count} rejected images on {medium}? This cannot be undone.",
+    "delete_rejected_partial": "Some files could not be deleted: {error}",
+    "slideshow_interval": "Interval (seconds)",
+    "slideshow_play": "Play slideshow",
+    "slideshow_stop": "Stop slideshow",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
+    "zoom_file_missing": "Original file not available"
+  },
+  "maintenance": {
+    "update": {
+      "check_error": "Failed to check for updates",
+      "no_update_available": "System is already up to date",
+      "install_started": "Update installation started",
+      "install_error": "Failed to install update",
+      "branch": "Branch",
+      "installed_version": "Installed version",
+      "available_version": "Available version",
+      "section": "Updates"
+    },
+    "database": {
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings",
+      "section": "Database Operations",
+      "target": "Target Storage"
+    },
+    "dev_update_button": "Install development update",
+    "dev_update_warning": "Development branch may contain unstable changes.",
+    "dev_update_error": "Could not fetch from remote",
+    "libraw_title": "Update LibRaw",
+    "libraw_description": "Updates LibRaw for improved RAW image processing. This requires compiling from source and may take 5–15 minutes. RAW processing will be unavailable during the update.",
+    "libraw_button": "Update LibRaw",
+    "libraw_warning": "This process takes 5–15 minutes and will temporarily interrupt RAW processing.",
+    "file": {
+      "rename_error": "Failed to start rename operation",
+      "rename_started": "Rename files operation started"
+    },
+    "settings": {
+      "download_error": "Failed to download settings",
+      "download_success": "Settings downloaded successfully",
+      "invalid_file_type": "Please select a ZIP file",
+      "upload_error": "Failed to upload settings",
+      "upload_success": "Settings uploaded successfully",
+      "uploading": "Uploading..."
+    },
+    "tab": {
+      "database": "Database",
+      "files": "Files",
+      "settings": "Settings"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Display",
+      "locale": "Locale",
+      "backup": "Backup defaults"
+    }
+  },
+  "integrations": {
+    "social_media": {
+      "test_telegram": "Test Connection",
+      "test_mastodon": "Test Connection",
+      "test_bluesky": "Test Connection",
+      "test_matrix": "Test Connection"
+    },
+    "social_general": "General",
+    "social_publish_date": "Publish date format",
+    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
+    "social_publish_filename": "Include filename in post",
+    "cloud_services": {
+      "no_services": "No cloud services configured. Please configure rclone first."
+    },
+    "cloud_target_dir": "Target base directory",
+    "cloud_sync_method": "Sync method",
+    "cloud_sync_rclone": "rclone",
+    "cloud_sync_rsync": "rsync",
+    "cloud_files_stay": "Files stay in place",
+    "vpn": {
+      "title": "VPN",
+      "file_uploaded": "VPN config file uploaded",
+      "file_removed": "VPN config file removed",
+      "confirm_remove": "Are you sure you want to remove the {type} config file?",
+      "remove": "Remove"
+    },
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
+    }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None",
+    "display_status": "Display status",
+    "display_status_ready": "Ready",
+    "display_status_info": "Info",
+    "display_status_custom": "Custom…"
+  },
+  "cancel": "Cancel",
+  "hardware": {
+    "button_action": "Action",
+    "button_add_combination": "Add combination",
+    "button_bouncetime": "Bounce time",
+    "button_combinations": "Button combinations",
+    "button_edge": "Edge detection",
+    "button_edge_both": "Both",
+    "button_edge_falling": "Falling",
+    "button_edge_rising": "Rising",
+    "button_enabled": "Enable buttons",
+    "button_pull": "Resistor pull",
+    "button_pull_down": "Pull-down",
+    "button_pull_up": "Pull-up",
+    "button_rotation": "Layout rotation",
+    "button_section": "Button hardware",
+    "fan_gpio_pin": "GPIO pin",
+    "fan_gpio_pin_help": "BCM pin number",
+    "fan_section": "Fan",
+    "fan_temp_out_of_range": "Must be 0–100",
+    "fan_temp_threshold": "Temperature threshold",
+    "fan_temp_threshold_help": "°C · 0 = fan always off",
+    "tab": {
+      "display": "Display",
+      "buttons": "Buttons",
+      "fan": "Fan"
+    }
+  },
+  "menu": {
+    "yes": "Yes"
+  },
+  "status": {
+    "tooltip": "Device status",
+    "ready": "Ready"
+  },
+  "welcome": {
+    "title": "Welcome to Little Backup Box",
+    "about_title": "About",
+    "about_text": "Little Backup Box turns a Raspberry Pi into a powerful, mobile backup and media management hub - ideal for photographers, travelers, and professionals working on the go.",
+    "about_text_2": "It can automatically back up files from cameras, smartphones, and storage devices to local drives, or a wide range of cloud services. Acting as a central hub, Little Backup Box aggregates media from multiple sources and can automatically forward them for further processing, archiving, or publishing.",
+    "features_title": "Features",
+    "features_backup_from": "Automate backup from:",
+    "features_backup_from_list": "USB storage, camera, internal storage, NVMe SSD storage, cloud storage",
+    "features_backup_to": "Automate backup to:",
+    "features_backup_to_list": "USB storage, internal storage, NVMe SSD storage, rsync server, cloud storage, social media",
+    "features_tools": "Tools for memory management:",
+    "features_tools_list": "Manual mount, check disk integrity, format disks, verify USB capacity",
+    "features_other": "Other features:",
+    "features_other_list": "Email notifications, preview and rate images, file manager, convenient web interface",
+    "status_title": "Development Status",
+    "status_text": "Little Backup Box has reached a largely stable and functional stage. While new features are still being added from time to time, the established core functions are now highly reliable.",
+    "status_text_2": "Regular updates are strongly recommended to benefit from ongoing refinements and fixes."
+  }
+}

@@ -1,0 +1,658 @@
+{
+  "log": {
+    "logmonitor": "Moniteur de journal",
+    "refresh_button": "Rafraîchir"
+  },
+  "mainmenue": {
+    "welcome": "Bienvenue",
+    "main": "Sauvegarde",
+    "network": "Réseau",
+    "integrations": "Connections",
+    "filebrowser": "Navigateur de fichiers",
+    "gallery": "Galerie",
+    "maintenance": "Maintenance",
+    "rclone_gui": "rclone GUI",
+    "scrape": "Interface archivée",
+    "storage": "Storage",
+    "preferences": "Preferences",
+    "system": "System",
+    "hardware": "Hardware"
+  },
+  "network": {
+    "wifi_config": {
+      "title": "WiFi"
+    },
+    "rsync_config": {
+      "title": "rsync Server"
+    },
+    "network_info": {
+      "title": "Informations réseau"
+    },
+    "internet_status": "État Internet",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "ip_addresses": "Adresses IP",
+    "refresh": "Actualiser",
+    "no_ips": "Aucune adresse IP trouvée",
+    "qr_codes": "Codes QR",
+    "wifi_reset_section": "Reset WiFi Credentials",
+    "wifi_reset_description": "This will erase stored WiFi credentials and reboot the device into access point mode.",
+    "wifi_reset_button": "Reset WiFi credentials",
+    "wifi_reset_confirm_title": "Reset WiFi Credentials?",
+    "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
+    "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
+    "wifi_reset_error": "Comitup is not installed on this device"
+  },
+  "scrape": {
+    "title": "Pages archivées",
+    "description": "Explorez les instantanés statiques de l'interface Little Backup Box qui ont été copiés à partir d'un appareil en fonctionnement. Chaque instantané s'ouvre dans un nouvel onglet et fonctionne sans backend.",
+    "open": "Ouvrir l'instantané",
+    "empty": "Aucune page archivée n'est disponible pour le moment.",
+    "error": "Impossible de charger la liste des pages archivées.",
+    "updated": "Dernière mise à jour :",
+    "generated": "Manifeste généré :"
+  },
+  "main": {
+    "internal_button": "stockage interne",
+    "rsync_button": "rsync-serveur",
+    "reboot_button": "Redémarrer",
+    "shutdown_button": "Éteindre",
+    "cancel_button": "Annuler",
+    "reboot_confirm_title": "Redémarrer l'appareil?",
+    "reboot_confirm_message": "Avertissement: Les processus de sauvegarde sont actuellement en cours d'exécution. Ils seront interrompus si vous continuez. Êtes-vous sûr de vouloir redémarrer?",
+    "reboot_confirm_message_no_backup": "Êtes-vous sûr de vouloir redémarrer l'appareil?",
+    "shutdown_confirm_title": "Éteindre l'appareil?",
+    "shutdown_confirm_message": "Avertissement: Les processus de sauvegarde sont actuellement en cours d'exécution. Ils seront interrompus si vous continuez. Êtes-vous sûr de vouloir éteindre?",
+    "shutdown_confirm_message_no_backup": "Êtes-vous sûr de vouloir éteindre l'appareil?",
+    "stop_lbb_button": "Arrêter LBB",
+    "stop_lbb_confirm_title": "Arrêter Little Backup Box?",
+    "stop_lbb_confirm_message": "Les processus de sauvegarde sont actuellement en cours d'exécution. Voulez-vous les arrêter et terminer Little Backup Box?",
+    "stop_lbb_confirm_message_no_backup": "Êtes-vous sûr de vouloir terminer Little Backup Box?",
+    "reboot_m": "L'appareil redémarre. Actualisez cette page dans quelques instants.",
+    "shutdown_m": "L'appareil est éteint. Vous pouvez fermer cette page.",
+    "stopbackup_m": "Arrêt de la sauvegarde.",
+    "usb_button": "Poste stockage USB",
+    "source": "Source",
+    "target": "Cible",
+    "backup": {
+      "options": "Options",
+      "generate_thumbnails_checkbox_label": "Générer des vignettes et lire dans la base de données (uniquement pour le stockage local)",
+      "initiated": "initié",
+      "power_off_checkbox_label": "Éteindre après la course",
+      "update_exif_checkbox_label": "Écrire des données EXIF ​​​​dans les fichiers d'origine (uniquement pour le stockage local)",
+      "preset_target_label": "Définir la partition cible",
+      "preset_source_label": "Définir la partition source",
+      "preset_partition_auto": "sélection automatique",
+      "selected_partition": "Partition sélectionnée",
+      "running": "Sauvegardes en cours",
+      "primary": "Sauvegarde principale",
+      "secondary": "Sauvegarde secondaire",
+      "general": "Général",
+      "secondary_label": "Une sauvegarde cloud doit-elle être effectuée après la sauvegarde principale?",
+      "rename_checkbox_label": "Renommer les fichiers (uniquement pour le stockage local)",
+      "comparison_method_label": "Méthode de comparaison",
+      "comparison_file_size_timestamp": "Taille de fichier et horodatage",
+      "comparison_checksum": "Somme de contrôle",
+      "previous_runs": "Exécutions de sauvegarde précédentes",
+      "rerun": "Réexécuter",
+      "save_as_defaults": "Enregistrer comme valeurs par défaut",
+      "defaults_saved": "Valeurs par défaut enregistrées avec succès",
+      "defaults_save_error": "Échec de l'enregistrement des valeurs par défaut",
+      "start": "Démarrer la sauvegarde",
+      "usb_devices": "Périphériques USB",
+      "internal_storage": "Stockage interne",
+      "partitions": "Partitions",
+      "local_storage": "Stockage Local",
+      "logs": "Backup logs"
+    },
+    "logout_button": "Se déconnecter",
+    "nvme_button": "NVMe SSD",
+    "file_operations": "Opérations sur les fichiers",
+    "backup_error": "Erreur de sauvegarde"
+  },
+  "sysinfo": {
+    "temp": "Température",
+    "cpuload": "Charge CPU",
+    "devices": "Dispositifs",
+    "diskspace": "Espace disque",
+    "conditions": "Conditions",
+    "memory_ram": "RAM utilisé",
+    "memory_swap": "SWAP utilisé",
+    "refresh_button": "Rafraîchir",
+    "camera_serial": "Numéro de série",
+    "cameras": "Appareils photo/smartphones",
+    "system": "Système",
+    "model": "Modèle",
+    "device_states": "Statut du périphérique",
+    "info": "Info",
+    "no_cameras": "No cameras detected",
+    "loading": "Loading…"
+  },
+  "config": {
+    "lang_header": "Choisir la langue/Select language",
+    "lang_browser_detect": "Détection automatique/Auto-detect",
+    "view_theme_header": "Schéma de couleur",
+    "view_theme_light": "lumière",
+    "view_theme_dark": "foncé",
+    "view_theme_sepia": "sépia",
+    "view_theme_system": "Système",
+    "popup_messages": "Show popup notifications",
+    "camera_folder_mask": "Camera folder mask",
+    "camera_folder_mask_help": "Folder name pattern to back up from cameras (e.g. DCIM)",
+    "camera_folder_mask_no_slash": "Folder mask must not contain /",
+    "target_size_minimum": "Target size minimum",
+    "target_size_minimum_help": "GB · 0 = disabled",
+    "idle_power_off": "Idle power-off",
+    "idle_power_off_help": "Minutes · 0 = disabled",
+    "write_rating_to_exif": "Write rating to EXIF",
+    "timezone": "Timezone",
+    "background_image": "Background image",
+    "background_image_help": "Path to an image file on the device",
+    "background_image_path_traversal": "Path traversal not allowed",
+    "log_level": "Log level",
+    "log_sync": "Log sync protocol",
+    "display_images_keep": "Keep display images",
+    "default_backup_mode_section": "Default backup modes",
+    "backup_mode_copy": "Copy",
+    "backup_mode_move": "Move",
+    "source_camera": "Camera",
+    "source_usb": "USB",
+    "source_internal": "Internal",
+    "source_nvme": "NVMe",
+    "target_usb": "USB",
+    "target_internal": "Internal",
+    "target_nvme": "NVMe",
+    "target_cloud": "Cloud",
+    "target_rsync": "Rsync",
+    "rsync_server_label": "Adresse du serveur rsync",
+    "rsync_port_label": "Port du serveur rsync (par défaut :",
+    "rsync_user_label": "Nom d'utilisateur pour le serveur rsync",
+    "rsync_password_label": "Mot de passe pour le serveur rsync",
+    "save_button": "Sauvegarder",
+    "username": "Nom d'utilisateur",
+    "save_settings_download_link_text": "Paramètres de téléchargement",
+    "save_settings_download_text": "Obtenez une archive zip avec vos paramètres",
+    "save_settings_section": "Paramètres de sauvegarde / restauration",
+    "save_settings_upload_button": "Paramètres de téléchargement",
+    "save_settings_download_header": "Télécharger",
+    "save_settings_upload_header": "Télécharger",
+    "alert_password_too_short": "Le mot de passe doit comporter au moins 5 caractères.",
+    "message_settings_saved": "config.cfg a été écrit avec succès.",
+    "rsync_module_label1": "Nom du module sur le serveur rsync, par exemple 'little-backup-box' (par défaut :",
+    "wifi_country_label": "Sélectionnez le pays dans lequel cette Little Backup Box doit être utilisée",
+    "wifi_country_header": "Pays Wi-Fi",
+    "backup": {
+      "none": "pas de sauvegarde automatique",
+      "section": "Sauvegarde",
+      "general_settings_header": "Valeurs par défaut",
+      "file_operation_label": "Opération sur les fichiers",
+      "file_operation_copy": "Copier les fichiers",
+      "file_operation_move": "Déplacer les fichiers",
+      "rename": {
+        "warning": "Danger! Les fichiers doivent ensuite être supprimés de la source. Dans le cas contraire, ils seront à nouveau transférés lors de la prochaine sauvegarde, renommés et ainsi remplacer la version de la sauvegarde précédente.",
+        "desc": "Une tentative est effectuée pour lire la date de création de tous les fichiers multimédias sur le support de stockage local. Si cela est possible, le fichier sera renommé selon le modèle suivant : à partir de \"Image0123.jpg\" sera par exemple \"2024-10-18_23-47-26_-_Image.jpg\"."
+      }
+    },
+    "mail": {
+      "password_label": "Mot de passe pour le serveur de messagerie",
+      "port_label": "Port du serveur de messagerie SMTP",
+      "recipient_label": "Adresse e-mail du destinataire",
+      "section": "E-mail",
+      "server_settings_notice": "Les paramètres du serveur doivent être configurés avant que les notifications par e-mail puissent être envoyées.",
+      "smtp_header": "Serveur de messagerie",
+      "smtp_label": "Adresse du serveur de messagerie SMTP",
+      "user_label": "Nom d'utilisateur pour le serveur de messagerie",
+      "testmail_header": "Envoyer un e-mail test",
+      "testmail_sent": "L'e-mail de test a été envoyé",
+      "testmail_error": "Échec de l'envoi de l'e-mail de test",
+      "sender_label": "Adresse e-mail de l'expéditeur",
+      "security_header": "Sécurité de la connexion",
+      "timeout_header": "Délai d'expiration du courrier",
+      "notify_backup_label": "Envoyer le résumé de sauvegarde par e-mail",
+      "notify_ip_label": "Envoyer les liens d'accès par e-mail lorsque l'adresse IP réseau change",
+      "html_label": "Formater les e-mails en HTML"
+    },
+    "vpn": {
+      "upload_header": "Télécharger le fichier de configuration",
+      "upload_type_label": "Pour quelle variante VPN le fichier de configuration doit-il être utilisé ?",
+      "upload_type_none": "Veuillez sélectionner",
+      "type_none": "N'utilisez pas de VPN",
+      "type_header": "Quel VPN activer ?",
+      "upload_file_label": "Télécharger le fichier de configuration",
+      "remove_header": "Supprimer le fichier VPN",
+      "timeout_header": "Délai d'expiration de connexion",
+      "timeout_label": "Quel est le temps maximum d'attente pour que la connexion VPN soit établie ?",
+      "type_cloud_label": "Pour les services cloud",
+      "type_rsync_label": "Pour la sauvegarde du serveur rsync",
+      "type_desc": "Quel VPN doit être activé avant de transférer des données vers un service réseau ? Attention : L'interface de Little Backup Box peut ne pas être accessible pendant l'exécution de la sauvegarde. Vous pourrez peut-être accéder à la boîte sous l'IP VPN si votre terminal est également enregistré dans le même VPN."
+    },
+    "display": {
+      "section": "Écran monté sur GPIO",
+      "activate_label": "Activer l'écran",
+      "connection_label": "Interface d'affichage",
+      "i2c_address_label": "Adresse i2c de l'écran",
+      "i2c_header": "Affichage I2C",
+      "ip_label": "Imprimez l'IP toutes les minutes.",
+      "device_available": "Périphérique détecté",
+      "behavior_header": "Comportement d'affichage",
+      "spi_header": "Affichage SPI",
+      "spi_port_label": "Port SPI",
+      "driver_label": "Pilote d'affichage",
+      "resolution_x_label": "Résolution horizontale (pixels)",
+      "resolution_y_label": "Résolution verticale (pixels)",
+      "font_size_label": "Taille de police",
+      "frame_time_label": "Temps d'affichage minimum par image en secondes",
+      "colors_header": "Sélection des couleurs lors de l'utilisation d'un écran couleur",
+      "color": {
+        "white": "blanc",
+        "yellow": "jaune",
+        "green": "vert",
+        "blue": "bleu",
+        "red": "rouge",
+        "grey": "gris",
+        "lightgrey": "gris clair",
+        "orange": "orange",
+        "black": "noir",
+        "alert_label": "Couleur de la police des avertissements",
+        "high_label": "Couleur de police pour le texte en surbrillance",
+        "model_1": "Noir et blanc",
+        "model_RGB": "RGB",
+        "model_RGBA": "RGBA (RVB avec transparence)",
+        "model_label": "Couleur",
+        "text_label": "Couleur de police par défaut",
+        "background_label": "Couleur d'arrière-plan",
+        "notation_label": "Notation des couleurs",
+        "notation_RGB": "RGB (red-green-blue)",
+        "notation_BGR": "BGR (blue-green-red)",
+        "inverse_label": "Couleurs inversées"
+      },
+      "contrast_label": "Contraste",
+      "rotate_label": "Rotation de l'affichage",
+      "rotate_header": "Rotation de l'écran",
+      "offset_x_label": "Décalage d'affichage horizontal (en pixels)",
+      "offset_y_label": "Décalage d'affichage vertical (en pixels)",
+      "frame_time_ip_label": "Temps d'affichage minimum de l'IP en secondes",
+      "statusbar": {
+        "label": "Afficher la barre d'état"
+      },
+      "backlight_header": "Rétroéclairage de l'écran",
+      "backlight_enabled_label": "Activer le rétroéclairage de l'écran (si disponible)",
+      "backlight_pin_label": "Broche GPIO du rétroéclairage (notation BCM)",
+      "additional_settings_header": "Affichage supplémentaire",
+      "detect_devices": "Détecter les appareils"
+    },
+    "hardware": {
+      "section": "Matériel"
+    },
+    "update": {
+      "linktext": "Mettez à jour maintenant",
+      "text": "<h3>Mettre à jour Little Backup Box</h3><p>Attention :<ul><li>La mise à jour peut rendre le système inutilisable.</li> <li>La mise à jour peut entraîner un volume de téléchargement considérable et donc éventuellement des coûts.</li><li>La mise à jour peut prendre plusieurs minutes ou plus, selon la vitesse d'Internet.</li></ul><br>Uniquement effectuez la mise à jour si vous ...<ul><li>pouvez également effectuer une nouvelle installation si nécessaire</li><li>disposez d'une connexion Internet stable</li><li>disposez d'une alimentation électrique stable</li> </ul></p>",
+      "section": "Mettre à jour",
+      "available": "Mise à jour disponible",
+      "not_available": "Système à jour",
+      "check_label": "Rechercher des mises à jour"
+    },
+    "screen": {
+      "virtual_keyboard_enable_label": "Activer le clavier virtuel"
+    },
+    "social": {
+      "bluesky": {
+        "header": "Bluesky",
+        "install_desc": "Veuillez vous référer aux préparatifs dans le <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04f_Bluesky\">Wiki: Bluesky</a>",
+        "base_url_label": "URL de base de l’API",
+        "identifier_label": "Identifiant (e-mail ou handle)",
+        "app_password_label": "Mot de passe de l’application",
+        "test_success": "Test de connexion Bluesky réussi"
+      },
+      "telegram": {
+        "header": "Telegram",
+        "install_desc": "Veuillez vous référer aux préparatifs dans le <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04c_Telegram\">Wiki : Telegram</a>",
+        "token_label": "Jeton",
+        "chat_id_label": "ID de discussion",
+        "error_invalid_token": "Jeton invalide",
+        "select_chat_first": "Veuillez d'abord sélectionner un chat.",
+        "test_message": "Message de test de Little-Backup-Box via un bot",
+        "test_message_sent_to": "Message de test envoyé à",
+        "test_message_error": "Erreur d'envoi",
+        "select_chat": "Sélectionnez le chat",
+        "table_headers": "Affichage : Nom (Type) — <code>chat_id",
+        "close": "Fermer",
+        "accept": "Accepter",
+        "test_message_send": "Envoyer un message de test",
+        "button_select_chat": "Sélectionnez le chat",
+        "test_success": "Test de connexion Telegram réussi"
+      },
+      "mastodon": {
+        "header": "Mastodon",
+        "install_desc": "Veuillez vous référer aux préparatifs dans le <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04e_Mastodon\">Wiki: Mastodon</a>",
+        "token_label": "Jeton d'accès",
+        "base_url_label": "URL de base de Mastodon",
+        "test_success": "Test de connexion Mastodon réussi"
+      },
+      "general": {
+        "header": "Paramètres généraux",
+        "services": "Services",
+        "date_label": "Date de publication de l'enregistrement",
+        "filename_label": "Publier le nom du fichier"
+      },
+      "matrix": {
+        "header": "Matrix",
+        "install_desc": "Veuillez vous référer aux préparatifs dans le <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/04d_Matrix\">Wiki: Matrix</a>",
+        "homeserver_label": "Serveur Matrix (ex. https://matrix.example.org)",
+        "token_label": "Jeton d’accès du compte bot",
+        "error": {
+          "not_set_token": "Veuillez d’abord saisir le jeton d’accès Matrix.",
+          "not_set_homeserver": "Veuillez d’abord saisir le serveur Matrix."
+        },
+        "select_room": "Sélectionner un salon Matrix",
+        "table_headers": "Nom — Alias — ID du salon",
+        "close": "Fermer",
+        "accept": "Valider",
+        "test_message_send": "Envoyer un message de test",
+        "without_name": "sans nom",
+        "select_room_first": "Veuillez d’abord sélectionner un salon.",
+        "test_message": "Message de test Matrix envoyé par le Little Backup Box",
+        "test_message_sent_to": "Message de test envoyé à",
+        "test_message_error": "Erreur lors de l’envoi du message de test",
+        "button_select_room": "Sélectionner un salon",
+        "room_id_label": "ID du salon Matrix",
+        "test_success": "Test de connexion Matrix réussi"
+      }
+    },
+    "cloud": {
+      "target_basedir_header": "Dossier d'accueil sur les serveurs cloud",
+      "target_basedir_label": "La sauvegarde est effectuée sous ce répertoire.",
+      "sync_method_header": "Méthode de synchronisation",
+      "sync_parameter_header": "Paramètres de synchronisation",
+      "files_stay_in_place_header": "Les fichiers restent en place",
+      "rclone": {
+        "gui": {
+          "header": "rclone GUI",
+          "restart_label": "Mettre à jour et redémarrer l'interface rclone",
+          "restarted": "L'interface utilisateur rclone a été redémarrée.",
+          "password_hint": "Utilisez le mot de passe global défini dans la section Mot de passe"
+        },
+        "desc": "Selon votre fournisseur de services cloud, cette configuration peut n'être valable que pour une durée limitée."
+      }
+    },
+    "save_settings_upload_text": "Téléchargez une archive zip contenant vos paramètres"
+  },
+  "tools": {
+    "umount_b": "Supprimer",
+    "repair": "Réparation",
+    "select_partition": "Sélectionnez la partition",
+    "fsck_check_b": "Vérifier",
+    "fsck_autorepair_b": "réparation",
+    "fsck_check_m": "vérification lancée",
+    "fsck_autorepair_m": "réparation lancée",
+    "format_b": "formater le disque !",
+    "select_format_fstype": "type de système de fichiers",
+    "f3": {
+      "select_action": "Sélectionner l'essai",
+      "probe_non_destructive": "essayer de conserver les données (lent)",
+      "probe_destructive": "EFFACER les données (plus rapide)",
+      "b": "commencer l'essai"
+    },
+    "mount": {
+      "b": "Mount",
+      "header": "Monter le périphérique de stockage",
+      "target": "Cible",
+      "source": "Origine",
+      "usb": "USB",
+      "select_partition_label": "Partition",
+      "nvme": "NVMe SSD",
+      "mounted": "monté"
+    }
+  },
+  "box": {
+    "backup": {
+      "complete": "Sauvegarde terminée",
+      "mode": {
+        "anyusb": "tout USB",
+        "cameras": "Caméras",
+        "cloud": "Cloud",
+        "cloud_rsync": "Serveur rsync",
+        "internal": "Stockage intégré (carte SD / eMMC)",
+        "usb": "Stockage USB",
+        "nvme": "NVMe SSD",
+        "rename": "Rebaptiser",
+        "ftp": "Stockage FTP",
+        "social": "médias sociaux",
+        "bluesky": "Bluesky",
+        "mastodon": "Mastodon",
+        "matrix": "Matrix",
+        "telegram": "Telegram"
+      }
+    }
+  },
+  "seconds_short": "s",
+  "system": {
+    "logs_section": "Logs",
+    "tab": {
+      "device": "Device",
+      "cameras": "Cameras",
+      "updates": "Updates",
+      "logs": "Logs"
+    }
+  },
+  "cmd": {
+    "format": {
+      "warning": "Danger! Cela effacera toutes les données sur l'appareil sélectionné !",
+      "header": "Formater l'appareil"
+    },
+    "f3": {
+      "header": "Vérifier la capacité du lecteur USB",
+      "warning_non_destructive": "Attention, TOUTES LES DONNEES sur le support de données pourraient être supprimées !",
+      "warning_destructive": "Attention, TOUTES LES DONNEES sur le support de données seront supprimées!"
+    },
+    "fsck": {
+      "header": "Vérification du système de fichiers",
+      "warning": "Le système de fichiers pourrait être endommagé !"
+    }
+  },
+  "view": {
+    "filter": {
+      "section": "Filtre",
+      "date": "Date",
+      "order_by_filename": "nom de fichier",
+      "rating_all": "Tous",
+      "order_by_id": "ID",
+      "file_type": "Type de fichier",
+      "rejected": "Rejeté (−1)",
+      "unrated": "Non noté (0)",
+      "date_from": "Date de",
+      "date_to": "Date jusqu'à",
+      "filename": "Nom de fichier",
+      "camera": "Appareil photo",
+      "reset": "Réinitialiser les filtres",
+      "directory": "Répertoire",
+      "extension": "Extension de fichier",
+      "social_publish": "Marqué pour publication",
+      "social_published": "Déjà publié"
+    },
+    "images": {
+      "back_to_grid": "Retour à l'aperçu",
+      "comment": "Commentaire"
+    },
+    "footer": {
+      "footer": "Attention, seules les images qui ont des vignettes sont affichées ici. Générez-les soit automatiquement (Paramètres, Sauvegarde) soit via la page Sauvegarde.<br>\nConsulte la <a href=\"https://github.com/outdoorbits/little-backup-box/wiki/05a.-view-image-viewer\">Wiki</a> para obtener más información."
+    },
+    "social": {
+      "publish": "Publier",
+      "published": "Publié",
+      "telegram": "Telegram",
+      "mastodon": "Mastodon",
+      "publish_error": "Échec de la publication",
+      "auth_failed": "Échec de l'authentification",
+      "rate_limit": "Limite de débit atteinte"
+    },
+    "medium_selector": "Storage medium",
+    "columns": "Columns",
+    "sort_by": "Sort by",
+    "per_page": "Per page",
+    "not_mounted": "Storage medium is not mounted",
+    "no_images": "No images found on this medium",
+    "no_database": "No database found. Generate thumbnails from the Backup page first.",
+    "go_to_backup": "Go to Backup page",
+    "comment_placeholder": "Ajouter un commentaire...",
+    "rating_save_error": "Impossible de sauvegarder la note. Veuillez réessayer.",
+    "delete_rejected_button": "Supprimer les refusées",
+    "delete_rejected_title": "Supprimer les images refusées",
+    "delete_rejected_confirm": "Supprimer les {count} images refusées sur {medium} ? Cette action est irréversible.",
+    "delete_rejected_partial": "Certains fichiers n'ont pas pu être supprimés : {error}",
+    "slideshow_interval": "Intervalle (secondes)",
+    "slideshow_play": "Lancer le diaporama",
+    "slideshow_stop": "Arrêter le diaporama",
+    "zoom_in": "Zoom avant",
+    "zoom_out": "Zoom arrière",
+    "zoom_file_missing": "Fichier original non disponible"
+  },
+  "maintenance": {
+    "update": {
+      "check_error": "Échec de la vérification des mises à jour",
+      "no_update_available": "Aucune mise à jour disponible à installer",
+      "install_started": "Installation de la mise à jour démarrée",
+      "install_error": "Échec de l'installation de la mise à jour",
+      "branch": "Branche",
+      "installed_version": "Version installée",
+      "available_version": "Version disponible",
+      "section": "Updates"
+    },
+    "dev_update_button": "Install development update",
+    "dev_update_warning": "Development branch may contain unstable changes.",
+    "dev_update_error": "Could not fetch from remote",
+    "libraw_title": "Update LibRaw",
+    "libraw_description": "Updates LibRaw for improved RAW image processing. This requires compiling from source and may take 5–15 minutes. RAW processing will be unavailable during the update.",
+    "libraw_button": "Update LibRaw",
+    "libraw_warning": "This process takes 5–15 minutes and will temporarily interrupt RAW processing.",
+    "database": {
+      "section": "Opérations de base de données",
+      "target": "Stockage cible",
+      "generate_thumbnails": "Generate thumbnails",
+      "sync": "Sync database",
+      "update_exif": "Update EXIF data",
+      "success": "Operation completed successfully",
+      "partial_success": "Completed with warnings"
+    },
+    "file": {
+      "rename_started": "Opération de renommage démarrée",
+      "rename_error": "Échec du démarrage de l'opération de renommage"
+    },
+    "settings": {
+      "download_error": "Échec du téléchargement des paramètres",
+      "download_success": "Paramètres téléchargés avec succès",
+      "invalid_file_type": "Veuillez sélectionner un fichier ZIP",
+      "upload_error": "Échec du téléchargement des paramètres",
+      "upload_success": "Paramètres téléchargés avec succès",
+      "uploading": "Téléchargement..."
+    },
+    "tab": {
+      "database": "Base de données",
+      "files": "Fichiers",
+      "settings": "Paramètres"
+    }
+  },
+  "preferences": {
+    "tab": {
+      "display": "Affichage",
+      "locale": "Langue et région",
+      "backup": "Valeurs par défaut"
+    }
+  },
+  "integrations": {
+    "social_media": {
+      "test_telegram": "Tester la Connexion",
+      "test_mastodon": "Tester la Connexion",
+      "test_bluesky": "Tester la Connexion",
+      "test_matrix": "Tester la Connexion"
+    },
+    "social_general": "General",
+    "social_publish_date": "Publish date format",
+    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
+    "social_publish_filename": "Include filename in post",
+    "cloud_services": {
+      "no_services": "Aucun service cloud configuré. Veuillez configurer rclone d'abord."
+    },
+    "cloud_target_dir": "Target base directory",
+    "cloud_sync_method": "Sync method",
+    "cloud_sync_rclone": "rclone",
+    "cloud_sync_rsync": "rsync",
+    "cloud_files_stay": "Files stay in place",
+    "vpn": {
+      "title": "VPN",
+      "file_uploaded": "Fichier de configuration VPN téléchargé",
+      "file_removed": "Fichier de configuration VPN supprimé",
+      "confirm_remove": "Êtes-vous sûr de vouloir supprimer le fichier de configuration {type}?",
+      "remove": "Supprimer"
+    },
+    "tab": {
+      "cloud": "Cloud",
+      "social": "Social",
+      "mail": "Mail"
+    }
+  },
+  "mock_controls": {
+    "title": "Mock Controls",
+    "delay": "Delay",
+    "failure_mode": "Failure mode",
+    "failure_none": "None",
+    "display_status": "Display status",
+    "display_status_ready": "Ready",
+    "display_status_info": "Info",
+    "display_status_custom": "Custom…"
+  },
+  "cancel": "Annuler",
+  "hardware": {
+    "button_action": "Action",
+    "button_add_combination": "Ajouter une combinaison",
+    "button_bouncetime": "Temps de rebond",
+    "button_combinations": "Combinaisons de boutons",
+    "button_edge": "Détection de front",
+    "button_edge_both": "Les deux",
+    "button_edge_falling": "Descendant",
+    "button_edge_rising": "Montant",
+    "button_enabled": "Activer les boutons",
+    "button_pull": "Résistance pull",
+    "button_pull_down": "Pull-down",
+    "button_pull_up": "Pull-up",
+    "button_rotation": "Rotation de la disposition",
+    "button_section": "Matériel de boutons",
+    "fan_gpio_pin": "Broche GPIO",
+    "fan_gpio_pin_help": "Numéro de broche BCM",
+    "fan_section": "Ventilateur",
+    "fan_temp_out_of_range": "Doit être 0–100",
+    "fan_temp_threshold": "Seuil de température",
+    "fan_temp_threshold_help": "°C · 0 = ventilateur toujours allumé",
+    "tab": {
+      "display": "Affichage",
+      "buttons": "Boutons",
+      "fan": "Ventilateur"
+    }
+  },
+  "menu": {
+    "yes": "Oui"
+  },
+  "status": {
+    "tooltip": "Device status",
+    "ready": "Ready"
+  }
+  ,
+  "welcome": {
+    "title": "Welcome to Little Backup Box",
+    "about_title": "About",
+    "about_text": "Little Backup Box turns a Raspberry Pi into a powerful, mobile backup and media management hub - ideal for photographers, travelers, and professionals working on the go.",
+    "about_text_2": "It can automatically back up files from cameras, smartphones, and storage devices to local drives, or a wide range of cloud services. Acting as a central hub, Little Backup Box aggregates media from multiple sources and can automatically forward them for further processing, archiving, or publishing.",
+    "features_title": "Features",
+    "features_backup_from": "Automate backup from:",
+    "features_backup_from_list": "USB storage, camera, internal storage, NVMe SSD storage, cloud storage",
+    "features_backup_to": "Automate backup to:",
+    "features_backup_to_list": "USB storage, internal storage, NVMe SSD storage, rsync server, cloud storage, social media",
+    "features_tools": "Tools for memory management:",
+    "features_tools_list": "Manual mount, check disk integrity, format disks, verify USB capacity",
+    "features_other": "Other features:",
+    "features_other_list": "Email notifications, preview and rate images, file manager, convenient web interface",
+    "status_title": "Development Status",
+    "status_text": "Little Backup Box has reached a largely stable and functional stage. While new features are still being added from time to time, the established core functions are now highly reliable.",
+    "status_text_2": "Regular updates are strongly recommended to benefit from ongoing refinements and fixes."
+  }
+}
