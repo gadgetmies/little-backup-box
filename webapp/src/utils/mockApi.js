@@ -1,4 +1,14 @@
 import { getActiveMockSettings } from './mockFailures.js';
+import {
+  MOCK_SOCIAL_BITS,
+  MOCK_SOCIAL_SERVICES,
+  MOCK_SOCIAL_SERVICES_CONFIGURED,
+  buildMockViewRows,
+  computeMockStats,
+  filterMockRows,
+  sortMockRows,
+} from './viewMockFixture.js';
+import { classifyMedia, isGoProH265, showsLowResImageNotice } from './viewMediaKinds.js';
 
 let runningBackups = [];
 let backupHistory = [];
@@ -44,6 +54,7 @@ const mockData = {
     conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
     conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
     conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
+    conf_VIEW_WRITE_RATING_EXIF: 'false',
   },
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
@@ -51,6 +62,20 @@ const mockData = {
     const_RCLONE_CONFIG_FILE: 'rclone.conf',
     const_BUTTONS_PRIVATE_CONFIG_FILE: 'buttons.cfg',
     const_IMAGE_DATABASE_FILENAME: 'images.db',
+    const_MOUNTPOINT_USB_TARGET: 'usb_target',
+    const_MOUNTPOINT_USB_SOURCE: 'usb_source',
+    const_MOUNTPOINT_NVME_TARGET: 'nvme_target',
+    const_MOUNTPOINT_NVME_SOURCE: 'nvme_source',
+    const_INTERNAL_BACKUP_DIR: 'internal',
+    const_VIEW_GRID_COLUMNS: '3',
+    const_VIEW_MAGNIFYING_GLASS_ZOOM: '10',
+    const_FILE_EXTENSIONS_LIST_WEB_IMAGES: 'jpg;jpeg;gif;png;webp',
+    const_FILE_EXTENSIONS_LIST_HEIC: 'heic;heif',
+    const_FILE_EXTENSIONS_LIST_RAW: '3fr;arw;dcr;dng;cr2;cr3;crw;fff;gpr;j6i;k25;kc2;kdc;mdc;mrw;nef;nrw;orf;pef;raw;raf;rw2;rwl;sr2;srf;srw;x3f',
+    const_FILE_EXTENSIONS_LIST_TIF: 'tif;tiff',
+    const_FILE_EXTENSIONS_LIST_VIDEO: 'avi;lrv;mp4',
+    const_FILE_EXTENSIONS_LIST_AUDIO: 'mp3;wav;m4a',
+    const_FILE_EXTENSIONS_LIST_TEXT: 'txt;md;html',
     const_BACKGROUND_IMAGES_DIR: 'backgrounds',
     const_SOFTWARE_BRANCH: 'main',
   },
@@ -105,103 +130,6 @@ const mockData = {
     severity: 'ready',
   },
   log: '',
-  viewImages: {
-    images: [
-      {
-        ID: 1,
-        File_Name: 'IMG_001.jpg',
-        Directory: '2024/01',
-        Create_Date: '2024-01-01',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: -1,
-        comment: 'Blurry shot',
-        Camera_Model_Name: 'Canon EOS R5',
-        File_Type: 'JPEG',
-        publish_telegram: false,
-        publish_mastodon: false,
-      },
-      {
-        ID: 2,
-        File_Name: 'IMG_002.jpg',
-        Directory: '2024/01',
-        Create_Date: '2024-01-05',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: 0,
-        comment: '',
-        Camera_Model_Name: 'Canon EOS R5',
-        File_Type: 'JPEG',
-        publish_telegram: false,
-        publish_mastodon: false,
-      },
-      {
-        ID: 3,
-        File_Name: 'IMG_003.jpg',
-        Directory: '2024/01',
-        Create_Date: '2024-01-10',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: 3,
-        comment: 'Nice composition',
-        Camera_Model_Name: 'Fujifilm X-T5',
-        File_Type: 'JPEG',
-        publish_telegram: true,
-        publish_mastodon: false,
-      },
-      {
-        ID: 4,
-        File_Name: 'IMG_004.RAF',
-        Directory: '2024/01',
-        Create_Date: '2024-01-15',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: 5,
-        comment: 'Best shot of the day',
-        Camera_Model_Name: 'Fujifilm X-T5',
-        File_Type: 'RAF',
-        publish_telegram: false,
-        publish_mastodon: true,
-      },
-      {
-        ID: 5,
-        File_Name: 'IMG_005.jpg',
-        Directory: '2024/02',
-        Create_Date: '2024-02-01',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: 1,
-        comment: '',
-        Camera_Model_Name: 'Canon EOS R5',
-        File_Type: 'JPEG',
-        publish_telegram: false,
-        publish_mastodon: false,
-      },
-      {
-        ID: 6,
-        File_Name: 'IMG_006.jpg',
-        Directory: '2024/02',
-        Create_Date: '2024-02-05',
-        thumbnail_path: '/img/unknown.JPG',
-        rating: -1,
-        comment: 'Out of focus',
-        Camera_Model_Name: 'Fujifilm X-T5',
-        File_Type: 'JPEG',
-        publish_telegram: false,
-        publish_mastodon: false,
-      },
-    ],
-    count: 6,
-  },
-  viewStats: {
-    imagesAll: 4,
-    directories: ['2024/01', '2024/02'],
-    ratings: [
-      { LbbRating: -1, count: 1 },
-      { LbbRating: 0, count: 1 },
-      { LbbRating: 3, count: 1 },
-      { LbbRating: 5, count: 1 },
-    ],
-    dates: ['2024-01-15', '2024-01-16', '2024-02-10', '2024-02-11'],
-    fileTypes: ['JPEG', 'RAF'],
-    fileTypeExtensions: ['jpg', 'RAF'],
-    cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5'],
-  },
 };
 
 function delay(ms = 100) {
@@ -234,6 +162,25 @@ function resolveDisplayStatus() {
 
 function generateBackupId() {
   return Date.now();
+}
+
+// Library rows for the static mock (mutable per page load, like a real DB).
+let viewRows = null;
+function getViewRows() {
+  if (!viewRows) viewRows = buildMockViewRows();
+  return viewRows;
+}
+
+function parseBody(data) {
+  if (!data) return {};
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
+  }
+  return data;
 }
 
 export function createMockApiInterceptor() {
@@ -473,25 +420,7 @@ export function createMockApiInterceptor() {
       return { data: { success: true, message: 'Settings uploaded (mock)' } };
     }
     
-    if (url === '/view/image') {
-      const params = config.params || {};
-      if (params.id === 'missing') {
-        return Promise.reject({
-          response: {
-            status: 404,
-            data: { error: 'file_missing' },
-          },
-        });
-      }
-      return {
-        data: { url: `https://placehold.co/800x600/333/fff?text=Full+Resolution+${params.id || ''}` },
-      };
-    }
-
-    if (url === '/view/init') {
-      return { data: { success: true } };
-    }
-
+    // ---- Library (/view) — mirrors webapp/server/routes/view.js -------------
     if (url === '/view/media') {
       if (mockSettings.failureMode === 'not_mounted') {
         return Promise.reject({
@@ -500,8 +429,24 @@ export function createMockApiInterceptor() {
       }
       return {
         data: {
-          media: ['usb', 'nvme', 'internal'],
-          available: { usb: true, nvme: false, internal: true },
+          media: ['target_usb', 'source_usb', 'target_nvme', 'source_nvme', 'internal'],
+          mounted: { target_usb: true, source_usb: true, target_nvme: false, source_nvme: false, internal: false },
+          default: 'target_usb',
+          nvmeAvailable: true,
+        },
+      };
+    }
+
+    if (url === '/view/init') {
+      return { data: { success: true, dbExists: true } };
+    }
+
+    if (url === '/view/social-services') {
+      return {
+        data: {
+          configured: [...MOCK_SOCIAL_SERVICES_CONFIGURED],
+          services: [...MOCK_SOCIAL_SERVICES],
+          bits: { ...MOCK_SOCIAL_BITS },
         },
       };
     }
@@ -512,146 +457,41 @@ export function createMockApiInterceptor() {
           response: { status: 503, data: { error: 'not_mounted' } },
         });
       }
-
-      const params = config.params || {};
-      const medium = params.medium;
-
-      // Legacy storagePath-based mock
-      if (!medium) {
-        return { data: mockData.viewImages };
-      }
-
       if (mockSettings.failureMode === 'no_results') {
-        return { data: { images: [], total: 0, dbExists: true } };
+        return { data: { images: [], count: 0, total: 0, dbExists: true } };
       }
       if (mockSettings.failureMode === 'db_not_initialised') {
-        return { data: { images: [], total: 0, dbExists: false } };
+        return { data: { images: [], count: 0, total: 0, dbExists: false } };
       }
-
-      const TOTAL = 120;
-      const page = parseInt(params.page || '1', 10);
-      const perPage = parseInt(params.per_page || '25', 10);
-      const cameras = ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'];
-      const fileTypes = ['JPEG', 'RAF', 'NEF', 'MP4'];
-      const fileExtensions = ['JPG', 'RAF', 'NEF', 'MP4'];
-      const directories = ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'];
-      // Mirrors webapp/server/utils/socialServiceBits.js. Keep in sync.
-      const SOCIAL_BITS = { telegram: 0, mastodon: 1, bluesky: 2, matrix: 3 };
-      const SERVICE_NAMES = Object.keys(SOCIAL_BITS);
-
-      let allImages = [];
-      for (let i = 0; i < TOTAL; i++) {
-        const id = i + 1;
-        const ftIdx = i % fileTypes.length;
-        const ext = fileExtensions[ftIdx];
-        const filename = `IMG_${String(id).padStart(4, '0')}.${ext}`;
-        const dir = directories[i % directories.length];
-        const publishService = i % 3 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
-        const publishedService = i % 7 === 0 ? SERVICE_NAMES[i % SERVICE_NAMES.length] : null;
-        allImages.push({
-          ID: id,
-          File_Name: filename,
-          Directory: dir,
-          Create_Date: `2024-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
-          thumbnail_path: `/thumbnails/${medium}/${filename}`,
-          rating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
-          LbbRating: id % 7 === 0 ? -1 : id % 6 === 0 ? 5 : id % 5 === 0 ? 3 : 0,
-          comment: '',
-          Camera_Model_Name: cameras[i % cameras.length],
-          File_Type: fileTypes[ftIdx],
-          File_Type_Extension: ext,
-          social_publish: publishService ? 1 << SOCIAL_BITS[publishService] : 0,
-          social_published: publishedService ? 1 << SOCIAL_BITS[publishedService] : 0,
-        });
-      }
-
-      // Apply filters — mirrors the SQL builder in webapp/server/routes/view.js.
-      if (params.rating) {
-        const ratingValues = params.rating.split(',').map((r) => parseInt(r, 10));
-        allImages = allImages.filter((img) => ratingValues.includes(img.LbbRating));
-      }
-      if (params.date_from) allImages = allImages.filter((img) => img.Create_Date >= params.date_from);
-      if (params.date_to) allImages = allImages.filter((img) => img.Create_Date <= params.date_to);
-      if (params.filename) {
-        const fn = params.filename.toLowerCase();
-        allImages = allImages.filter((img) => img.File_Name.toLowerCase().includes(fn));
-      }
-      if (params.camera) allImages = allImages.filter((img) => img.Camera_Model_Name === params.camera);
-      if (params.file_type) {
-        const ftValues = params.file_type.split(',').map((f) => f.trim());
-        allImages = allImages.filter((img) => ftValues.includes(img.File_Type));
-      }
-      if (params.directory) {
-        allImages = allImages.filter((img) => img.Directory === params.directory);
-      }
-      if (params.extension) {
-        const extValues = params.extension.split(',').map((e) => e.trim());
-        allImages = allImages.filter((img) => extValues.includes(img.File_Type_Extension));
-      }
-      if (params.social_publish) {
-        const masks = params.social_publish.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
-        allImages = allImages.filter((img) => masks.some((m) => (img.social_publish & m) !== 0));
-      }
-      if (params.social_published) {
-        const masks = params.social_published.split(',').map((s) => 1 << SOCIAL_BITS[s.trim()]).filter((m) => !Number.isNaN(m));
-        allImages = allImages.filter((img) => masks.some((m) => (img.social_published & m) !== 0));
-      }
-
-      const total = allImages.length;
-      const start = (page - 1) * perPage;
-      const images = allImages.slice(start, start + perPage);
-
-      return { data: { images, total, dbExists: true } };
+      const params = config.params || {};
+      const page = Math.max(1, parseInt(params.page || '1', 10));
+      const perPage = Math.max(1, parseInt(params.per_page || '30', 10));
+      const rows = sortMockRows(filterMockRows(getViewRows(), params), params.sort, params.dir);
+      const images = rows.slice((page - 1) * perPage, page * perPage).map((r) => ({ ...r }));
+      return { data: { images, count: images.length, total: rows.length, dbExists: true } };
     }
-
 
     if (url === '/view/stats') {
-      const params = config.params || {};
-      const medium = params.medium;
-      // Legacy storagePath-based callers get the static fixture.
-      if (!medium) {
-        return { data: mockData.viewStats };
+      return { data: computeMockStats(getViewRows(), config.params || {}) };
+    }
+
+    if (url === '/view/details') {
+      const id = parseInt((config.params || {}).id, 10);
+      const row = getViewRows().find((r) => r.ID === id);
+      if (!row) {
+        return Promise.reject({ response: { status: 404, data: { error: 'Image not found' } } });
       }
-      // Counts that mirror the medium-based generator above (TOTAL=120, every
-      // 3rd marked-for-publish, every 7th already-published, rotating service).
-      const SERVICE_NAMES = ['telegram', 'mastodon', 'bluesky', 'matrix'];
-      const buildCounts = (modulo) => {
-        const counts = Object.fromEntries(SERVICE_NAMES.map((s) => [s, 0]));
-        for (let i = 0; i < 120; i++) {
-          if (i % modulo === 0) counts[SERVICE_NAMES[i % SERVICE_NAMES.length]] += 1;
-        }
-        return SERVICE_NAMES.map((service) => ({ service, count: counts[service] }));
-      };
+      const kind = classifyMedia(row.File_Name, mockData.constants);
       return {
         data: {
-          ...mockData.viewStats,
-          directories: ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'],
-          fileTypes: ['JPEG', 'RAF', 'NEF', 'MP4'],
-          fileTypeExtensions: ['JPG', 'RAF', 'NEF', 'MP4'],
-          cameraModelNames: ['Canon EOS R5', 'Fujifilm X-T5', 'Nikon Z7 II'],
-          socialPublishPending: buildCounts(3),
-          socialPublished: buildCounts(7),
+          image: { ...row },
+          media: {
+            kind,
+            lowResImage: showsLowResImageNotice(kind),
+            lowResVideo: kind === 'video' && isGoProH265(row),
+          },
         },
       };
-    }
-
-    if (url === '/social/publish' && method === 'post') {
-      const { platforms } = config.data || {};
-      const results = {};
-      if (Array.isArray(platforms)) {
-        platforms.forEach((p) => {
-          results[p] = true;
-        });
-      }
-      return { data: { success: true, results } };
-    }
-    
-    if (url === '/view/update-metadata' && method === 'post') {
-      return { data: { success: true } };
-    }
-
-    if (url === '/view/delete-image' && method === 'post') {
-      return { data: { success: true } };
     }
 
     if (url === '/view/rating' && method === 'post') {
@@ -672,13 +512,36 @@ export function createMockApiInterceptor() {
           },
         });
       }
-      const { imageId, rating, comment } = config.data || {};
-      const img = mockData.viewImages.images.find(i => i.ID === imageId);
-      if (img) {
-        if (rating !== undefined) img.rating = rating;
-        if (comment !== undefined) img.comment = comment;
+      const { imageId, rating, comment } = parseBody(config.data);
+      const row = getViewRows().find((r) => r.ID === imageId);
+      if (!row) {
+        return Promise.reject({ response: { status: 404, data: { error: 'Image not found' } } });
       }
-      return { data: { success: true } };
+      const updated = {};
+      if (rating !== undefined && rating !== null) {
+        row.LbbRating = Number(rating);
+        updated.LbbRating = row.LbbRating;
+        if (mockData.config.conf_VIEW_WRITE_RATING_EXIF === 'true') {
+          row.Rating = String(rating);
+          updated.Rating = row.Rating;
+        }
+      }
+      if (comment !== undefined && comment !== null) {
+        row.Comment = String(comment).trim();
+        updated.Comment = row.Comment;
+      }
+      return { data: { success: true, changed: Object.keys(updated).length > 0, updated } };
+    }
+
+    if (url === '/view/social-publish' && method === 'post') {
+      const { imageId, service, publish } = parseBody(config.data);
+      const row = getViewRows().find((r) => r.ID === imageId);
+      const bit = MOCK_SOCIAL_BITS[service];
+      if (!row || bit === undefined) {
+        return Promise.reject({ response: { status: 400, data: { error: 'Image ID and a known service are required' } } });
+      }
+      row.social_publish = publish ? row.social_publish | (1 << bit) : row.social_publish & ~(1 << bit);
+      return { data: { success: true, social_publish: row.social_publish, social_published: row.social_published } };
     }
 
     if (url === '/view/delete-rejected' && method === 'post') {
@@ -691,23 +554,20 @@ export function createMockApiInterceptor() {
           },
         });
       }
-      if (failureMode === 'partial_failure') {
-        mockData.viewImages.images = mockData.viewImages.images.filter(
-          i => i.rating !== -1
-        );
-        mockData.viewImages.count = mockData.viewImages.images.length;
+      const { ids } = parseBody(config.data);
+      const idSet = new Set((ids || []).map(Number));
+      const targets = getViewRows().filter((r) => idSet.has(r.ID) && r.LbbRating === -1);
+      const keep = failureMode === 'partial_failure' ? targets.slice(0, 1) : [];
+      const removeIds = new Set(targets.filter((r) => !keep.includes(r)).map((r) => r.ID));
+      viewRows = getViewRows().filter((r) => !removeIds.has(r.ID));
+      if (keep.length > 0) {
         return {
-          data: { success: false, deleted: 2, error: '1 file could not be deleted' },
+          data: { success: false, deleted: removeIds.size, error: `${keep.length} file(s) could not be deleted` },
         };
       }
-      const rejectedCount = mockData.viewImages.images.filter(i => i.rating === -1).length;
-      mockData.viewImages.images = mockData.viewImages.images.filter(
-        i => i.rating !== -1
-      );
-      mockData.viewImages.count = mockData.viewImages.images.length;
-      return { data: { success: true, deleted: rejectedCount } };
+      return { data: { success: true, deleted: removeIds.size } };
     }
-    
+
     if (url === '/display/status') {
       return { data: resolveDisplayStatus() };
     }

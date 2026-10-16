@@ -504,7 +504,75 @@
     "slideshow_stop": "Arrêter le diaporama",
     "zoom_in": "Zoom avant",
     "zoom_out": "Zoom arrière",
-    "zoom_file_missing": "Fichier original non disponible"
+    "zoom_file_missing": "Fichier original non disponible",
+    "date_format": "d.m.Y",
+    "medium_options": {
+      "target_usb": "USB cible",
+      "source_usb": "USB source",
+      "target_nvme": "Cible NVMe locale",
+      "source_nvme": "Origine NVMe locale",
+      "internal": "Int. stockage",
+      "not_mounted": "non monté"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Contient un commentaire",
+      "summary": "{count} fichiers · page {page} / {pages}",
+      "sort_ascending": "Tri croissant",
+      "sort_descending": "Tri décroissant"
+    },
+    "filter_extra": {
+      "day": "Jour",
+      "none": "–",
+      "advanced": "Avancé : n’importe quel champ de métadonnées",
+      "variable": "Champ de métadonnées",
+      "variable_value": "Valeur",
+      "active": "{count} actifs"
+    },
+    "single": {
+      "first": "Premier",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "last": "Dernier",
+      "filtered_hint": "filtré",
+      "fullscreen": "Plein écran",
+      "close": "Fermer",
+      "download": "Télécharger l'original",
+      "zoom": "Loupe",
+      "zoom_exit": "Quitter la loupe",
+      "low_res_image": "Fichier RAW ou TIFF — aperçu en basse résolution.",
+      "low_res_video": "Vidéo GoPro H.265 — lecture de l’aperçu en basse résolution (.LRV).",
+      "unsupported": "Ce type de fichier n'a pas d'aperçu. Utilisez « Télécharger l'original ».",
+      "saved": "Modifications enregistrées",
+      "comment_title": "Commentaire",
+      "characters": "{count} caractères",
+      "social_title": "Publier sur les réseaux sociaux",
+      "social_caption": "Les images marquées sont publiées lors de la prochaine sauvegarde.",
+      "social_none": "Aucun réseau social n’est configuré. Configurez-en un sous Connexions → Social.",
+      "social_state_nothing": "non marqué",
+      "social_state_publish": "marqué",
+      "social_state_published": "publié",
+      "social_state_combined": "publié, marqué à nouveau",
+      "social_toggle_on": "Marquer pour publication sur {service}",
+      "social_toggle_off": "Retirer le marquage {service}",
+      "social_error": "Impossible de mettre à jour la file de publication.",
+      "info_title": "Infos fichier",
+      "info_taken": "Prise le",
+      "info_camera": "Appareil photo",
+      "info_lens": "Objectif",
+      "info_exposure": "Exposition",
+      "info_duration": "Durée",
+      "info_folder": "Dossier",
+      "info_size": "Taille",
+      "show_all_fields": "Afficher les {count} champs de métadonnées",
+      "hide_all_fields": "Masquer les champs de métadonnées"
+    },
+    "delete_rejected_page_confirm": "Supprimer les {count} fichiers rejetés de cette page sur {medium} ? Le fichier, sa vignette et son fichier XMP sont supprimés. Action irréversible."
   },
   "maintenance": {
     "update": {

@@ -504,7 +504,75 @@
     "slideshow_stop": "Stop slideshow",
     "zoom_in": "Zoom in",
     "zoom_out": "Zoom out",
-    "zoom_file_missing": "Original file not available"
+    "zoom_file_missing": "Original file not available",
+    "date_format": "Y/m/d",
+    "medium_options": {
+      "target_usb": "USB target",
+      "source_usb": "USB source",
+      "target_nvme": "Local NVMe target",
+      "source_nvme": "Local NVMe source",
+      "internal": "Internal storage",
+      "not_mounted": "not mounted"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Has a comment",
+      "summary": "{count} files · page {page} / {pages}",
+      "sort_ascending": "Sort ascending",
+      "sort_descending": "Sort descending"
+    },
+    "filter_extra": {
+      "day": "Day",
+      "none": "–",
+      "advanced": "Advanced: any metadata field",
+      "variable": "Metadata field",
+      "variable_value": "Value",
+      "active": "{count} active"
+    },
+    "single": {
+      "first": "First",
+      "previous": "Previous",
+      "next": "Next",
+      "last": "Last",
+      "filtered_hint": "filtered",
+      "fullscreen": "Full screen",
+      "close": "Close",
+      "download": "Download original",
+      "zoom": "Magnifier",
+      "zoom_exit": "Exit magnifier",
+      "low_res_image": "RAW or TIFF file — showing a low-resolution preview.",
+      "low_res_video": "GoPro H.265 video — playing the low-resolution preview (.LRV).",
+      "unsupported": "This file type cannot be previewed. Use \"Download original\".",
+      "saved": "Changes saved",
+      "comment_title": "Comment",
+      "characters": "{count} characters",
+      "social_title": "Publish to social media",
+      "social_caption": "Queued images are posted by the next backup run.",
+      "social_none": "No social media service is configured. Set one up under Connections → Social.",
+      "social_state_nothing": "not queued",
+      "social_state_publish": "queued",
+      "social_state_published": "published",
+      "social_state_combined": "published, queued again",
+      "social_toggle_on": "Queue for {service}",
+      "social_toggle_off": "Remove from the {service} queue",
+      "social_error": "Could not update the publish queue.",
+      "info_title": "File info",
+      "info_taken": "Taken",
+      "info_camera": "Camera",
+      "info_lens": "Lens",
+      "info_exposure": "Exposure",
+      "info_duration": "Duration",
+      "info_folder": "Folder",
+      "info_size": "Size",
+      "show_all_fields": "Show all {count} metadata fields",
+      "hide_all_fields": "Hide metadata fields"
+    },
+    "delete_rejected_page_confirm": "Delete the {count} rejected files on this page from {medium}? Each file, its thumbnail and its XMP sidecar are removed. This cannot be undone."
   },
   "maintenance": {
     "update": {

@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams, Link as RouterLink } from 'react-router-dom';
 import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
-  CardMedia,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -16,65 +13,80 @@ import {
   Grid,
   IconButton,
   InputLabel,
+  LinearProgress,
   Link,
   MenuItem,
   Pagination,
   Select,
-  TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Link as RouterLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import useAsyncAction from '../hooks/useAsyncAction';
-import RatingWidget from '../components/RatingWidget';
+import PageSection from '../components/PageSection';
 import FilterBar, { DEFAULT_FILTERS } from '../components/FilterBar';
-import SocialPublishPanel from '../components/SocialPublishPanel';
+import GridCard from '../components/view/GridCard';
+import SingleView from '../components/view/SingleView';
+import { countActiveFilters, SLIDESHOW_INTERVALS } from '../components/view/viewMedia';
+import {
+  classifyMedia,
+  createDay,
+  formatCreateDate,
+  perPageOptions,
+  showsLowResImageNotice,
+} from '../utils/viewMediaKinds';
+
+// Filter state <-> URL search params <-> API query params.
+const FILTER_FIELDS = [
+  { key: 'ratings', url: 'ratings', api: 'rating', list: true },
+  { key: 'date', url: 'date', api: 'date' },
+  { key: 'dateFrom', url: 'dateFrom', api: 'date_from' },
+  { key: 'dateTo', url: 'dateTo', api: 'date_to' },
+  { key: 'filename', url: 'filename', api: 'filename' },
+  { key: 'camera', url: 'camera', api: 'camera' },
+  { key: 'fileType', url: 'fileType', api: 'file_type' },
+  { key: 'directory', url: 'directory', api: 'directory' },
+  { key: 'extension', url: 'extension', api: 'extension', list: true },
+  { key: 'socialPublish', url: 'socialPublish', api: 'social_publish', list: true },
+  { key: 'socialPublished', url: 'socialPublished', api: 'social_published', list: true },
+  { key: 'varField', url: 'varField', api: 'var_field' },
+  { key: 'varValue', url: 'varValue', api: 'var_value' },
+];
 
 function filtersToParams(filters) {
   const params = {};
-  if (filters.ratings && filters.ratings.length > 0) params.rating = filters.ratings.join(',');
-  if (filters.dateFrom) params.date_from = filters.dateFrom;
-  if (filters.dateTo) params.date_to = filters.dateTo;
-  if (filters.filename) params.filename = filters.filename;
-  if (filters.camera) params.camera = filters.camera;
-  if (filters.fileType) params.file_type = filters.fileType;
-  if (filters.directory) params.directory = filters.directory;
-  if (filters.extension && filters.extension.length > 0) params.extension = filters.extension.join(',');
-  if (filters.socialPublish && filters.socialPublish.length > 0) params.social_publish = filters.socialPublish.join(',');
-  if (filters.socialPublished && filters.socialPublished.length > 0) params.social_published = filters.socialPublished.join(',');
+  for (const f of FILTER_FIELDS) {
+    const v = filters[f.key];
+    if (f.list ? v && v.length > 0 : v) params[f.api] = f.list ? v.join(',') : v;
+  }
+  return params;
+}
+
+function filtersToSearch(filters) {
+  const params = {};
+  for (const f of FILTER_FIELDS) {
+    const v = filters[f.key];
+    if (f.list ? v && v.length > 0 : v) params[f.url] = f.list ? v.join(',') : v;
+  }
   return params;
 }
 
 function searchToFilters(searchParams) {
-  return {
-    ratings: searchParams.get('ratings') ? searchParams.get('ratings').split(',') : [],
-    dateFrom: searchParams.get('dateFrom') || '',
-    dateTo: searchParams.get('dateTo') || '',
-    filename: searchParams.get('filename') || '',
-    camera: searchParams.get('camera') || '',
-    fileType: searchParams.get('fileType') || '',
-    directory: searchParams.get('directory') || '',
-    extension: searchParams.get('extension') ? searchParams.get('extension').split(',') : [],
-    socialPublish: searchParams.get('socialPublish') ? searchParams.get('socialPublish').split(',') : [],
-    socialPublished: searchParams.get('socialPublished') ? searchParams.get('socialPublished').split(',') : [],
-  };
+  const filters = { ...DEFAULT_FILTERS };
+  for (const f of FILTER_FIELDS) {
+    const v = searchParams.get(f.url);
+    if (v) filters[f.key] = f.list ? v.split(',') : v;
+  }
+  return filters;
 }
 
 const PREFS_KEY = 'lbb-view-preferences';
 const SCROLL_KEY = 'lbb-view-scroll';
+const SAVED_FLASH_MS = 2500;
 
 function loadPreferences() {
   try {
@@ -94,494 +106,412 @@ function savePreferences(prefs) {
   }
 }
 
+const COLUMN_OPTIONS = [1, 2, 3, 4, 6];
+const COLUMN_SIZES = { 1: 12, 2: 6, 3: 4, 4: 3, 6: 2 };
+
 export default function View() {
   const { t } = useLanguage();
+  const { constants } = useConfig();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Load persisted preferences
-  const prefs = loadPreferences();
+  const prefs = useMemo(() => loadPreferences(), []);
+  const gridColumnsConst = constants?.const_VIEW_GRID_COLUMNS;
+  const perPageChoices = useMemo(() => perPageOptions(gridColumnsConst), [gridColumnsConst]);
+  const defaultColumns = parseInt(String(gridColumnsConst || '3').replace(/'/g, ''), 10) || 3;
+  const maxZoom = parseFloat(String(constants?.const_VIEW_MAGNIFYING_GLASS_ZOOM || '').replace(/'/g, '')) || 8;
 
-  const [availableMedia, setAvailableMedia] = useState([]);
+  const [mediaInfo, setMediaInfo] = useState({ media: [], mounted: {} });
   const [medium, setMedium] = useState(null);
+  const [readyMedium, setReadyMedium] = useState(null);
   const [images, setImages] = useState([]);
   const [total, setTotal] = useState(0);
   const [dbExists, setDbExists] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(prefs.perPage || 25);
+  const [perPage, setPerPage] = useState(prefs.perPage || null);
   const [sortField, setSortField] = useState(prefs.sortField || 'date');
   const [sortDir, setSortDir] = useState(prefs.sortDir || 'desc');
-  const [columns, setColumns] = useState(prefs.columns || 3);
+  const [columns, setColumns] = useState(prefs.columns || null);
   const [filters, setFilters] = useState(() => searchToFilters(searchParams));
   const [viewStats, setViewStats] = useState(null);
+  const [social, setSocial] = useState({ configured: [], bits: {} });
+  const [details, setDetails] = useState(null);
 
   // Rating / comment / delete-rejected state
   const [comment, setComment] = useState('');
   const [ratingError, setRatingError] = useState(null);
   const [commentError, setCommentError] = useState(null);
+  const [savedVisible, setSavedVisible] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteDialogError, setDeleteDialogError] = useState(null);
   const [deleteDialogWarning, setDeleteDialogWarning] = useState(null);
   const ratingDebounceRef = useRef({});
-  const commentDebounceRef = useRef(null);
+  const commentPendingRef = useRef(null); // { imageId, value, timer }
+  const savedTimerRef = useRef(null);
+  const pendingIndexRef = useRef(null);
+  const requestSeqRef = useRef(0);
 
-  // Slideshow state
+  // Slideshow / fullscreen state
   const [isPlaying, setIsPlaying] = useState(false);
-  const [intervalSeconds, setIntervalSeconds] = useState(5);
+  const [intervalSeconds, setIntervalSeconds] = useState(() =>
+    SLIDESHOW_INTERVALS.includes(prefs.slideshowInterval) ? prefs.slideshowInterval : 3
+  );
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
-  // Zoom state
-  const [zoomMode, setZoomMode] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [fullResUrl, setFullResUrl] = useState(null);
-  const [fullResFailed, setFullResFailed] = useState(false);
-  const [fullResLoading, setFullResLoading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [lastPinchDistance, setLastPinchDistance] = useState(null);
+  // Effective per-page / columns once constants are known (view.php:488-495).
+  const effectivePerPage = perPage && perPageChoices.includes(perPage) ? perPage : perPageChoices[1];
+  const effectiveColumns = columns && COLUMN_OPTIONS.includes(columns) ? columns : COLUMN_OPTIONS.includes(defaultColumns) ? defaultColumns : 3;
 
-  // Ref to track current images/page for keyboard handler without stale closures
-  const stateRef = useRef({ images, selectedIndex, page, perPage, total, medium, sortField, sortDir });
-
+  // Ref with the latest state for callbacks/timers without stale closures.
+  const stateRef = useRef({});
   useEffect(() => {
-    stateRef.current = { images, selectedIndex, page, perPage, total, medium, sortField, sortDir };
+    stateRef.current = { images, selectedIndex, page, perPage: effectivePerPage, total };
   });
 
-  // ---- fetch available media ----
-  const fetchMediaFn = useCallback(async () => {
-    const res = await api.get('/view/media');
-    return res.data;
-  }, []);
+  // ---- API ----
+  const fetchMediaFn = useCallback(async () => (await api.get('/view/media')).data, []);
+  const { execute: fetchMedia, isExecuting: isFetchingMedia, error: mediaError } = useAsyncAction(fetchMediaFn);
 
-  const {
-    execute: fetchMedia,
-    isExecuting: isFetchingMedia,
-    error: mediaError,
-  } = useAsyncAction(fetchMediaFn);
+  const fetchImagesFn = useCallback(async (params) => (await api.get('/view/images', { params })).data, []);
+  const { execute: fetchImages, isExecuting: isFetchingImages, error: imagesError } = useAsyncAction(fetchImagesFn);
 
-  // ---- fetch images ----
-  const fetchImagesFn = useCallback(async (med, pg, pp, sf, sd, filterParams = {}) => {
-    const res = await api.get('/view/images', {
-      params: {
-        medium: med,
-        page: pg,
-        per_page: pp,
-        sort: sf,
-        dir: sd,
-        ...filterParams,
-      },
-    });
-    return res.data;
-  }, []);
+  const deleteRejectedFn = useCallback(async (ids) => api.post('/view/delete-rejected', { medium, ids }), [medium]);
+  const { execute: executeDeleteRejected, isExecuting: isDeletingRejected } = useAsyncAction(deleteRejectedFn);
 
-  // ---- fetch stats (for FilterBar dropdowns) ----
-  const fetchStatsFn = useCallback(async (med) => {
-    const res = await api.get('/view/stats', { params: { medium: med } });
-    return res.data;
-  }, []);
-
-  const {
-    execute: fetchImages,
-    isExecuting: isFetchingImages,
-    error: imagesError,
-  } = useAsyncAction(fetchImagesFn);
-
-  // ---- rating / delete-rejected ----
-  const saveRatingFn = useCallback(
-    async ({ imageId, rating, comment: cmt }) => {
-      return api.post('/view/rating', { medium, imageId, rating, comment: cmt });
-    },
-    [medium]
-  );
-
-  const deleteRejectedFn = useCallback(async () => {
-    return api.post('/view/delete-rejected', { medium });
-  }, [medium]);
-
-  const { execute: executeDeleteRejected, isExecuting: isDeletingRejected } =
-    useAsyncAction(deleteRejectedFn);
-
-  // Load media on mount
+  // Media list + default medium (view.php:563-573) and configured social services.
   useEffect(() => {
     fetchMedia()
       .then((data) => {
-        const available = data.available || {};
-        const list = (data.media || []).filter((m) => available[m]);
-        setAvailableMedia(list);
-        if (list.length > 0) {
-          setMedium(list[0]);
-        }
+        const list = data.media || [];
+        setMediaInfo({ media: list, mounted: data.mounted || {} });
+        const fromUrl = searchParams.get('medium');
+        setMedium(fromUrl && list.includes(fromUrl) ? fromUrl : data.default || list[0] || null);
       })
       .catch(() => {
         // error is tracked in mediaError
       });
+    api
+      .get('/view/social-services')
+      .then((res) => setSocial({ configured: res.data.configured || [], bits: res.data.bits || {} }))
+      .catch(() => {});
+    // Only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchMedia]);
 
-  // Load images when medium / page / sort / perPage / filters change
+  // Opening a medium runs lib_view.py --action init first (view.php:644-646).
   useEffect(() => {
-    if (!medium) return;
-    fetchImages(medium, page, perPage, sortField, sortDir, filtersToParams(filters))
+    if (!medium) return undefined;
+    let cancelled = false;
+    setReadyMedium(null);
+    api
+      .get('/view/init', { params: { medium } })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setReadyMedium(medium);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [medium]);
+
+  const filterParams = useMemo(() => filtersToParams(filters), [filters]);
+
+  // Load images when medium / page / sort / perPage / filters change.
+  useEffect(() => {
+    if (!readyMedium) return;
+    const seq = ++requestSeqRef.current;
+    fetchImages({
+      medium: readyMedium,
+      page,
+      per_page: effectivePerPage,
+      sort: sortField,
+      dir: sortDir,
+      ...filterParams,
+    })
       .then((data) => {
-        setImages(data.images || []);
+        if (seq !== requestSeqRef.current) return;
+        const list = data.images || [];
+        setImages(list);
         setTotal(data.total || 0);
         setDbExists(data.dbExists !== false);
+        if (pendingIndexRef.current !== null) {
+          setSelectedIndex(Math.max(0, Math.min(pendingIndexRef.current, list.length - 1)));
+          pendingIndexRef.current = null;
+        }
       })
       .catch(() => {
+        if (seq !== requestSeqRef.current) return;
         setImages([]);
         setTotal(0);
       });
-  }, [medium, page, perPage, sortField, sortDir, filters, fetchImages]);
+  }, [readyMedium, page, effectivePerPage, sortField, sortDir, filterParams, fetchImages]);
 
-  // Load stats when medium changes (for FilterBar camera/file-type dropdowns)
+  // Faceted filter counts follow the active filters (view.php:763-827).
   useEffect(() => {
-    if (!medium) return;
-    fetchStatsFn(medium).then(setViewStats).catch(() => {});
-  }, [medium, fetchStatsFn]);
+    if (!readyMedium) return undefined;
+    let cancelled = false;
+    api
+      .get('/view/stats', { params: { medium: readyMedium, ...filterParams } })
+      .then((res) => {
+        if (!cancelled) setViewStats(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [readyMedium, filterParams]);
 
   // Persist preferences
   useEffect(() => {
-    savePreferences({ perPage, sortField, sortDir, columns });
-  }, [perPage, sortField, sortDir, columns]);
+    savePreferences({ perPage, sortField, sortDir, columns, slideshowInterval: intervalSeconds });
+  }, [perPage, sortField, sortDir, columns, intervalSeconds]);
 
-  // ---- Zoom helpers ----
+  const currentImage = viewMode === 'single' ? images[selectedIndex] : null;
+  const currentImageId = currentImage?.ID;
 
-  const resetZoomState = useCallback(() => {
-    setZoomMode(false);
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-    setZoomOrigin({ x: 0, y: 0 });
-    setFullResUrl(null);
-    setFullResFailed(false);
-    setFullResLoading(false);
+  // Media details for the single view (kind, GoPro LRV proxy notice).
+  useEffect(() => {
+    if (!currentImageId || !readyMedium) return undefined;
+    let cancelled = false;
+    api
+      .get('/view/details', { params: { medium: readyMedium, id: currentImageId } })
+      .then((res) => {
+        if (!cancelled) setDetails({ id: currentImageId, media: res.data.media });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [currentImageId, readyMedium]);
+
+  const currentMedia = useMemo(() => {
+    if (!currentImage) return null;
+    if (details && details.id === currentImage.ID) return details.media;
+    const kind = classifyMedia(currentImage.File_Name, constants);
+    return { kind, lowResImage: showsLowResImageNotice(kind), lowResVideo: false };
+  }, [currentImage, details, constants]);
+
+  // ---- Saving (rating / comment / social) ----
+  const flashSaved = useCallback(() => {
+    setSavedVisible(true);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSavedVisible(false), SAVED_FLASH_MS);
   }, []);
 
-  // ---- Navigation helpers ----
-
-  // Navigate to a specific absolute index (0-based across all pages)
-  const navigateToAbsolute = useCallback(
-    (absIdx) => {
-      const { medium: med, perPage: pp, sortField: sf, sortDir: sd } = stateRef.current;
-      const targetPage = Math.floor(absIdx / pp) + 1;
-      const targetIdx = absIdx % pp;
-
-      if (targetPage !== stateRef.current.page) {
-        fetchImages(med, targetPage, pp, sf, sd)
-          .then((data) => {
-            setImages(data.images || []);
-            setTotal(data.total || 0);
-            setDbExists(data.dbExists !== false);
-            setPage(targetPage);
-            setSelectedIndex(targetIdx);
-          })
-          .catch(() => {});
-      } else {
-        setSelectedIndex(targetIdx);
-      }
-    },
-    [fetchImages]
+  const saveMetadata = useCallback(
+    (payload) => api.post('/view/rating', { medium, ...payload }),
+    [medium]
   );
 
-  const currentAbsoluteIndex = (page - 1) * perPage + selectedIndex;
+  const updateImage = useCallback((imageId, patch) => {
+    setImages((prev) => prev.map((img) => (img.ID === imageId ? { ...img, ...patch } : img)));
+  }, []);
+
+  const handleRatingChange = useCallback(
+    (imageId, newRating) => {
+      const prevRating = stateRef.current.images.find((img) => img.ID === imageId)?.LbbRating ?? 0;
+      updateImage(imageId, { LbbRating: newRating });
+      setRatingError(null);
+
+      if (ratingDebounceRef.current[imageId]) clearTimeout(ratingDebounceRef.current[imageId]);
+      ratingDebounceRef.current[imageId] = setTimeout(async () => {
+        delete ratingDebounceRef.current[imageId];
+        try {
+          await saveMetadata({ imageId, rating: newRating });
+          flashSaved();
+        } catch (err) {
+          setRatingError(err?.response?.data?.error || err?.message || t('view.rating_save_error'));
+          updateImage(imageId, { LbbRating: prevRating });
+        }
+      }, 800);
+    },
+    [saveMetadata, updateImage, flashSaved, t]
+  );
+
+  const saveComment = useCallback(
+    async ({ imageId, value, previous }) => {
+      try {
+        await saveMetadata({ imageId, comment: value });
+        flashSaved();
+      } catch (err) {
+        setCommentError(err?.response?.data?.error || err?.message || t('view.rating_save_error'));
+        updateImage(imageId, { Comment: previous });
+        if (stateRef.current.images[stateRef.current.selectedIndex]?.ID === imageId) setComment(previous ?? '');
+      }
+    },
+    [saveMetadata, updateImage, flashSaved, t]
+  );
+
+  // Save a pending (debounced) comment right away, e.g. before navigating.
+  const flushComment = useCallback(() => {
+    const pending = commentPendingRef.current;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    commentPendingRef.current = null;
+    saveComment(pending);
+  }, [saveComment]);
+
+  const handleCommentChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      const img = stateRef.current.images[stateRef.current.selectedIndex];
+      if (!img) return;
+      setComment(value);
+      setCommentError(null);
+      const previous = commentPendingRef.current?.imageId === img.ID ? commentPendingRef.current.previous : img.Comment ?? '';
+      if (commentPendingRef.current) clearTimeout(commentPendingRef.current.timer);
+      updateImage(img.ID, { Comment: value });
+      const pending = { imageId: img.ID, value, previous };
+      pending.timer = setTimeout(() => {
+        commentPendingRef.current = null;
+        saveComment(pending);
+      }, 1200);
+      commentPendingRef.current = pending;
+    },
+    [updateImage, saveComment]
+  );
+
+  // Sync the comment box with the shown image.
+  useEffect(() => {
+    if (!currentImageId) return;
+    flushComment();
+    const img = stateRef.current.images.find((i) => i.ID === currentImageId);
+    setComment(img?.Comment ?? '');
+    setCommentError(null);
+    setRatingError(null);
+  }, [currentImageId, flushComment]);
+
+  const handleSocialToggle = useCallback(
+    async (service, publish) => {
+      const img = stateRef.current.images[stateRef.current.selectedIndex];
+      if (!img) return;
+      const res = await api.post('/view/social-publish', { medium, imageId: img.ID, service, publish });
+      updateImage(img.ID, {
+        social_publish: res.data.social_publish,
+        social_published: res.data.social_published ?? img.social_published,
+      });
+      flashSaved();
+    },
+    [medium, updateImage, flashSaved]
+  );
+
+  // ---- Navigation (keeps all filters; view.php keeps them in GET_PARAMETER) ----
+  const navigateToAbsolute = useCallback((absIdx) => {
+    const { perPage: pp, page: currentPage, total: tot } = stateRef.current;
+    if (tot <= 0) return;
+    const idx = Math.max(0, Math.min(absIdx, tot - 1));
+    const targetPage = Math.floor(idx / pp) + 1;
+    const targetIdx = idx % pp;
+    if (targetPage !== currentPage) {
+      pendingIndexRef.current = targetIdx;
+      setPage(targetPage);
+    } else {
+      setSelectedIndex(targetIdx);
+    }
+  }, []);
+
+  const currentAbsoluteIndex = (page - 1) * effectivePerPage + selectedIndex;
+  const absIndex = () => (stateRef.current.page - 1) * stateRef.current.perPage + stateRef.current.selectedIndex;
 
   const goFirst = useCallback(() => {
     setIsPlaying(false);
-    resetZoomState();
     navigateToAbsolute(0);
-  }, [navigateToAbsolute, resetZoomState]);
-
+  }, [navigateToAbsolute]);
   const goLast = useCallback(() => {
     setIsPlaying(false);
-    resetZoomState();
     navigateToAbsolute(stateRef.current.total - 1);
-  }, [navigateToAbsolute, resetZoomState]);
-
+  }, [navigateToAbsolute]);
   const goPrev = useCallback(() => {
     setIsPlaying(false);
-    resetZoomState();
-    const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
+    const abs = absIndex();
     if (abs > 0) navigateToAbsolute(abs - 1);
-  }, [navigateToAbsolute, resetZoomState]);
-
+  }, [navigateToAbsolute]);
   const goNext = useCallback(() => {
     setIsPlaying(false);
-    resetZoomState();
-    const abs = stateRef.current.page * stateRef.current.perPage - stateRef.current.perPage + stateRef.current.selectedIndex;
+    const abs = absIndex();
     if (abs < stateRef.current.total - 1) navigateToAbsolute(abs + 1);
-  }, [navigateToAbsolute, resetZoomState]);
-
-  // Slideshow auto-advance (doesn't stop slideshow, wraps around)
-  const slideshowAdvance = useCallback(() => {
-    const { page: pg, perPage: pp, selectedIndex: idx, total: tot } = stateRef.current;
-    const abs = (pg - 1) * pp + idx;
-    const nextAbs = abs < tot - 1 ? abs + 1 : 0;
-    navigateToAbsolute(nextAbs);
   }, [navigateToAbsolute]);
 
-  // Slideshow effect
+  // Slideshow: wraps from the last image to the first (view.php:196).
+  const slideshowAdvance = useCallback(() => {
+    const abs = absIndex();
+    navigateToAbsolute(abs < stateRef.current.total - 1 ? abs + 1 : 0);
+  }, [navigateToAbsolute]);
+
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) return undefined;
     const timer = setInterval(slideshowAdvance, intervalSeconds * 1000);
     return () => clearInterval(timer);
   }, [isPlaying, intervalSeconds, slideshowAdvance]);
 
-  // Keyboard navigation in single-image mode
+  const handleTogglePlay = useCallback(() => {
+    setIsPlaying((playing) => {
+      if (!playing) setFullscreenOpen(true); // the slideshow runs in the overlay
+      return !playing;
+    });
+  }, []);
+
+  const handleCloseFullscreen = useCallback(() => {
+    setFullscreenOpen(false);
+    setIsPlaying(false);
+  }, []);
+
+  // Keyboard navigation in single view (not while typing).
   useEffect(() => {
     const handler = (e) => {
       if (viewMode !== 'single') return;
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
       if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'ArrowRight') goNext();
-      if (e.key === 'Escape' && zoomMode) {
-        setZoomMode(false);
-        setZoomLevel(1);
-        setPanOffset({ x: 0, y: 0 });
-      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [viewMode, goPrev, goNext, zoomMode]);
+  }, [viewMode, goPrev, goNext]);
 
-  // ---- Zoom handlers ----
-
-  const clampZoom = (level) => Math.max(1, Math.min(8, level));
-
-  const handleZoomClick = async () => {
-    if (zoomMode) {
-      setZoomMode(false);
-      setZoomLevel(1);
-      setPanOffset({ x: 0, y: 0 });
-      return;
-    }
-
-    if (!currentImage) return;
-
-    if (fullResUrl) {
-      setZoomMode(true);
-      return;
-    }
-
-    setFullResLoading(true);
-    try {
-      const response = await api.get('/view/image', {
-        params: { medium, id: currentImage.ID },
-      });
-      const url = response.data?.url || `/api/view/image?medium=${encodeURIComponent(medium)}&id=${currentImage.ID}`;
-      setFullResUrl(url);
-      setZoomMode(true);
-    } catch (err) {
-      if (err.response?.data?.error === 'file_missing') {
-        setFullResFailed(true);
-      }
-    } finally {
-      setFullResLoading(false);
-    }
-  };
-
-  const handleWheel = (e) => {
-    if (!zoomMode) return;
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setZoomOrigin({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    const delta = e.deltaY < 0 ? 0.25 : -0.25;
-    setZoomLevel((prev) => clampZoom(prev + delta));
-  };
-
-  const handleMouseDown = (e) => {
-    if (!zoomMode) return;
-    e.preventDefault();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    setPanStart({ ...panOffset });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || !zoomMode) return;
-    setPanOffset({ x: panStart.x + (e.clientX - dragStart.x), y: panStart.y + (e.clientY - dragStart.y) });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const getPinchDistance = (touches) => {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const handleTouchStart = (e) => {
-    if (!zoomMode || e.touches.length !== 2) return;
-    setLastPinchDistance(getPinchDistance(e.touches));
-  };
-
-  const handleTouchMove = (e) => {
-    if (!zoomMode || e.touches.length !== 2 || lastPinchDistance === null) return;
-    e.preventDefault();
-    const distance = getPinchDistance(e.touches);
-    setZoomLevel((prev) => clampZoom(prev * (distance / lastPinchDistance)));
-    setLastPinchDistance(distance);
-  };
-
-  const handleTouchEnd = () => {
-    setLastPinchDistance(null);
-  };
-
-  // ---- Filter handler ----
-
-  const handleFiltersChange = useCallback((newFilters) => {
-    setFilters(newFilters);
-    setPage(1);
-    const urlParams = {};
-    if (newFilters.ratings && newFilters.ratings.length > 0) urlParams.ratings = newFilters.ratings.join(',');
-    if (newFilters.dateFrom) urlParams.dateFrom = newFilters.dateFrom;
-    if (newFilters.dateTo) urlParams.dateTo = newFilters.dateTo;
-    if (newFilters.filename) urlParams.filename = newFilters.filename;
-    if (newFilters.camera) urlParams.camera = newFilters.camera;
-    if (newFilters.fileType) urlParams.fileType = newFilters.fileType;
-    if (newFilters.directory) urlParams.directory = newFilters.directory;
-    if (newFilters.extension && newFilters.extension.length > 0) urlParams.extension = newFilters.extension.join(',');
-    if (newFilters.socialPublish && newFilters.socialPublish.length > 0) urlParams.socialPublish = newFilters.socialPublish.join(',');
-    if (newFilters.socialPublished && newFilters.socialPublished.length > 0) urlParams.socialPublished = newFilters.socialPublished.join(',');
-    setSearchParams(urlParams);
-  }, [setSearchParams]);
-
-  // ---- Rating / comment handlers ----
-
-  const handleRatingChange = useCallback(
-    (imageId, newRating) => {
-      const prevRating = images.find((img) => img.ID === imageId)?.rating ?? 0;
-      setImages((prev) =>
-        prev.map((img) => (img.ID === imageId ? { ...img, rating: newRating } : img))
-      );
-      setRatingError(null);
-
-      if (ratingDebounceRef.current[imageId]) {
-        clearTimeout(ratingDebounceRef.current[imageId]);
-      }
-      ratingDebounceRef.current[imageId] = setTimeout(async () => {
-        try {
-          await saveRatingFn({ imageId, rating: newRating });
-        } catch (err) {
-          setRatingError(
-            err?.response?.data?.error || err?.message || t('view.rating_save_error')
-          );
-          setImages((prev) =>
-            prev.map((img) => (img.ID === imageId ? { ...img, rating: prevRating } : img))
-          );
-        }
-      }, 800);
+  // ---- Filters ----
+  const handleFiltersChange = useCallback(
+    (newFilters) => {
+      setFilters(newFilters);
+      setPage(1);
+      const urlParams = filtersToSearch(newFilters);
+      if (medium) urlParams.medium = medium;
+      setSearchParams(urlParams);
     },
-    [images, saveRatingFn, t]
+    [setSearchParams, medium]
   );
 
-  const handleCommentChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setComment(val);
-      setCommentError(null);
-
-      const currentImg = images[selectedIndex];
-      if (!currentImg) return;
-      const imageId = currentImg.ID;
-      const prevComment = currentImg.comment ?? '';
-
-      setImages((prev) =>
-        prev.map((img) => (img.ID === imageId ? { ...img, comment: val } : img))
-      );
-
-      if (commentDebounceRef.current) clearTimeout(commentDebounceRef.current);
-      commentDebounceRef.current = setTimeout(async () => {
-        try {
-          await saveRatingFn({ imageId, comment: val });
-        } catch (err) {
-          setCommentError(
-            err?.response?.data?.error || err?.message || t('view.rating_save_error')
-          );
-          setComment(prevComment);
-          setImages((prev) =>
-            prev.map((img) => (img.ID === imageId ? { ...img, comment: prevComment } : img))
-          );
-        }
-      }, 1200);
-    },
-    [images, selectedIndex, saveRatingFn, t]
-  );
-
-  const rejectedCount = images.filter((img) => img.rating === -1).length;
+  // ---- Delete rejected (view.php:180-182, 718-735) ----
+  // Only offered when the rating filter is exactly "rejected"; deletes the
+  // rejected files on the current page.
+  const rejectedFilterOnly = filters.ratings.length === 1 && filters.ratings[0] === '-1';
+  const rejectedOnPage = images.filter((img) => Number(img.LbbRating) === -1);
 
   const handleDeleteRejectedConfirm = async () => {
     setDeleteDialogError(null);
     setDeleteDialogWarning(null);
     try {
-      const response = await executeDeleteRejected();
+      const response = await executeDeleteRejected(rejectedOnPage.map((img) => img.ID));
       const data = response?.data;
+      // PHP drops the rating filter after deleting (view.php:600).
+      const afterDelete = () => handleFiltersChange({ ...filters, ratings: [] });
       if (data && !data.success) {
-        setDeleteDialogWarning(data.error || t('view.delete_rejected_partial'));
-        fetchImages(medium, page, perPage, sortField, sortDir)
-          .then((d) => {
-            setImages(d.images || []);
-            setTotal(d.total || 0);
-          })
-          .catch(() => {});
-        setTimeout(() => setDeleteDialogOpen(false), 3000);
+        setDeleteDialogWarning(t('view.delete_rejected_partial').replace('{error}', data.error || ''));
+        setTimeout(() => {
+          setDeleteDialogOpen(false);
+          afterDelete();
+        }, 3000);
       } else {
         setDeleteDialogOpen(false);
-        fetchImages(medium, page, perPage, sortField, sortDir)
-          .then((d) => {
-            setImages(d.images || []);
-            setTotal(d.total || 0);
-          })
-          .catch(() => {});
+        afterDelete();
       }
     } catch (err) {
-      setDeleteDialogError(
-        err?.response?.data?.error || err?.message || 'Failed to delete rejected images'
-      );
+      setDeleteDialogError(err?.response?.data?.error || err?.message || t('view.delete_rejected_partial').replace('{error}', ''));
     }
   };
 
-  // When opening single-image, sync comment state
-  const handleOpenSingleWithComment = (idx) => {
-    const img = images[idx];
-    if (img) setComment(img.comment ?? '');
-    setRatingError(null);
-    setCommentError(null);
-    resetZoomState();
-    handleOpenSingle(idx);
-  };
-
-  // ---- Event handlers ----
-
-  const handleMediumChange = (e) => {
-    setMedium(e.target.value);
-    setPage(1);
-  };
-
-  const handleColumnChange = (e) => {
-    setColumns(Number(e.target.value));
-  };
-
-  const handleSortFieldChange = (e) => {
-    setSortField(e.target.value);
-    setPage(1);
-  };
-
-  const handleSortDirToggle = () => {
-    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    setPage(1);
-  };
-
-  const handlePerPageChange = (e) => {
-    setPerPage(Number(e.target.value));
-    setPage(1);
-  };
-
-  const handlePageChange = (_e, value) => {
-    setPage(value);
-  };
-
+  // ---- Grid / single view switching ----
   const handleOpenSingle = (idx) => {
     try {
       sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
@@ -590,423 +520,264 @@ export default function View() {
     }
     setSelectedIndex(idx);
     setViewMode('single');
+    window.scrollTo(0, 0);
   };
 
   const handleBackToGrid = () => {
+    flushComment();
     setIsPlaying(false);
-    resetZoomState();
+    setFullscreenOpen(false);
     setViewMode('grid');
     try {
       const saved = sessionStorage.getItem(SCROLL_KEY);
-      if (saved) {
-        requestAnimationFrame(() => window.scrollTo(0, parseInt(saved, 10)));
-      }
+      if (saved) requestAnimationFrame(() => window.scrollTo(0, parseInt(saved, 10)));
     } catch {
       // ignore
     }
   };
 
-  // Compute xs grid size from column count
-  const colSizes = { 1: 12, 2: 6, 3: 4, 4: 3, 6: 2 };
-  const xs = colSizes[columns] || 4;
+  const handleMediumChange = (e) => {
+    const next = e.target.value;
+    setMedium(next);
+    setPage(1);
+    setViewMode('grid');
+    setSearchParams({ ...filtersToSearch(filters), medium: next });
+  };
 
-  const isLoading = isFetchingMedia || isFetchingImages;
-  const pageCount = Math.ceil(total / perPage) || 1;
+  const isLoading = isFetchingMedia || isFetchingImages || (medium && !readyMedium);
+  const pageCount = Math.ceil(total / effectivePerPage) || 1;
+  const xs = COLUMN_SIZES[effectiveColumns] || 4;
 
-  // Determine empty-state type
   const notMounted =
     (mediaError && mediaError.includes('not_mounted')) ||
     (imagesError && imagesError.includes('not_mounted'));
   const noImages = !notMounted && total === 0 && dbExists;
   const dbNotInitialised = !notMounted && total === 0 && !dbExists;
+  const filtered = countActiveFilters(filters) > 0;
 
-  const currentImage = images[selectedIndex];
+  const dateFormat = (() => {
+    const f = t('view.date_format');
+    return f && f !== 'view.date_format' ? f : 'Y-m-d';
+  })();
+
+  // Grid items with date headers when sorted by date (view.php:1200-1203).
+  const gridItems = [];
+  let lastDay = null;
+  images.forEach((image, idx) => {
+    if (sortField === 'date') {
+      const day = createDay(image.Create_Date);
+      if (day !== lastDay) {
+        gridItems.push(
+          <Grid item xs={12} key={`day-${day}-${idx}`}>
+            <Typography variant="subtitle1" component="p" sx={{ fontWeight: 600, mt: idx === 0 ? 0 : 1 }} data-testid="date-header">
+              {formatCreateDate(image.Create_Date, dateFormat)}
+            </Typography>
+          </Grid>
+        );
+        lastDay = day;
+      }
+    }
+    gridItems.push(
+      <Grid item xs={Math.max(xs, 6)} sm={xs} key={image.ID}>
+        <GridCard
+          image={image}
+          medium={medium}
+          constants={constants}
+          socialServices={social.configured}
+          socialBits={social.bits}
+          onOpen={() => handleOpenSingle(idx)}
+          onRate={handleRatingChange}
+        />
+      </Grid>
+    );
+  });
 
   return (
     <Box>
-      {/* Controls */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-        <FormControl size="small" sx={{ minWidth: 160 }} disabled={isLoading}>
-          <InputLabel>{t('view.medium_selector')}</InputLabel>
-          <Select
-            value={medium || ''}
-            label={t('view.medium_selector')}
-            onChange={handleMediumChange}
-          >
-            {availableMedia.map((m) => (
-              <MenuItem key={m} value={m}>
-                {m}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      {isLoading && viewMode === 'single' && <LinearProgress sx={{ mb: 1 }} />}
 
-        <FormControl size="small" sx={{ minWidth: 130 }} disabled={isLoading}>
-          <InputLabel>{t('view.sort_by')}</InputLabel>
-          <Select value={sortField} label={t('view.sort_by')} onChange={handleSortFieldChange}>
-            <MenuItem value="date">{t('view.filter.date')}</MenuItem>
-            <MenuItem value="filename">{t('view.filter.order_by_filename')}</MenuItem>
-            <MenuItem value="id">{t('view.filter.order_by_id')}</MenuItem>
-          </Select>
-        </FormControl>
+      {viewMode === 'single' && currentImage ? (
+        <SingleView
+          medium={medium}
+          image={currentImage}
+          media={currentMedia}
+          position={currentAbsoluteIndex + 1}
+          total={total}
+          filtered={filtered}
+          maxZoom={maxZoom}
+          onBack={handleBackToGrid}
+          onFirst={goFirst}
+          onPrev={goPrev}
+          onNext={goNext}
+          onLast={goLast}
+          isPlaying={isPlaying}
+          onTogglePlay={handleTogglePlay}
+          intervalSeconds={intervalSeconds}
+          onIntervalChange={setIntervalSeconds}
+          fullscreenOpen={fullscreenOpen}
+          onOpenFullscreen={() => setFullscreenOpen(true)}
+          onCloseFullscreen={handleCloseFullscreen}
+          onRate={handleRatingChange}
+          ratingError={ratingError}
+          onDismissRatingError={() => setRatingError(null)}
+          comment={comment}
+          onCommentChange={handleCommentChange}
+          commentError={commentError}
+          onDismissCommentError={() => setCommentError(null)}
+          saved={savedVisible}
+          socialServices={social.configured}
+          socialBits={social.bits}
+          onSocialToggle={handleSocialToggle}
+        />
+      ) : (
+        <PageSection variant="plain">
+          {/* Controls */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 190 }} disabled={isFetchingMedia}>
+              <InputLabel id="view-medium-label">{t('view.medium_selector')}</InputLabel>
+              <Select
+                labelId="view-medium-label"
+                value={medium || ''}
+                label={t('view.medium_selector')}
+                onChange={handleMediumChange}
+                data-testid="medium-select"
+              >
+                {mediaInfo.media.map((m) => (
+                  <MenuItem key={m} value={m}>
+                    {t(`view.medium_options.${m}`)}
+                    {mediaInfo.mounted[m] === false ? ` (${t('view.medium_options.not_mounted')})` : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-        <IconButton
-          onClick={handleSortDirToggle}
-          disabled={isLoading}
-          aria-label={sortDir === 'asc' ? 'sort descending' : 'sort ascending'}
-        >
-          {sortDir === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
-        </IconButton>
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel id="view-sort-label">{t('view.sort_by')}</InputLabel>
+              <Select
+                labelId="view-sort-label"
+                value={sortField}
+                label={t('view.sort_by')}
+                onChange={(e) => {
+                  setSortField(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <MenuItem value="date">{t('view.filter.date')}</MenuItem>
+                <MenuItem value="filename">{t('view.filter.order_by_filename')}</MenuItem>
+                <MenuItem value="id">{t('view.filter.order_by_id')}</MenuItem>
+              </Select>
+            </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 110 }} disabled={isLoading}>
-          <InputLabel>{t('view.per_page')}</InputLabel>
-          <Select value={perPage} label={t('view.per_page')} onChange={handlePerPageChange}>
-            {[10, 25, 50, 100, 200].map((n) => (
-              <MenuItem key={n} value={n}>
-                {n}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <IconButton
+              onClick={() => {
+                setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+                setPage(1);
+              }}
+              aria-label={sortDir === 'asc' ? t('view.grid.sort_descending') : t('view.grid.sort_ascending')}
+              sx={{ width: 44, height: 44 }}
+            >
+              {sortDir === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
+            </IconButton>
 
-        <FormControl size="small" sx={{ minWidth: 120 }} disabled={isLoading}>
-          <InputLabel>{t('view.columns')}</InputLabel>
-          <Select value={columns} label={t('view.columns')} onChange={handleColumnChange}>
-            {[1, 2, 3, 4, 6].map((c) => (
-              <MenuItem key={c} value={c}>
-                {c}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <InputLabel id="view-perpage-label">{t('view.per_page')}</InputLabel>
+              <Select
+                labelId="view-perpage-label"
+                value={effectivePerPage}
+                label={t('view.per_page')}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                {perPageChoices.map((n) => (
+                  <MenuItem key={n} value={n}>
+                    {n}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-        {viewMode === 'grid' && rejectedCount > 0 && (
-          <Button
-            variant="outlined"
-            color="error"
-            disabled={isLoading}
-            startIcon={<WarningAmberIcon />}
-            onClick={() => {
-              setDeleteDialogError(null);
-              setDeleteDialogWarning(null);
-              setDeleteDialogOpen(true);
-            }}
-          >
-            {t('view.delete_rejected_button')}
-          </Button>
-        )}
-      </Box>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <InputLabel id="view-columns-label">{t('view.columns')}</InputLabel>
+              <Select
+                labelId="view-columns-label"
+                value={effectiveColumns}
+                label={t('view.columns')}
+                onChange={(e) => setColumns(Number(e.target.value))}
+              >
+                {COLUMN_OPTIONS.map((c) => (
+                  <MenuItem key={c} value={c}>
+                    {c}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-      {/* Loading */}
-      {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      )}
+            {rejectedFilterOnly && (
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={isLoading || rejectedOnPage.length === 0}
+                startIcon={<WarningAmberIcon />}
+                onClick={() => {
+                  setDeleteDialogError(null);
+                  setDeleteDialogWarning(null);
+                  setDeleteDialogOpen(true);
+                }}
+                sx={{ minHeight: 44 }}
+                data-testid="delete-rejected-button"
+              >
+                {t('view.delete_rejected_button')}
+              </Button>
+            )}
 
-      {/* Error / empty states */}
-      {!isLoading && notMounted && (
-        <Alert severity="warning">{t('view.not_mounted')}</Alert>
-      )}
-      {!isLoading && noImages && medium && (
-        <Alert severity="info">{t('view.no_images')}</Alert>
-      )}
-      {!isLoading && dbNotInitialised && medium && (
-        <Alert severity="info">
-          {t('view.no_database')}{' '}
-          <Link component={RouterLink} to="/">
-            {t('view.go_to_backup')}
-          </Link>
-        </Alert>
-      )}
+            {!isLoading && total > 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ ml: { sm: 'auto' } }} data-testid="grid-summary">
+                {t('view.grid.summary')
+                  .replace('{count}', String(total))
+                  .replace('{page}', String(page))
+                  .replace('{pages}', String(pageCount))}
+              </Typography>
+            )}
+          </Box>
 
-      {/* Filter bar */}
-      {viewMode === 'grid' && (
-        <FilterBar filters={filters} onFiltersChange={handleFiltersChange} stats={viewStats} />
-      )}
+          {/* Filter bar */}
+          <FilterBar filters={filters} onFiltersChange={handleFiltersChange} stats={viewStats} />
 
-      {/* Thumbnail grid */}
-      {!isLoading && !notMounted && images.length > 0 && viewMode === 'grid' && (
-        <>
-          <Grid container spacing={2}>
-            {images.map((image, idx) => (
-              <Grid item xs={xs} key={image.ID}>
-                <Card
-                  data-testid="image-card"
-                  sx={{ cursor: 'pointer', position: 'relative' }}
-                  onClick={() => handleOpenSingleWithComment(idx)}
-                >
-                  <CardMedia
-                    component="img"
-                    height="150"
-                    image={`/api/view/image?medium=${encodeURIComponent(medium)}&id=${image.ID}&variant=thumb`}
-                    alt={image.File_Name}
-                    sx={{
-                      objectFit: 'cover',
-                      backgroundColor: 'action.hover',
-                    }}
-                    onError={(e) => {
-                      // Hide broken-image icon and show a 1×1 transparent pixel
-                      // so the card still renders with its filename caption.
-                      e.currentTarget.src =
-                        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=';
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 32,
-                      left: 0,
-                      right: 0,
-                      bgcolor: 'rgba(0,0,0,0.55)',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      p: 0.5,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <RatingWidget
-                      size="small"
-                      value={image.rating ?? 0}
-                      onChange={(r) => handleRatingChange(image.ID, r)}
-                    />
-                  </Box>
-                  <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                    <Typography variant="caption" noWrap display="block">
-                      {image.File_Name}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-
-          {/* Pagination */}
-          {pageCount > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-              <Pagination
-                count={pageCount}
-                page={page}
-                onChange={handlePageChange}
-                disabled={isLoading}
-              />
+          {/* Loading */}
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress />
             </Box>
           )}
-        </>
-      )}
 
-      {/* Single image view */}
-      {!isLoading && viewMode === 'single' && currentImage && (
-        <Box>
-          {/* Back to grid */}
-          <Box sx={{ mb: 2 }}>
-            <Button variant="outlined" onClick={handleBackToGrid}>
-              {t('view.images.back_to_grid')}
-            </Button>
-          </Box>
-
-          {/* Image with zoom */}
-          <Box
-            sx={{
-              textAlign: 'center',
-              mb: 2,
-              overflow: 'hidden',
-              cursor: zoomMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
-              userSelect: 'none',
-            }}
-            onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <img
-              src={
-                zoomMode && fullResUrl
-                  ? fullResUrl
-                  : `https://placehold.co/800x600?text=${encodeURIComponent(currentImage.File_Name)}`
-              }
-              alt={currentImage.File_Name}
-              style={{
-                maxWidth: zoomMode ? 'none' : '100%',
-                maxHeight: zoomMode ? 'none' : '80vh',
-                objectFit: zoomMode ? undefined : 'contain',
-                transform: zoomMode
-                  ? `scale(${zoomLevel}) translate(${panOffset.x / zoomLevel}px, ${panOffset.y / zoomLevel}px)`
-                  : 'none',
-                transformOrigin: `${zoomOrigin.x}px ${zoomOrigin.y}px`,
-                transition: isDragging ? 'none' : 'transform 0.1s ease',
-                display: 'block',
-                margin: '0 auto',
-                pointerEvents: 'none',
-              }}
-              draggable={false}
-            />
-          </Box>
-
-          {fullResFailed && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              {t('view.zoom_file_missing')}
+          {/* Error / empty states */}
+          {!isLoading && notMounted && <Alert severity="warning">{t('view.not_mounted')}</Alert>}
+          {!isLoading && noImages && medium && <Alert severity="info">{t('view.no_images')}</Alert>}
+          {!isLoading && dbNotInitialised && medium && (
+            <Alert severity="info">
+              {t('view.no_database')}{' '}
+              <Link component={RouterLink} to="/">
+                {t('view.go_to_backup')}
+              </Link>
             </Alert>
           )}
 
-          {/* Filename + date */}
-          <Typography variant="body2" sx={{ textAlign: 'center' }}>
-            {currentImage.File_Name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ textAlign: 'center', mb: 2 }}>
-            {currentImage.Create_Date}
-          </Typography>
-
-          {/* Navigation toolbar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <IconButton onClick={goFirst} disabled={currentAbsoluteIndex === 0} aria-label="first">
-              <SkipPreviousIcon />
-            </IconButton>
-            <IconButton
-              onClick={goPrev}
-              disabled={currentAbsoluteIndex === 0}
-              aria-label="previous"
-            >
-              <NavigateBeforeIcon />
-            </IconButton>
-
-            <Typography variant="body2" sx={{ minWidth: 80, textAlign: 'center' }}>
-              {currentAbsoluteIndex + 1} / {total}
-            </Typography>
-
-            <IconButton
-              onClick={goNext}
-              disabled={currentAbsoluteIndex >= total - 1}
-              aria-label="next"
-            >
-              <NavigateNextIcon />
-            </IconButton>
-            <IconButton
-              onClick={goLast}
-              disabled={currentAbsoluteIndex >= total - 1}
-              aria-label="last"
-            >
-              <SkipNextIcon />
-            </IconButton>
-
-            {/* Slideshow controls */}
-            <Tooltip title={t('view.slideshow_interval')}>
-              <TextField
-                type="number"
-                value={intervalSeconds}
-                onChange={(e) =>
-                  setIntervalSeconds(Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 5)))
-                }
-                inputProps={{ min: 1, max: 60 }}
-                sx={{ width: 70 }}
-                size="small"
-                disabled={isPlaying}
-                aria-label={t('view.slideshow_interval')}
-              />
-            </Tooltip>
-            <Tooltip title={isPlaying ? t('view.slideshow_stop') : t('view.slideshow_play')}>
-              <IconButton
-                onClick={() => setIsPlaying((p) => !p)}
-                color={isPlaying ? 'error' : 'primary'}
-                aria-label={isPlaying ? t('view.slideshow_stop') : t('view.slideshow_play')}
-              >
-                {isPlaying ? <StopIcon /> : <PlayArrowIcon />}
-              </IconButton>
-            </Tooltip>
-
-            {/* Zoom controls */}
-            {zoomMode && (
-              <>
-                <Tooltip title={t('view.zoom_out')}>
-                  <IconButton
-                    onClick={() => setZoomLevel((z) => clampZoom(z - 0.5))}
-                    size="small"
-                    aria-label={t('view.zoom_out')}
-                    data-testid="zoom-out-button"
-                  >
-                    <ZoomOutIcon />
-                  </IconButton>
-                </Tooltip>
-                <Typography variant="caption" sx={{ minWidth: 40, textAlign: 'center' }} data-testid="zoom-level-indicator">
-                  {zoomLevel.toFixed(1)}x
-                </Typography>
-                <Tooltip title={t('view.zoom_in')}>
-                  <IconButton
-                    onClick={() => setZoomLevel((z) => clampZoom(z + 0.5))}
-                    size="small"
-                    aria-label={t('view.zoom_in')}
-                    data-testid="zoom-in-button"
-                  >
-                    <ZoomInIcon />
-                  </IconButton>
-                </Tooltip>
-              </>
-            )}
-
-            <Tooltip
-              title={
-                fullResFailed
-                  ? t('view.zoom_file_missing')
-                  : zoomMode
-                    ? t('view.zoom_out')
-                    : t('view.zoom_in')
-              }
-            >
-              <span>
-                <IconButton
-                  onClick={handleZoomClick}
-                  disabled={fullResFailed || fullResLoading}
-                  color={zoomMode ? 'primary' : 'default'}
-                  aria-label={t('view.zoom_in')}
-                  data-testid="zoom-button"
-                >
-                  {fullResLoading ? <CircularProgress size={20} /> : <ZoomInIcon />}
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
-
-          {/* Rating + comment */}
-          <Box sx={{ mt: 3, maxWidth: 600, mx: 'auto' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-              <RatingWidget
-                size="normal"
-                value={currentImage.rating ?? 0}
-                onChange={(r) => handleRatingChange(currentImage.ID, r)}
-              />
-            </Box>
-            {ratingError && (
-              <Alert severity="error" onClose={() => setRatingError(null)} sx={{ mb: 1 }}>
-                {ratingError}
-              </Alert>
-            )}
-            <TextField
-              multiline
-              fullWidth
-              minRows={2}
-              label={t('view.images.comment')}
-              placeholder={t('view.comment_placeholder')}
-              value={comment}
-              onChange={handleCommentChange}
-              inputProps={{ maxLength: 500 }}
-              helperText={`${comment.length} / 500`}
-            />
-            {commentError && (
-              <Alert severity="error" onClose={() => setCommentError(null)} sx={{ mt: 1 }}>
-                {commentError}
-              </Alert>
-            )}
-            <SocialPublishPanel
-              medium={medium}
-              imageId={currentImage?.ID}
-              image={currentImage}
-            />
-          </Box>
-        </Box>
+          {/* Thumbnail grid */}
+          {!isLoading && !notMounted && images.length > 0 && (
+            <>
+              <Grid container spacing={2}>
+                {gridItems}
+              </Grid>
+              {pageCount > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                  <Pagination count={pageCount} page={page} onChange={(_e, value) => setPage(value)} disabled={isLoading} />
+                </Box>
+              )}
+            </>
+          )}
+        </PageSection>
       )}
 
       {/* Delete rejected dialog */}
@@ -1018,10 +789,10 @@ export default function View() {
       >
         <DialogTitle>{t('view.delete_rejected_title')}</DialogTitle>
         <DialogContent>
-          <Typography>
-            {(t('view.delete_rejected_confirm') || 'Delete {count} rejected images from {medium}? This cannot be undone.')
-              .replace('{count}', String(rejectedCount))
-              .replace('{medium}', medium || 'selected medium')}
+          <Typography data-testid="delete-rejected-message">
+            {t('view.delete_rejected_page_confirm')
+              .replace('{count}', String(rejectedOnPage.length))
+              .replace('{medium}', medium ? t(`view.medium_options.${medium}`) : '')}
           </Typography>
           {deleteDialogWarning && (
             <Alert severity="warning" sx={{ mt: 2 }}>
@@ -1036,7 +807,7 @@ export default function View() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingRejected}>
-            {t('cancel') || 'Cancel'}
+            {t('cancel')}
           </Button>
           <Button
             color="error"
@@ -1044,8 +815,9 @@ export default function View() {
             onClick={handleDeleteRejectedConfirm}
             disabled={isDeletingRejected}
             startIcon={<WarningAmberIcon />}
+            data-testid="delete-rejected-confirm"
           >
-            {isDeletingRejected ? '…' : (t('view.delete_rejected_button') || 'Delete rejected')}
+            {isDeletingRejected ? '…' : t('view.delete_rejected_button')}
           </Button>
         </DialogActions>
       </Dialog>

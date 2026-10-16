@@ -504,7 +504,75 @@
     "slideshow_stop": "Detener presentación",
     "zoom_in": "Acercar",
     "zoom_out": "Alejar",
-    "zoom_file_missing": "Archivo original no disponible"
+    "zoom_file_missing": "Archivo original no disponible",
+    "date_format": "d.m.Y",
+    "medium_options": {
+      "target_usb": "USB de destino",
+      "source_usb": "USB de origen",
+      "target_nvme": "Destino NVMe local",
+      "source_nvme": "Origen NVMe local",
+      "internal": "Almacenamiento int.",
+      "not_mounted": "no montado"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Tiene un comentario",
+      "summary": "{count} archivos · página {page} / {pages}",
+      "sort_ascending": "Orden ascendente",
+      "sort_descending": "Orden descendente"
+    },
+    "filter_extra": {
+      "day": "Día",
+      "none": "–",
+      "advanced": "Avanzado: cualquier campo de metadatos",
+      "variable": "Campo de metadatos",
+      "variable_value": "Valor",
+      "active": "{count} activos"
+    },
+    "single": {
+      "first": "Primero",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "last": "Último",
+      "filtered_hint": "filtrado",
+      "fullscreen": "Pantalla completa",
+      "close": "Cerrar",
+      "download": "Descargar original",
+      "zoom": "Lupa",
+      "zoom_exit": "Salir de la lupa",
+      "low_res_image": "Archivo RAW o TIFF: se muestra una vista previa de baja resolución.",
+      "low_res_video": "Vídeo GoPro H.265: se reproduce la vista previa de baja resolución (.LRV).",
+      "unsupported": "Este tipo de archivo no tiene vista previa. Use \"Descargar original\".",
+      "saved": "Cambios guardados",
+      "comment_title": "Comentario",
+      "characters": "{count} caracteres",
+      "social_title": "Publicar en redes sociales",
+      "social_caption": "Las imágenes marcadas se publican en la próxima copia de seguridad.",
+      "social_none": "No hay ningún servicio de redes sociales configurado. Configúrelo en Conexiones → Social.",
+      "social_state_nothing": "no marcado",
+      "social_state_publish": "marcado",
+      "social_state_published": "publicado",
+      "social_state_combined": "publicado, marcado de nuevo",
+      "social_toggle_on": "Marcar para publicar en {service}",
+      "social_toggle_off": "Quitar la marca de {service}",
+      "social_error": "No se pudo actualizar la cola de publicación.",
+      "info_title": "Información del archivo",
+      "info_taken": "Tomada",
+      "info_camera": "Cámara",
+      "info_lens": "Objetivo",
+      "info_exposure": "Exposición",
+      "info_duration": "Duración",
+      "info_folder": "Carpeta",
+      "info_size": "Tamaño",
+      "show_all_fields": "Mostrar los {count} campos de metadatos",
+      "hide_all_fields": "Ocultar los campos de metadatos"
+    },
+    "delete_rejected_page_confirm": "¿Eliminar los {count} archivos rechazados de esta página de {medium}? Se eliminan el archivo, su miniatura y su archivo XMP. Esta acción no se puede deshacer."
   },
   "maintenance": {
     "update": {

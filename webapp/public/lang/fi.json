@@ -504,7 +504,75 @@
     "slideshow_stop": "Pysäytä diaesitys",
     "zoom_in": "Lähennä",
     "zoom_out": "Loitonna",
-    "zoom_file_missing": "Alkuperäinen tiedosto ei saatavilla"
+    "zoom_file_missing": "Alkuperäinen tiedosto ei saatavilla",
+    "date_format": "j.n.Y",
+    "medium_options": {
+      "target_usb": "USB-kohde",
+      "source_usb": "USB-lähde",
+      "target_nvme": "Paikallinen NVMe-kohde",
+      "source_nvme": "Paikallinen NVMe-lähde",
+      "internal": "Sisäinen tallennustila",
+      "not_mounted": "ei liitetty"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Sisältää kommentin",
+      "summary": "{count} tiedostoa · sivu {page} / {pages}",
+      "sort_ascending": "Nouseva järjestys",
+      "sort_descending": "Laskeva järjestys"
+    },
+    "filter_extra": {
+      "day": "Päivä",
+      "none": "–",
+      "advanced": "Lisäasetus: mikä tahansa metatietokenttä",
+      "variable": "Metatietokenttä",
+      "variable_value": "Arvo",
+      "active": "{count} aktiivista"
+    },
+    "single": {
+      "first": "Ensimmäinen",
+      "previous": "Edellinen",
+      "next": "Seuraava",
+      "last": "Viimeinen",
+      "filtered_hint": "suodatettu",
+      "fullscreen": "Koko näyttö",
+      "close": "Sulje",
+      "download": "Lataa alkuperäinen",
+      "zoom": "Suurennuslasi",
+      "zoom_exit": "Poistu suurennuksesta",
+      "low_res_image": "RAW- tai TIFF-tiedosto — näytetään matalaresoluutioinen esikatselu.",
+      "low_res_video": "GoPro H.265 -video — toistetaan matalaresoluutioinen esikatselu (.LRV).",
+      "unsupported": "Tätä tiedostotyyppiä ei voi esikatsella. Käytä ”Lataa alkuperäinen”.",
+      "saved": "Muutokset tallennettu",
+      "comment_title": "Kommentti",
+      "characters": "{count} merkkiä",
+      "social_title": "Julkaise sosiaaliseen mediaan",
+      "social_caption": "Jonoon lisätyt kuvat julkaistaan seuraavan varmuuskopioinnin yhteydessä.",
+      "social_none": "Yhtään sosiaalisen median palvelua ei ole määritetty. Määritä se kohdassa Yhteydet → Some.",
+      "social_state_nothing": "ei jonossa",
+      "social_state_publish": "jonossa",
+      "social_state_published": "julkaistu",
+      "social_state_combined": "julkaistu, uudelleen jonossa",
+      "social_toggle_on": "Lisää {service}-jonoon",
+      "social_toggle_off": "Poista {service}-jonosta",
+      "social_error": "Julkaisujonon päivitys epäonnistui.",
+      "info_title": "Tiedoston tiedot",
+      "info_taken": "Otettu",
+      "info_camera": "Kamera",
+      "info_lens": "Objektiivi",
+      "info_exposure": "Valotus",
+      "info_duration": "Kesto",
+      "info_folder": "Kansio",
+      "info_size": "Koko",
+      "show_all_fields": "Näytä kaikki {count} metatietokenttää",
+      "hide_all_fields": "Piilota metatietokentät"
+    },
+    "delete_rejected_page_confirm": "Poistetaanko tämän sivun {count} hylättyä tiedostoa välineeltä {medium}? Tiedosto, sen pikkukuva ja XMP-sivutiedosto poistetaan. Toimintoa ei voi perua."
   },
   "maintenance": {
     "update": {

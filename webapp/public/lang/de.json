@@ -504,7 +504,75 @@
     "slideshow_stop": "Diashow stoppen",
     "zoom_in": "Vergrößern",
     "zoom_out": "Verkleinern",
-    "zoom_file_missing": "Originaldatei nicht verfügbar"
+    "zoom_file_missing": "Originaldatei nicht verfügbar",
+    "date_format": "d.m.Y",
+    "medium_options": {
+      "target_usb": "USB Ziel",
+      "source_usb": "USB Quelle",
+      "target_nvme": "Lokales NVMe Ziel",
+      "source_nvme": "Lokale NVMe Quelle",
+      "internal": "Int. Speicher",
+      "not_mounted": "nicht eingehängt"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Hat einen Kommentar",
+      "summary": "{count} Dateien · Seite {page} / {pages}",
+      "sort_ascending": "Aufsteigend sortieren",
+      "sort_descending": "Absteigend sortieren"
+    },
+    "filter_extra": {
+      "day": "Tag",
+      "none": "–",
+      "advanced": "Erweitert: beliebiges Metadatenfeld",
+      "variable": "Metadatenfeld",
+      "variable_value": "Wert",
+      "active": "{count} aktiv"
+    },
+    "single": {
+      "first": "Erstes",
+      "previous": "Vorheriges",
+      "next": "Nächstes",
+      "last": "Letztes",
+      "filtered_hint": "gefiltert",
+      "fullscreen": "Vollbild",
+      "close": "Schließen",
+      "download": "Download Original",
+      "zoom": "Lupe",
+      "zoom_exit": "Lupe beenden",
+      "low_res_image": "RAW- oder TIFF-Datei — Vorschaubild in geringer Auflösung.",
+      "low_res_video": "GoPro-H.265-Video — Vorschauvideo in geringer Auflösung (.LRV).",
+      "unsupported": "Für diesen Dateityp gibt es keine Vorschau. Nutzen Sie „Download Original“.",
+      "saved": "Änderungen gespeichert",
+      "comment_title": "Kommentar",
+      "characters": "{count} Zeichen",
+      "social_title": "In sozialen Medien veröffentlichen",
+      "social_caption": "Markierte Bilder werden beim nächsten Backup veröffentlicht.",
+      "social_none": "Kein Social-Media-Dienst eingerichtet. Richten Sie einen unter Verbindungen → Social ein.",
+      "social_state_nothing": "nicht markiert",
+      "social_state_publish": "markiert",
+      "social_state_published": "veröffentlicht",
+      "social_state_combined": "veröffentlicht, erneut markiert",
+      "social_toggle_on": "Zur Veröffentlichung auf {service} markieren",
+      "social_toggle_off": "Markierung für {service} entfernen",
+      "social_error": "Die Markierung konnte nicht gespeichert werden.",
+      "info_title": "Dateiinfo",
+      "info_taken": "Aufgenommen",
+      "info_camera": "Kamera",
+      "info_lens": "Objektiv",
+      "info_exposure": "Belichtung",
+      "info_duration": "Dauer",
+      "info_folder": "Verzeichnis",
+      "info_size": "Größe",
+      "show_all_fields": "Alle {count} Metadatenfelder anzeigen",
+      "hide_all_fields": "Metadatenfelder ausblenden"
+    },
+    "delete_rejected_page_confirm": "Die {count} abgelehnten Dateien dieser Seite von {medium} löschen? Datei, Vorschaubild und XMP-Datei werden entfernt. Dies kann nicht rückgängig gemacht werden."
   },
   "maintenance": {
     "update": {

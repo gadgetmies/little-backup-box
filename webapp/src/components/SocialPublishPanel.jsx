@@ -1,135 +1,88 @@
 import React, { useState, useCallback } from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  Button,
-  Alert,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
-import TelegramIcon from '@mui/icons-material/Telegram';
-import PublicIcon from '@mui/icons-material/Public';
-import SendIcon from '@mui/icons-material/Send';
+import { Alert, Chip, Stack, Typography } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useConfig } from '../contexts/ConfigContext';
-import api from '../utils/api';
+import SocialServiceIcon from './view/SocialServiceIcon';
+import { socialState } from './view/viewMedia';
 
-function SocialPublishPanel({ medium, imageId, image, onPublished }) {
+/**
+ * Per-image "publish to social media" marking (scripts/view.php:293-339).
+ *
+ * One toggle chip per CONFIGURED service. Toggling flips the service bit in
+ * EXIF_DATA.social_publish; nothing is posted from here — the next backup run
+ * (scripts/backup.py) posts queued images and sets social_published.
+ *
+ * Props:
+ *   services   string[]  configured services, display order
+ *   bits       object    service -> bit number
+ *   image      object    EXIF_DATA row (social_publish, social_published)
+ *   onToggle   (service, publish:boolean) => Promise
+ */
+function SocialPublishPanel({ services = [], bits = {}, image, onToggle }) {
   const { t } = useLanguage();
-  const { config } = useConfig();
-  const [selected, setSelected] = useState([]);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
 
-  const telegramEnabled =
-    config?.conf_SOCIAL_TELEGRAM_TOKEN && config.conf_SOCIAL_TELEGRAM_TOKEN.trim() !== '';
-  const mastodonEnabled =
-    config?.conf_SOCIAL_MASTODON_TOKEN && config.conf_SOCIAL_MASTODON_TOKEN.trim() !== '';
-
-  const hasPlatforms = telegramEnabled || mastodonEnabled;
-
-  const togglePlatform = useCallback((platform) => {
-    setSelected((prev) =>
-      prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]
-    );
-    setResult(null);
-    setError(null);
-  }, []);
-
-  const handlePublish = useCallback(async () => {
-    if (selected.length === 0) return;
-    setIsPublishing(true);
-    setResult(null);
-    setError(null);
-    try {
-      const response = await api.post('/social/publish', {
-        medium,
-        imageId,
-        platforms: selected,
-      });
-      setResult(response.data.results || {});
-      if (onPublished) onPublished(response.data);
-    } catch (err) {
-      const errCode = err.response?.data?.error;
-      if (errCode === 'social_auth_failed') {
-        setError(t('view.social.auth_failed'));
-      } else if (errCode === 'social_rate_limit') {
-        setError(t('view.social.rate_limit'));
-      } else {
-        setError(err.response?.data?.error || t('view.social.publish_error'));
+  const handleToggle = useCallback(
+    async (service, queued) => {
+      if (!onToggle) return;
+      setBusy(service);
+      setError(null);
+      try {
+        await onToggle(service, !queued);
+      } catch (err) {
+        setError(err?.response?.data?.error || t('view.single.social_error'));
+      } finally {
+        setBusy(null);
       }
-    } finally {
-      setIsPublishing(false);
-    }
-  }, [selected, medium, imageId, t, onPublished]);
+    },
+    [onToggle, t]
+  );
 
-  if (!hasPlatforms) return null;
-
-  const publishedTelegram = image?.publish_telegram === '1' || image?.publish_telegram === 1;
-  const publishedMastodon = image?.publish_mastodon === '1' || image?.publish_mastodon === 1;
+  if (!services.length) {
+    return (
+      <Typography variant="body2" color="text.secondary" data-testid="social-none">
+        {t('view.single.social_none')}
+      </Typography>
+    );
+  }
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="subtitle2" gutterBottom>
-        {t('view.social.publish')}
-      </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
-        {telegramEnabled && (
-          <Chip
-            icon={<TelegramIcon />}
-            label={
-              publishedTelegram
-                ? `${t('view.social.telegram')} (${t('view.social.published')})`
-                : t('view.social.telegram')
-            }
-            color={selected.includes('telegram') ? 'primary' : 'default'}
-            variant={selected.includes('telegram') ? 'filled' : 'outlined'}
-            onClick={() => togglePlatform('telegram')}
-            size="small"
-          />
-        )}
-        {mastodonEnabled && (
-          <Chip
-            icon={<PublicIcon />}
-            label={
-              publishedMastodon
-                ? `${t('view.social.mastodon')} (${t('view.social.published')})`
-                : t('view.social.mastodon')
-            }
-            color={selected.includes('mastodon') ? 'primary' : 'default'}
-            variant={selected.includes('mastodon') ? 'filled' : 'outlined'}
-            onClick={() => togglePlatform('mastodon')}
-            size="small"
-          />
-        )}
+    <Stack spacing={1.5} data-testid="social-publish-panel">
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+        {services.map((service) => {
+          const bit = bits[service];
+          if (bit === undefined) return null;
+          const state = socialState(image?.social_publish, image?.social_published, bit);
+          const queued = state === 'publish' || state === 'combined';
+          const name = t(`view.social_services.${service}`);
+          const stateLabel = t(`view.single.social_state_${state}`);
+          return (
+            <Chip
+              key={service}
+              icon={<SocialServiceIcon service={service} state={state} size={22} />}
+              label={`${name} · ${stateLabel}`}
+              color={queued ? 'primary' : 'default'}
+              variant={queued ? 'filled' : 'outlined'}
+              onClick={() => handleToggle(service, queued)}
+              disabled={busy === service}
+              aria-pressed={queued}
+              aria-label={(queued ? t('view.single.social_toggle_off') : t('view.single.social_toggle_on')).replace('{service}', name)}
+              data-testid={`social-toggle-${service}`}
+              data-state={state}
+              sx={{ minHeight: 44, borderRadius: 22, '& .MuiChip-icon': { ml: 1 } }}
+            />
+          );
+        })}
       </Stack>
-
-      <Button
-        variant="contained"
-        size="small"
-        startIcon={isPublishing ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
-        onClick={handlePublish}
-        disabled={selected.length === 0 || isPublishing}
-        data-testid="social-publish-button"
-      >
-        {t('view.social.publish')}
-      </Button>
-
-      {result && (
-        <Alert severity="success" sx={{ mt: 1 }}>
-          {Object.entries(result)
-            .map(([platform, ok]) => `${platform}: ${ok ? t('view.social.published') : t('view.social.publish_error')}`)
-            .join(', ')}
-        </Alert>
-      )}
+      <Typography variant="caption" color="text.secondary">
+        {t('view.single.social_caption')}
+      </Typography>
       {error && (
-        <Alert severity="error" sx={{ mt: 1 }}>
+        <Alert severity="error" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-    </Box>
+    </Stack>
   );
 }
 
