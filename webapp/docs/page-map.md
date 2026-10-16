@@ -27,13 +27,16 @@ The route table is allowed to evolve, but every change must update both this fil
 | 9 | `/system` | System | `mainmenue.system` |
 | 10 | `/scrape` | Legacy UI | `mainmenue.scrape` |
 | ext | `/files` | Files (external) | `mainmenue.filebrowser` |
-| ext | `/frame.php?page=rclone_gui` | rclone GUI (external) | `mainmenue.rclone_gui` |
+| ext | `/rclone/` | rclone GUI (external) | `mainmenue.rclone_gui` |
+| ext | `/comitup/` | WiFi portal (comitup) (external; only when comitup is installed, disabled unless its hotspot is active) | `menu.comitup_portal` |
 
 The sidebar order targets typical-user task frequency: things touched every backup session at the top (Backup → Library → Storage), occasional admin in the middle (Maintenance, Connections, Network), set-once configuration after that (Hardware, Preferences), and diagnostics / legacy at the end. Note the route slugs are stable but the displayed page title diverges for `/integrations` (displays "Connections"), and `/hardware` was renamed from `/devices` (no redirect — the old route was new enough that no external links pointed at it).
 
 External links always appear after internal links and never highlight as the active route.
 
-The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout) that is not per-page; see the catalog entries under "Manage device lifecycle".
+The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout) that is not per-page; see the catalog entries under "Manage device lifecycle". It also shows a "branch: <name>" chip when the device is not on `main`, and the device-status popover includes the rendered display image when the display is enabled. The sidebar "System" entry carries an "Update" badge when an update is available.
+
+Protected commands (format, fsck repair, f3, updates, LibRaw, comitup reset) all go through the shared `ProtectedCommandDialog` from the page that owns the feature; see "Run a protected command" in the catalog.
 
 ## Pages
 
@@ -144,7 +147,7 @@ This page uses `Tabs` for the three configuration domains (WiFi / Network info /
 | 3 | VPN | Configure VPN |
 
 Below the tabs:
-- **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode
+- **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode; Open the comitup WiFi portal
 
 ### `/system` — System
 
@@ -159,7 +162,7 @@ This page uses `Tabs` for the four functional areas — same rationale as `/stor
 | 1 | Device | View system information |
 | 2 | Cameras | View connected cameras and smartphones; Copy camera storage pattern to clipboard |
 | 3 | Updates | Check for system updates; Install system updates; Update LibRaw camera-format library |
-| 4 | Logs | View live logs; Set log level; Toggle log sync; Keep display images for debugging |
+| 4 | Logs | View live logs (main log + command log); Set log level; Toggle log sync; Keep display images for debugging |
 
 Reboot / Power off / Stop LBB / Logout do not live on this page — they live in the AppBar power menu and are accessible from anywhere. They are catalogued under "Manage device lifecycle" but their UI location is "AppBar → power menu".
 
@@ -200,6 +203,9 @@ Some features are reachable from more than one entry point but are implemented a
 - **Set UI language** — primary location is `/preferences` → "Locale"; AppBar quick-menu is a shortcut.
 - **Set UI theme** — primary location is `/preferences` → "Display"; AppBar quick-menu is a shortcut.
 - **Reboot the device**, **Power off the device**, **Stop the LBB process**, **Log out** — primary location is the AppBar power menu (always available); not on any page.
+- **See the installed software branch (AppBar)** and **View device status (AppBar)** (incl. the rendered display image) — AppBar only; not on any page.
+- **Open the comitup WiFi portal** — primary location is `/network` → "WiFi recovery"; the sidebar entry is a shortcut.
+- **Run a protected command** — the shared `ProtectedCommandDialog`; it is opened by the owning feature (`/storage` Repair / Format / Verify capacity, `/system` → "Updates", `/network` → "WiFi recovery") and has no page of its own.
 
 ## Verifying the page map
 

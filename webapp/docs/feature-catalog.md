@@ -65,7 +65,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: read live log output from running backups.
 - **Audience**: anyone debugging a backup or curious about progress.
 - **UI location**: `/` → "Backup logs" section (collapsible)
-- **Backend**: `GET /api/log/stream` (SSE)
+- **Backend**: `GET /api/log?file=main` polled every 2 s (there is no streaming endpoint); only the allow-listed logs `main` (`const_LOGFILE`) and `cmd` (`const_CMD_LOGFILE`) can be read.
 - **Prerequisites**: none.
 - **Related**: Monitor running backups.
 
@@ -258,9 +258,9 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: pull the latest LibRaw build so newer camera RAW formats are recognised.
 - **Audience**: users with newly-released cameras whose RAW files aren't being read.
 - **UI location**: `/system` → "Updates" tab
-- **Backend**: `POST /api/setup/update/libraw`
-- **Prerequisites**: internet connectivity.
-- **Related**: Check for system updates.
+- **Backend**: `POST /api/setup/update/libraw` (device password; runs `scripts/mods/update_libraw.sh` in the background into the command log, cmd.php:309-313)
+- **Prerequisites**: internet connectivity; device password set.
+- **Related**: Check for system updates; Run a protected command.
 
 ## Manage storage devices
 
@@ -286,9 +286,9 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: surface SMART, wear, and other health indicators for storage devices that report them.
 - **Audience**: users monitoring drive longevity.
-- **UI location**: `/storage` → "Device health" section
-- **Backend**: `GET /api/sysinfo/device-states`
-- **Prerequisites**: device must report SMART or wear info.
+- **UI location**: `/storage` → "Info" tab → "Device status" (auto-refreshes every 5 s while the tab is visible)
+- **Backend**: `GET /api/sysinfo/device-states` — every partition is listed; `smartctl` output is parsed regardless of its bitmask exit status, `-` when a device prints no `key: value` lines.
+- **Prerequisites**: none.
 - **Related**: View connected block devices.
 
 ### Mount storage as backup source
@@ -322,7 +322,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 - **Purpose**: run a non-destructive integrity check on a partition.
 - **Audience**: users investigating a flaky disk.
-- **UI location**: `/storage` → "Repair" section → "Check" action
+- **UI location**: `/storage` → "Repair" section → "Check" action (no password; output shown in the command dialog)
 - **Backend**: `POST /api/tools/fsck/check`
 - **Prerequisites**: partition selected and not currently in use.
 - **Related**: Repair filesystem errors.
@@ -332,8 +332,8 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: attempt automatic repair of detected filesystem errors.
 - **Audience**: users with confirmed errors from the check.
 - **UI location**: `/storage` → "Repair" section → "Repair" action
-- **Backend**: `POST /api/tools/fsck/repair`
-- **Prerequisites**: partition selected and unmounted.
+- **Backend**: `POST /api/tools/fsck/repair` (device password)
+- **Prerequisites**: partition selected and unmounted; device password set.
 - **Related**: Check filesystem for errors.
 
 ### Format a partition
@@ -341,8 +341,8 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: erase a partition and write a new filesystem on it.
 - **Audience**: users preparing fresh media.
 - **UI location**: `/storage` → "Format" section
-- **Backend**: `POST /api/tools/format`
-- **Prerequisites**: partition selected, target filesystem type chosen, partition unmounted.
+- **Backend**: `POST /api/tools/format` (device password)
+- **Prerequisites**: partition selected, target filesystem type chosen, partition unmounted; device password set.
 - **Related**: View connected block devices.
 
 ### Verify USB drive capacity (f3)
@@ -350,9 +350,18 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: detect counterfeit or failing USB drives by writing and reading test patterns.
 - **Audience**: users vetting cheap or unknown-source media before trusting them.
 - **UI location**: `/storage` → "Verify capacity" section
-- **Backend**: `POST /api/tools/f3`
-- **Prerequisites**: device selected.
-- **Related**: View device health states.
+- **Backend**: `POST /api/tools/f3` (device password, both modes)
+- **Prerequisites**: device selected; device password set.
+- **Related**: View device health states; Run a protected command.
+
+### Run a protected command
+
+- **Purpose**: run the commands `scripts/cmd.php` guards — format, fsck repair (check is unprotected), both f3 modes, system update (main / development), LibRaw update and comitup reset — with a password gate, live output and an optional mailed result.
+- **Audience**: anyone using the destructive or long-running maintenance actions above.
+- **UI location**: shared `ProtectedCommandDialog` opened from `/storage`, `/system` → "Updates" and `/network` → "WiFi recovery". Step 1 asks for the device password (and offers "Email me the result" when SMTP is fully configured); step 2 shows progress and the command log, with Download log + Close. If no device password is set the action is disabled and links to `/preferences` → "Security".
+- **Backend**: the per-feature routes above share `server/utils/commandRunner.js` (`requireDevicePassword` compares against base64-decoded `conf_PASSWORD` in constant time; commands run in the background into `const_CMD_LOGFILE`, steps joined with `;` like cmd.php, `lib_mail.py` mails the log when asked). `GET /api/cmd/status` reports `passwordSet`, `mailConfigured` and whether a command is running; output is polled from `GET /api/log?file=cmd`.
+- **Prerequisites**: device password set (except fsck check). In dev:mock without `scripts/config.cfg` the password is `lbb`; the static demo uses the same.
+- **Related**: View live logs.
 
 ## Configure backup defaults (system-wide)
 
@@ -454,10 +463,10 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: reboot the WiFi stack into the comitup AP-mode so the device becomes its own hotspot for first-time setup or recovery.
 - **Audience**: users who lost WiFi credentials or are setting up the device fresh.
-- **UI location**: `/network` → "WiFi" card → "Reset to AP mode" accordion (rare action)
-- **Backend**: `POST /api/network/comitup/reset`; `scripts/comitup-reset.sh`
-- **Prerequisites**: comitup tool installed.
-- **Related**: View WiFi interface info.
+- **UI location**: `/network` → "WiFi recovery" accordion (rare action), via the protected-command dialog. The same accordion links to the comitup portal (`/comitup/`) when comitup is installed; the link is disabled unless the comitup hotspot is active.
+- **Backend**: `POST /api/network/comitup/reset` (device password; prints and runs `scripts/comitup-reset.sh` in the background, cmd.php:528-537); `GET /api/cmd/shell-status` for the portal link
+- **Prerequisites**: comitup tool installed; device password set.
+- **Related**: View WiFi interface info; Run a protected command; Open the comitup WiFi portal.
 
 ### Configure VPN
 
@@ -551,15 +560,33 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: see at a glance whether the device is idle ("Ready") or has a current display message (e.g., during a backup), and read the latest message in a popover.
 - **Audience**: every user — visible from every page.
 - **UI location**: AppBar → status icon (between language and theme menus). Click to open a popover with the current status text.
-- **Backend**: `GET /api/display/status` polled every 1 s; reads the latest frame from `<tmp>/display-content/` (queue) or `display-content-old.txt` (when the physical display is disabled).
+- **Backend**: `GET /api/display/status` polled every 1 s; reads the latest frame from `<tmp>/display-content/` (queue) or `display-content-old.txt` (when the physical display is disabled). When the display is enabled (`conf_DISP`) with a resolution set, the popover also shows the rendered display image from `GET /api/display/image` (`const_DISPLAY_IMAGE_EXPORT_FILE`), refreshed every 2 s (sub-display.php).
 - **Prerequisites**: none.
 - **Related**: View live logs.
+
+### See the installed software branch (AppBar)
+
+- **Purpose**: notice when the device runs a non-`main` branch (e.g. `development`).
+- **Audience**: testers and developers.
+- **UI location**: AppBar → "branch: <name>" chip next to the page title, only when `const_SOFTWARE_BRANCH` is not `main` (sub-footer.php:52-54).
+- **Backend**: `GET /api/config` (constants).
+- **Prerequisites**: none.
+- **Related**: Install system updates.
+
+### Open the comitup WiFi portal
+
+- **Purpose**: open comitup's own web UI to pick a WiFi network.
+- **Audience**: users setting up WiFi through the device's hotspot.
+- **UI location**: sidebar → "WiFi portal (comitup)" (external) and `/network` → "WiFi recovery"; shown only when comitup is installed, disabled unless its hotspot is active (sub-menu.php:64-70).
+- **Backend**: `GET /api/cmd/shell-status` (`which comitup`, `lib_comitup.py --hotspot_active`).
+- **Prerequisites**: comitup installed.
+- **Related**: Reset WiFi to access-point mode.
 
 ### View system information
 
 - **Purpose**: see CPU model, temperature, load, RAM, swap, and overall system condition flags.
 - **Audience**: anyone diagnosing performance or thermal issues.
-- **UI location**: `/system` → "Device" tab
+- **UI location**: `/system` → "Device" tab (auto-refreshes every 5 s while visible, like sysinfo.php)
 - **Backend**: `GET /api/sysinfo/system`
 - **Prerequisites**: none.
 - **Related**: View connected cameras and smartphones.
@@ -568,7 +595,7 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: list cameras/phones currently connected over USB, with their storage paths and the folder-sync pattern to use as a preset.
 - **Audience**: users configuring presets for a specific camera.
-- **UI location**: `/system` → "Cameras" tab
+- **UI location**: `/system` → "Cameras" tab — per camera the raw auto-detect "MODEL PORT" line, Camera model / Serial number / Storage paths (`-` when missing), and per storage both patterns `MODEL:!storage` and `MODEL_SERIAL:!storage` (sysinfo.php:160-249)
 - **Backend**: `GET /api/sysinfo/cameras`
 - **Prerequisites**: camera connected via USB.
 - **Related**: Configure and start a backup.
@@ -595,9 +622,9 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: apply a previously-detected update.
 - **Audience**: anyone keeping the device current.
-- **UI location**: `/system` → "Updates" tab → "Install" action
-- **Backend**: `POST /api/setup/update/install`, `GET /api/setup/update/status`
-- **Prerequisites**: an update is available.
+- **UI location**: `/system` → "Updates" tab → "Install" action (and "Install development update"). The sidebar "System" entry shows an "Update" badge when `lib_git.py --update-available` reports an update (cached server-side for 5 min, sub-menu.php:79-85).
+- **Backend**: `POST /api/setup/update/install` (device password; `branch: 'development'` for the development branch; runs in the background into the command log, cmd.php:297-307), `GET /api/setup/update/status`, `GET /api/cmd/shell-status`
+- **Prerequisites**: an update is available; device password set.
 - **Related**: Check for system updates.
 
 ### Reboot the device
@@ -640,8 +667,8 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: stream the device's logs in the browser for live monitoring or debugging.
 - **Audience**: developers and users diagnosing issues.
-- **UI location**: `/system` → "Logs" tab
-- **Backend**: `GET /api/log/stream`
+- **UI location**: `/system` → "Logs" tab — the main log and the command log (`const_CMD_LOGFILE`). Each monitor has Refresh, Download, Clear (recreates the file with a "Little Backup Box" header line, sub-logmonitor.php:30-52) and auto-refresh.
+- **Backend**: `GET /api/log?file=main|cmd` (polled every 2 s; no streaming endpoint), `GET /api/log/download?file=…`, `POST /api/log/clear`. Only the two allow-listed logs are accessible.
 - **Prerequisites**: none.
 - **Related**: Stream backup logs.
 
