@@ -73,7 +73,7 @@ function Backup() {
     conf_BACKUP_UPDATE_EXIF: 'false',
     conf_BACKUP_CHECKSUM: 'false',
     conf_POWER_OFF: 'false',
-    conf_MAIL_NOTIFICATIONS: '0',
+    conf_MAIL_NOTIFICATIONS: 'false',
   });
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
@@ -89,7 +89,7 @@ function Backup() {
     conf_BACKUP_UPDATE_EXIF: 'false',
     conf_BACKUP_CHECKSUM: 'false',
     conf_POWER_OFF: 'false',
-    conf_MAIL_NOTIFICATIONS: '0',
+    conf_MAIL_NOTIFICATIONS: 'false',
   });
   useEffect(() => {
     loadServices();
@@ -145,7 +145,7 @@ function Backup() {
         conf_BACKUP_UPDATE_EXIF: config.conf_BACKUP_UPDATE_EXIF || 'false',
         conf_BACKUP_CHECKSUM: config.conf_BACKUP_CHECKSUM || 'false',
         conf_POWER_OFF: config.conf_POWER_OFF || 'false',
-        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || '0',
+        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || 'false',
       };
       const configString = JSON.stringify(newConfig);
       setDefaultBackupConfig(newConfig);
@@ -170,7 +170,7 @@ function Backup() {
         conf_BACKUP_UPDATE_EXIF: config.conf_BACKUP_UPDATE_EXIF || 'false',
         conf_BACKUP_CHECKSUM: config.conf_BACKUP_CHECKSUM || 'false',
         conf_POWER_OFF: config.conf_POWER_OFF || 'false',
-        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || '0',
+        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || 'false',
       };
       const configString = JSON.stringify(newConfig);
       
@@ -377,7 +377,7 @@ function Backup() {
       conf_BACKUP_UPDATE_EXIF: formData.updateExif ? 'true' : 'false',
       conf_BACKUP_CHECKSUM: formData.checksum === 'checksum' ? 'true' : 'false',
       conf_POWER_OFF: formData.powerOff ? 'true' : 'false',
-      conf_MAIL_NOTIFICATIONS: defaultBackupConfig.conf_MAIL_NOTIFICATIONS || '0',
+      conf_MAIL_NOTIFICATIONS: defaultBackupConfig.conf_MAIL_NOTIFICATIONS || 'false',
     };
     
     try {
@@ -766,8 +766,8 @@ function Backup() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={defaultBackupConfig.conf_MAIL_NOTIFICATIONS === '1'}
-                          onChange={(e) => setDefaultBackupConfig({ ...defaultBackupConfig, conf_MAIL_NOTIFICATIONS: e.target.checked ? '1' : '0' })}
+                          checked={['1', 'true'].includes(String(defaultBackupConfig.conf_MAIL_NOTIFICATIONS))}
+                          onChange={(e) => setDefaultBackupConfig({ ...defaultBackupConfig, conf_MAIL_NOTIFICATIONS: e.target.checked ? 'true' : 'false' })}
                         />
                       }
                       label={t('config.mail.notify_backup_label') || 'If possible, send backup reports via email?'}
