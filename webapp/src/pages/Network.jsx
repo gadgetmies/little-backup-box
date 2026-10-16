@@ -17,24 +17,22 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Tooltip,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ProtectedCommandDialog from '../components/ProtectedCommandDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
 import VPNConfig from '../components/VPNConfig';
 import SectionHeader from '../components/SectionHeader';
 import PageSaveBar from '../components/PageSaveBar';
-import useAsyncAction from '../hooks/useAsyncAction';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 
@@ -309,16 +307,26 @@ function Network() {
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState(0);
   const [comitupDialogOpen, setComitupDialogOpen] = useState(false);
-  const [comitupResetDone, setComitupResetDone] = useState(false);
+  const [comitupStatus, setComitupStatus] = useState({ installed: false, hotspotActive: false });
   const [vpnState, setVpnState] = useState({ isSaved: true, save: null });
   const [isSaving, setIsSaving] = useState(false);
 
-  const comitupResetFn = useCallback(() => api.post('/network/comitup/reset'), []);
-  const {
-    execute: executeComitupReset,
-    loading: comitupResetting,
-    error: comitupError,
-  } = useAsyncAction(comitupResetFn);
+  // sub-menu.php:41-43 — comitup portal availability for the WiFi recovery section.
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/cmd/shell-status')
+      .then((response) => {
+        if (cancelled || !response.data) return;
+        setComitupStatus({
+          installed: Boolean(response.data.comitupInstalled),
+          hotspotActive: Boolean(response.data.comitupHotspotActive),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // Load selected tab from localStorage
@@ -653,64 +661,47 @@ function Network() {
           <Typography variant="body2" sx={{ mb: 2 }}>
             {t('network.wifi_reset_description')}
           </Typography>
-          {comitupError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {t('network.wifi_reset_error') || 'Comitup is not installed on this device'}
-            </Alert>
-          )}
-          {comitupResetDone && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              {t('network.wifi_reset_rebooting')}
-            </Alert>
-          )}
-          <Button
-            color="error"
-            variant="outlined"
-            onClick={() => setComitupDialogOpen(true)}
-            disabled={comitupResetDone}
-            startIcon={<WarningAmberIcon />}
-          >
-            {t('network.wifi_reset_button')}
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+            <Button
+              color="error"
+              variant="outlined"
+              onClick={() => setComitupDialogOpen(true)}
+              startIcon={<WarningAmberIcon />}
+              sx={{ minHeight: 44 }}
+            >
+              {t('network.wifi_reset_button')}
+            </Button>
+            {comitupStatus.installed && (
+              <Tooltip title={comitupStatus.hotspotActive ? '' : t('menu.comitup_portal_inactive')}>
+                <span>
+                  <Button
+                    variant="outlined"
+                    href="/comitup/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    disabled={!comitupStatus.hotspotActive}
+                    startIcon={<WifiTetheringIcon />}
+                    endIcon={<OpenInNewIcon fontSize="small" />}
+                    sx={{ minHeight: 44 }}
+                    data-testid="comitup-portal-link"
+                  >
+                    {t('menu.comitup_portal')}
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+          </Stack>
         </AccordionDetails>
       </Accordion>
 
-      <Dialog
+      <ProtectedCommandDialog
         open={comitupDialogOpen}
         onClose={() => setComitupDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{t('network.wifi_reset_confirm_title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('network.wifi_reset_confirm_body')}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setComitupDialogOpen(false)}>
-            {t('main.cancel_button') || 'Cancel'}
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={() => {
-              executeComitupReset()
-                .then(() => {
-                  setComitupResetDone(true);
-                  setComitupDialogOpen(false);
-                })
-                .catch(() => {
-                  setComitupDialogOpen(false);
-                });
-            }}
-            disabled={comitupResetting}
-            startIcon={comitupResetting ? <CircularProgress size={18} /> : null}
-          >
-            {t('network.wifi_reset_button')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title={t('cmd.comitup_title')}
+        consequence={t('network.wifi_reset_confirm_body')}
+        actionLabel={t('network.wifi_reset_button')}
+        onConfirm={(body) => api.post('/network/comitup/reset', body)}
+      />
 
       <Snackbar
         open={!!message}

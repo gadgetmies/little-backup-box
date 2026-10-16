@@ -2,7 +2,14 @@
   "seconds_short": "s",
   "log": {
     "logmonitor": "Lokimonitori",
-    "refresh_button": "Päivitä"
+    "refresh_button": "Päivitä",
+    "download_button": "Lataa",
+    "clear_button": "Tyhjennä loki",
+    "clear_confirm_title": "Tyhjennetäänkö loki?",
+    "clear_confirm_body": "Loki tyhjennetään ja aloitetaan uudelleen otsikkorivillä. Toimintoa ei voi perua.",
+    "auto_refresh": "Päivitä automaattisesti",
+    "empty": "Loki on tyhjä",
+    "cmd_logmonitor": "Komentoloki"
   },
   "box": {
     "backup": {
@@ -147,7 +154,15 @@
     "device_states": "Laitteen tila",
     "info": "Info",
     "no_cameras": "No cameras detected",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "no_device_states": "Laitetiloja ei saatavilla",
+    "camera_model": "Kameran malli",
+    "camera_storages": "Tallennuspolut",
+    "camera_folder_pattern": "Käytettäväksi mallina asetuksissa",
+    "camera_model_folders": "Kameramallin mukaan synkronoitavat kansiot",
+    "camera_specific_folders": "Tietystä kamerasta synkronoitavat kansiot",
+    "copy": "Kopioi leikepöydälle",
+    "copied": "Kopioitu!"
   },
   "system": {
     "logs_section": "Logs",
@@ -432,6 +447,42 @@
       "select_partition_label": "Partitio",
       "nvme": "NVMe SSD",
       "mounted": "liitetty"
+    },
+    "none": "Ei mitään",
+    "no_mounts": "Ei liitoksia",
+    "mount_success": "Liitetty",
+    "umount_success": "Irrotettu",
+    "mount_failed": "Liittäminen epäonnistui",
+    "umount_failed": "Irrottaminen epäonnistui",
+    "select_source_first": "Valitse lähdetallennustila",
+    "select_target_first": "Valitse kohdetallennustila",
+    "select_partition_first": "Valitse osio",
+    "select_partition_fstype_first": "Valitse osio ja tiedostojärjestelmä",
+    "select_device_action_first": "Valitse laite ja testi",
+    "fsck_check_consequence": "Tiedostojärjestelmä vain tarkistetaan, mitään ei muuteta.",
+    "fsck_repair_title": "Korjataanko laitteen {device} tiedostojärjestelmä?",
+    "format_title": "Alustetaanko {device} muotoon {fstype}?",
+    "f3_title": "Testataanko laitteen {device} kapasiteetti?",
+    "help": {
+      "repair_warning": "Älä käytä, ellet tiedä mitä teet. Tallennustila voi vaurioitua!",
+      "procedure": "Toimintaohje:",
+      "repair_step1": "Tarkista virransyöttö. Virtakatko voi vaurioittaa tallennustilaa korjauskelvottomaksi.",
+      "repair_step2": "Varmista, ettei varmuuskopiointi ole käynnissä.",
+      "repair_step3": "Älä napsauta painikkeita ennen kuin kaikki tarkistukset ja korjaukset ovat valmiit. Älä käynnistä muita toimintoja!",
+      "repair_step4": "Suorita ensin tiedostojärjestelmän tarkistus.",
+      "repair_step5": "Jos lokissa näkyy virheitä, suorita tiedostojärjestelmän korjaus.",
+      "format_warning": "Älä käytä tätä toimintoa, ellet tiedä mitä teet. Tallennustila tyhjennetään eikä menetettyjä tietoja voi palauttaa.",
+      "options": "Vaihtoehdot:",
+      "format_fat32": "Yleinen, tiedostokoko on rajoitettu 4 Gt:iin.",
+      "format_exfat": "Harvinaisempi, ei tiedostokokorajoitusta.",
+      "format_ntfs": "Rajoitettu yhteensopivuus monien laitteiden kanssa, ei tiedostokokorajoitusta.",
+      "format_ntfs_compression": "Säästää levytilaa, mutta voi heikentää suorituskykyä merkittävästi.",
+      "format_ntfs_no_compression": "Ei pakkausta.",
+      "format_ext4": "Nykyinen Linux-tiedostojärjestelmä",
+      "format_ext3": "Ext4:n edeltäjä; suositellaan vain, jos tallennustilan on toimittava myös vanhemmissa laitteissa, jotka eivät tue Ext4:ää.",
+      "f3_warning": "Älä käytä tätä toimintoa, ellet tiedä mitä teet. Tallennustila voidaan tyhjentää eikä menetettyjä tietoja voi palauttaa.",
+      "f3_destructive": "f3probe ajetaan yrittämättä säilyttää tietoja.",
+      "f3_non_destructive": "f3probe ajetaan ja tiedot yritetään säilyttää."
     }
   },
   "cmd": {
@@ -447,6 +498,48 @@
     "fsck": {
       "header": "Tiedostojärjestelmän tarkistus",
       "warning": "Tiedostojärjestelmä voi olla vaurioitunut!"
+    },
+    "password_label": "Laitteen salasana",
+    "password_helper": "Tarvitaan alustukseen, korjaukseen, kapasiteettitestiin, päivityksiin ja WiFi-nollaukseen.",
+    "password_invalid": "Väärä salasana",
+    "password_not_set": "Laitteelle ei ole asetettu salasanaa. Et voi jatkaa. Aseta ensin laitteen salasana.",
+    "password_set_link": "Aseta salasana",
+    "demo_password_hint": "Demosalasana",
+    "mail_result_label": "Lähetä tulos sähköpostiin, kun valmis",
+    "command_running": "Toinen komento on vielä käynnissä. Odota, kunnes se on valmis.",
+    "start_error": "Komentoa ei voitu käynnistää",
+    "running": "Komento käynnissä",
+    "running_hint": "Älä pysäytä tai käynnistä laitetta uudelleen komennon aikana. Voit sulkea tämän ikkunan; komento jatkuu.",
+    "finished": "Komento valmis",
+    "output_header": "Komennon tuloste",
+    "output_waiting": "Odotetaan tulostetta…",
+    "close_button": "Sulje",
+    "libraw_confirm_title": "Päivitetäänkö LibRaw?",
+    "update_title": "Asennetaanko päivitys?",
+    "update_development_title": "Asennetaanko kehitysversion päivitys?",
+    "update_warning": "ÄLÄ PYSÄYTÄ tai lataa uudelleen suorituksen aikana!",
+    "comitup_title": "Nollataanko WiFi-tunnukset?",
+    "box": {
+      "fsck_start1": "Aloitetaan",
+      "fsck_start2": "tiedostojärj.",
+      "fsck_stop1": "Valmis",
+      "fsck_stop2": "tiedostojärj.",
+      "format_start1": "Alustus",
+      "format_start2": "aloitettu...",
+      "format_stop1": "Alustus",
+      "format_stop2": "valmis",
+      "update_start1": "Päivitys",
+      "update_start2": "aloitettu...",
+      "update_stop1": "Päivitys",
+      "update_stop2": "valmis",
+      "f3_probe_start1": "Tarkistus",
+      "f3_probe_start2": "aloitettu...",
+      "f3_probe_stop1": "Tarkistus",
+      "f3_probe_stop2": "valmis",
+      "f3_probe_non_destructive": "säilyttävä",
+      "f3_probe_destructive": "tuhoava",
+      "comitup_section": "comitup",
+      "reset": "nollaus"
     }
   },
   "view": {
@@ -629,7 +722,13 @@
     }
   },
   "menu": {
-    "yes": "Kyllä"
+    "yes": "Kyllä",
+    "update_badge": "Päivitys",
+    "update_available": "Ohjelmistopäivitys saatavilla",
+    "comitup_portal": "WiFi-portaali (comitup)",
+    "comitup_portal_inactive": "Käytettävissä, kun comitup-tukiasema on päällä",
+    "branch": "haara",
+    "display_image": "Laitteen näyttö"
   },
   "status": {
     "tooltip": "Device status",

@@ -3,13 +3,29 @@ import { Box, IconButton, Popover, Stack, Tooltip, Typography } from '@mui/mater
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
+import { mockDisplayImageUrl } from '../utils/mockApi';
 
 const POLL_INTERVAL_MS = 1000;
+const DISPLAY_IMAGE_REFRESH_MS = 2000;
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+// sub-display.php:28-34 — the rendered display image is shown when the
+// display is enabled and a resolution is configured.
+function displayImageEnabled(config) {
+  if (!config) return false;
+  const enabled = config.conf_DISP === '1' || config.conf_DISP === 'true' || config.conf_DISP === true;
+  return enabled
+    && parseInt(config.conf_DISP_RESOLUTION_X, 10) > 0
+    && parseInt(config.conf_DISP_RESOLUTION_Y, 10) > 0;
+}
 
 function StatusIndicator() {
   const { t } = useLanguage();
+  const { config, constants } = useConfig();
   const [data, setData] = useState({ status: '', severity: 'ready' });
+  const [imageTick, setImageTick] = useState(() => Date.now());
   const [visible, setVisible] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const cancelledRef = useRef(false);
@@ -40,7 +56,23 @@ function StatusIndicator() {
     };
   }, []);
 
+  const showImage = displayImageEnabled(config);
+  const popoverOpen = Boolean(anchorEl);
+
+  // Refresh the display image every ~2 s while the popover is open.
+  useEffect(() => {
+    if (!popoverOpen || !showImage) return undefined;
+    const interval = setInterval(() => setImageTick(Date.now()), DISPLAY_IMAGE_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [popoverOpen, showImage]);
+
   if (!visible) return null;
+
+  const imageWidth = parseInt(constants?.const_DISPLAY_SIZE_UI_X, 10) || 200;
+  const imageHeight = parseInt(constants?.const_DISPLAY_SIZE_UI_Y, 10) || 100;
+  const imageSrc = USE_MOCK_API
+    ? mockDisplayImageUrl(data.status)
+    : `/api/display/image?t=${imageTick}`;
 
   const Icon = data.severity === 'ready' ? CheckCircleOutlineIcon : InfoOutlinedIcon;
   const tooltipText = t('status.tooltip') || 'Device status';
@@ -69,6 +101,25 @@ function StatusIndicator() {
         disableScrollLock
       >
         <Box sx={{ p: 2, minWidth: 200, maxWidth: 360 }}>
+          {showImage && (
+            <Box
+              component="img"
+              src={imageSrc}
+              alt={t('menu.display_image')}
+              data-testid="display-image"
+              sx={{
+                display: 'block',
+                width: imageWidth,
+                maxWidth: '100%',
+                height: 'auto',
+                aspectRatio: `${imageWidth} / ${imageHeight}`,
+                bgcolor: '#000',
+                borderRadius: 0.5,
+                mb: 1.5,
+                imageRendering: 'pixelated',
+              }}
+            />
+          )}
           <Stack direction="row" alignItems="flex-start" spacing={1.5}>
             <Icon fontSize="small" color={data.severity === 'ready' ? 'success' : 'info'} />
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>

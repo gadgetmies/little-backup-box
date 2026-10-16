@@ -3,6 +3,156 @@ import { getActiveMockSettings } from './mockFailures.js';
 let runningBackups = [];
 let backupHistory = [];
 
+// Protected commands (cmd.php) — the demo device password is "lbb".
+const MOCK_DEVICE_PASSWORD = 'lbb';
+const MOCK_CMD_LINE_MS = 400;
+let mockCmdRun = null; // { cmd, lines, startedAt }
+let mockCmdLog = '';
+
+function mockCommandLines(cmd, param1 = '', param2 = '') {
+  const dev = `/dev/${param1}`;
+  switch (cmd) {
+    case 'fsck':
+      return [
+        `sudo fsck.ext4 ${param2 === 'repair' ? '-f -p ' : ''}'${dev}'`, '',
+        'e2fsck 1.47.0 (5-Feb-2023)',
+        'Pass 1: Checking inodes, blocks, and sizes',
+        'Pass 2: Checking directory structure',
+        'Pass 3: Checking directory connectivity',
+        'Pass 4: Checking reference counts',
+        'Pass 5: Checking group summary information',
+        `${param1}: 1532/7815168 files (0.4% non-contiguous), 712345/31258368 blocks`, '',
+        'FINISHED.',
+      ];
+    case 'format':
+      return [
+        `sudo mkfs (${param2}) '${dev}'`, '',
+        'Creating filesystem...',
+        'Writing volume boot record: done',
+        'Fat table creation: done',
+        'Allocation bitmap creation: done',
+        'Writing root directory entry: done',
+        'Synchronizing...',
+        'Format complete!', '',
+        `Disk ${dev}: 59.48 GiB, 63864569856 bytes, 124735488 sectors`, '',
+        `NAME FSTYPE UUID`,
+        `${param1} ${String(param2).toLowerCase().split(' ')[0]} 1A2B-3C4D`, '',
+        'FINISHED.',
+      ];
+    case 'f3':
+      return [
+        `sudo f3probe ${param2 === 'f3probe_destructive' ? '--destructive ' : ''}--time-ops '${dev}'`, '',
+        'F3 probe 8.0',
+        'WARNING: Probing normally takes from a few seconds to 15 minutes, but',
+        '         it can take longer. Please be patient.', '',
+        `Good news: The device \`${dev}' is the real thing`, '',
+        'Device geometry:',
+        '\t         *Usable* size: 59.48 GB (124735488 blocks)',
+        '\t        Announced size: 59.48 GB (124735488 blocks)',
+        '\t                Module: 64.00 GB (2^36 Bytes)', '',
+        'Probe time: 1\'13"', '',
+        'FINISHED.',
+      ];
+    case 'update_libraw':
+      return [
+        "Cloning into 'LibRaw'...",
+        'checking whether build environment is sane... yes',
+        'make  all-am',
+        '  CXX      src/libraw_la-libraw_datastream.lo',
+        '  CXXLD    libraw.la',
+        'Libraries have been installed in: /usr/local/lib',
+        'LibRaw update finished.',
+      ];
+    case 'update':
+    case 'update_development':
+      return [
+        `Downloading install-little-backup-box.sh (${cmd === 'update' ? 'main' : 'development'})`,
+        'Updating package lists...',
+        'Installing Little Backup Box...',
+        'Little Backup Box has been updated. The device will reboot now.',
+      ];
+    case 'comitup_reset':
+      return [
+        'sudo python3 /var/www/little-backup-box/lib_comitup.py --reset', '',
+        'comitup: WiFi credentials deleted, switching to hotspot mode', '',
+        'FINISHED.',
+      ];
+    default:
+      return [`${cmd} ${param1} ${param2}`.trim(), '', 'FINISHED.'];
+  }
+}
+
+function mockCmdProgress() {
+  if (!mockCmdRun) return { running: false, text: mockCmdLog };
+  const shown = Math.floor((Date.now() - mockCmdRun.startedAt) / MOCK_CMD_LINE_MS);
+  const lines = mockCmdRun.lines.slice(0, Math.min(shown, mockCmdRun.lines.length));
+  const text = lines.length ? `${lines.join('\n')}\n` : '';
+  if (shown > mockCmdRun.lines.length) {
+    mockCmdLog = text;
+    mockCmdRun = null;
+    return { running: false, text };
+  }
+  return { running: true, text };
+}
+
+// axios has already serialised the request body to JSON when the adapter runs.
+function parseMockBody(data) {
+  if (!data) return {};
+  if (typeof data !== 'string') return data;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+function decodeMockPassword(encoded) {
+  try {
+    return encoded ? atob(encoded) : '';
+  } catch {
+    return '';
+  }
+}
+
+// Emulates server/utils/commandRunner.js: password gate + background run.
+function startMockCommand(body, { cmd, param1 = '', param2 = '', requiresPassword = true }) {
+  if (requiresPassword) {
+    const expected = decodeMockPassword(mockData.config.conf_PASSWORD);
+    if (!expected) {
+      return Promise.reject({
+        response: { status: 403, data: { error: 'No device password has been set', code: 'password_not_set' } },
+      });
+    }
+    if ((body?.password || '') !== expected) {
+      return Promise.reject({
+        response: { status: 403, data: { error: 'Invalid device password', code: 'password_invalid' } },
+      });
+    }
+  }
+  if (mockCmdProgress().running) {
+    return Promise.reject({
+      response: { status: 409, data: { error: 'Another command is still running', code: 'command_running' } },
+    });
+  }
+  mockCmdRun = { cmd, param1, param2, lines: mockCommandLines(cmd, param1, param2), startedAt: Date.now() };
+  return { data: { success: true, started: true } };
+}
+
+// Rendition of the device display image (const_DISPLAY_IMAGE_EXPORT_FILE)
+// for the static demo; mirrors mockDisplaySvg() in server/utils/mockSystem.js.
+export function mockDisplayImageUrl(statusText = '') {
+  const escape = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const lines = (String(statusText).trim() || 'Little Backup Box\nReady')
+    .split('\n')
+    .map((l) => l.replace(/^[:+-]/, '').trim())
+    .slice(0, 5);
+  const text = lines
+    .map((line, i) => `<text x="6" y="${16 + i * 12}" font-family="monospace" font-size="10" fill="#fff">${escape(line)}</text>`)
+    .join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><rect width="128" height="64" fill="#000"/>${text}</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 const mockData = {
   services: {
     sourceServices: {
@@ -44,6 +194,11 @@ const mockData = {
     conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
     conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
     conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
+    // base64("lbb") — demo device password for protected commands.
+    conf_PASSWORD: 'bGJi',
+    conf_DISP: '1',
+    conf_DISP_RESOLUTION_X: '128',
+    conf_DISP_RESOLUTION_Y: '64',
   },
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
@@ -53,6 +208,8 @@ const mockData = {
     const_IMAGE_DATABASE_FILENAME: 'images.db',
     const_BACKGROUND_IMAGES_DIR: 'backgrounds',
     const_SOFTWARE_BRANCH: 'main',
+    const_DISPLAY_SIZE_UI_X: '200',
+    const_DISPLAY_SIZE_UI_Y: '100',
   },
   systemInfo: {
     model: 'Raspberry Pi 4 Model B (Mock)',
@@ -74,6 +231,8 @@ const mockData = {
   cameras: {
     cameras: [
       {
+        detected: 'Canon EOS Rebel T7i usb:001,005',
+        summaryModel: 'Canon_EOS_Rebel_T7i',
         model: 'Canon_EOS_Rebel_T7i',
         port: 'usb:001,005',
         serial: '12345678',
@@ -104,7 +263,29 @@ const mockData = {
     status: 'Ready',
     severity: 'ready',
   },
-  log: '',
+  log: 'Little Backup Box\n2024-06-01 09:12:03 Backup usb -> usb started\n2024-06-01 09:14:47 Backup complete\n',
+  deviceStates: [
+    {
+      lum: '/dev/sda1',
+      identifier: 'USB-DRIVE-001',
+      states: [
+        { value: 'SMART overall-health self-assessment test result:', measured: 'PASSED' },
+        { value: 'Device Model:', measured: 'Mock Drive' },
+        { value: 'Serial Number:', measured: 'MOCK123456' },
+        { value: 'User Capacity:', measured: '64,000,000,000 bytes' },
+        { value: 'Power_On_Hours:', measured: '1234' },
+      ],
+    },
+    {
+      lum: '/dev/sdb1',
+      identifier: 'BACKUP-DRIVE',
+      states: [
+        { value: 'Device Model:', measured: 'Backup Drive' },
+        { value: 'Serial Number:', measured: 'BKP-998877' },
+        { value: 'SMART support is:', measured: 'Unavailable - device lacks SMART capability.' },
+      ],
+    },
+  ],
   viewImages: {
     images: [
       {
@@ -238,7 +419,9 @@ function generateBackupId() {
 
 export function createMockApiInterceptor() {
   return async (config) => {
-    const url = config.url || '';
+    // Match on the pathname: callers such as DeviceSelector put the query in
+    // the URL itself (`/tools/devices?…`).
+    const url = (config.url || '').split('?')[0];
     const method = config.method?.toLowerCase() || 'get';
 
     // Apply configurable delay and failure mode from MockControls
@@ -393,7 +576,7 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/sysinfo/device-states') {
-      return { data: { deviceStates: [] } };
+      return { data: { deviceStates: mockData.deviceStates } };
     }
     
     if (url === '/sysinfo/cameras') {
@@ -419,6 +602,58 @@ export function createMockApiInterceptor() {
     if (url === '/tools/umount' && method === 'post') {
       return { data: { success: true } };
     }
+
+    if (url === '/tools/mountable-storages') {
+      return {
+        data: {
+          mountableStorages: ['usb', 'nvme', 'cloud:google-drive', 'cloud:dropbox'],
+          nvmeAvailable: true,
+          cloudServices: ['google-drive', 'dropbox'],
+        },
+      };
+    }
+
+    if (url === '/tools/fsck/check' && method === 'post') {
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'fsck', param1: body.partition, param2: 'check', requiresPassword: false });
+    }
+
+    if (url === '/tools/fsck/repair' && method === 'post') {
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'fsck', param1: body.partition, param2: 'repair' });
+    }
+
+    if (url === '/tools/format' && method === 'post') {
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'format', param1: body.partition, param2: body.fstype });
+    }
+
+    if (url === '/tools/f3' && method === 'post') {
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'f3', param1: body.device, param2: body.action });
+    }
+
+    if (url === '/cmd/status') {
+      const progress = mockCmdProgress();
+      const c = mockData.config;
+      const mailConfigured = ['conf_SMTP_SERVER', 'conf_SMTP_PORT', 'conf_MAIL_SECURITY', 'conf_MAIL_USER',
+        'conf_MAIL_PASSWORD', 'conf_MAIL_FROM', 'conf_MAIL_TO'].every((k) => String(c[k] ?? '').length > 0);
+      return {
+        data: {
+          passwordSet: decodeMockPassword(c.conf_PASSWORD) !== '',
+          mailConfigured,
+          running: progress.running,
+          command: progress.running && mockCmdRun
+            ? { cmd: mockCmdRun.cmd, param1: mockCmdRun.param1, param2: mockCmdRun.param2 }
+            : null,
+          demoPassword: decodeMockPassword(c.conf_PASSWORD) === MOCK_DEVICE_PASSWORD ? MOCK_DEVICE_PASSWORD : null,
+        },
+      };
+    }
+
+    if (url === '/cmd/shell-status') {
+      return { data: { updateAvailable: true, comitupInstalled: true, comitupHotspotActive: true } };
+    }
     
     if (url === '/setup/wifi-country') {
       return { data: mockData.wifiCountry };
@@ -438,7 +673,7 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/update-check') {
-      return { data: { updateAvailable: false } };
+      return { data: { updateAvailable: true } };
     }
     
     if (url === '/setup/update/status') {
@@ -452,12 +687,8 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/update/install' && method === 'post') {
-      const body = config.data || {};
-      if (body.branch === 'development') {
-        await delay(2000);
-        return { data: { success: true, message: 'Development update installation started (mock)' } };
-      }
-      return { data: { success: true, message: 'Update installation started (mock)' } };
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: body.branch === 'development' ? 'update_development' : 'update' });
     }
     
     if (url === '/setup/download-settings') {
@@ -713,26 +944,36 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/log' || url === '/log/') {
-      return { data: mockData.log };
+      const file = config.params?.file || 'main';
+      if (file === 'cmd') return { data: mockCmdProgress().text };
+      if (file === 'main') return { data: mockData.log };
+      return Promise.reject({ response: { status: 400, data: { error: 'Unknown log file' } } });
     }
-    
-    if (url === '/log/delete' && method === 'post') {
-      mockData.log = '';
+
+    if ((url === '/log/clear' || url === '/log/delete') && method === 'post') {
+      const body = parseMockBody(config.data);
+      if ((body.file || 'main') === 'cmd') {
+        mockCmdRun = null;
+        mockCmdLog = 'Little Backup Box\n';
+      } else {
+        mockData.log = 'Little Backup Box\n';
+      }
       return { data: { success: true } };
     }
+    
     
     if (url === '/cloud/remotes') {
       return { data: { remotes: ['Dropbox', 'Google Drive'] } };
     }
 
     if (url === '/setup/update/libraw' && method === 'post') {
-      await delay(4000);
-      return { data: { success: true, message: 'LibRaw update completed (mock)' } };
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'update_libraw' });
     }
 
     if (url === '/network/comitup/reset' && method === 'post') {
-      await delay(1000);
-      return { data: {} };
+      const body = parseMockBody(config.data);
+      return startMockCommand(body, { cmd: 'comitup_reset' });
     }
 
     if (url === '/network/wifi/info') {

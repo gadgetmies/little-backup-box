@@ -19,6 +19,9 @@ function DeviceSelector({
   nullName = '-',
   nullValue = '-',
   helperText,
+  // tools.php get_device_selector(): option values are the device name (lum)
+  // unless OptionValue_is_DeviceIdentifier is set.
+  optionValueIsIdentifier = true,
   ...props
 }) {
   const [devices, setDevices] = useState([]);
@@ -66,7 +69,7 @@ function DeviceSelector({
       >
         <MenuItem value={nullValue}>{nullName}</MenuItem>
         {devices.map((device, index) => {
-          const deviceValue = device.identifier || device.lum;
+          const deviceValue = optionValueIsIdentifier ? (device.identifier || device.lum) : device.lum;
           return (
             <MenuItem key={index} value={deviceValue}>
               {formatDeviceLabel(device)}

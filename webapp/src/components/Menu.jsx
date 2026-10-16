@@ -24,6 +24,8 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Badge,
+  Chip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -47,6 +49,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RouterIcon from '@mui/icons-material/Router';
 import AppsIcon from '@mui/icons-material/Apps';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import { useDrawer } from '../contexts/DrawerContext';
@@ -56,11 +60,15 @@ import StatusIndicator from './StatusIndicator';
 export const drawerWidth = 240;
 export const drawerCollapsedWidth = 64;
 
+// sub-menu.php runs lib_git.py / lib_comitup.py on every page load; the
+// backend caches the update check, so polling once a minute is cheap.
+const SHELL_STATUS_POLL_MS = 60 * 1000;
+
 function Menu() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { config } = useConfig();
+  const { config, constants } = useConfig();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -91,6 +99,11 @@ function Menu() {
     return saved || (config?.conf_LANGUAGE || 'en');
   });
   const [rcloneGuiInfo, setRcloneGuiInfo] = React.useState(null);
+  const [shellStatus, setShellStatus] = React.useState({
+    updateAvailable: false,
+    comitupInstalled: false,
+    comitupHotspotActive: false,
+  });
 
   const isActive = (path) => location.pathname === path;
 
@@ -107,8 +120,25 @@ function Menu() {
     { path: '/system', key: 'system', icon: <InfoIcon /> },
     { path: '/scrape', key: 'scrape', icon: <PublicIcon /> },
     { path: '/files', key: 'filebrowser', icon: <FolderOpenIcon />, external: true },
-    { path: '/frame.php?page=rclone_gui', key: 'rclone_gui', icon: <AppsIcon />, external: true, hasInfo: true },
+    // frame.php:39-43 — the rclone GUI is served under /rclone/.
+    { path: '/rclone/', key: 'rclone_gui', icon: <AppsIcon />, external: true, hasInfo: true },
+    // sub-menu.php:64-70 — only when comitup is installed; usable while its
+    // hotspot is active.
+    ...(shellStatus.comitupInstalled
+      ? [{
+          path: '/comitup/',
+          key: 'comitup',
+          labelKey: 'menu.comitup_portal',
+          icon: <WifiTetheringIcon />,
+          external: true,
+          disabled: !shellStatus.comitupHotspotActive,
+          disabledHint: 'menu.comitup_portal_inactive',
+        }]
+      : []),
   ];
+
+  const itemLabel = (item) => t(item.labelKey || `mainmenue.${item.key}`);
+  const softwareBranch = constants?.const_SOFTWARE_BRANCH;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -330,6 +360,40 @@ function Menu() {
   }, []);
 
   React.useEffect(() => {
+    let cancelled = false;
+    const loadShellStatus = async () => {
+      try {
+        const response = await api.get('/cmd/shell-status');
+        if (!cancelled && response.data) {
+          setShellStatus({
+            updateAvailable: Boolean(response.data.updateAvailable),
+            comitupInstalled: Boolean(response.data.comitupInstalled),
+            comitupHotspotActive: Boolean(response.data.comitupHotspotActive),
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load shell status:', error);
+      }
+    };
+    loadShellStatus();
+    const interval = setInterval(loadShellStatus, SHELL_STATUS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const openUpdates = (event) => {
+    event.stopPropagation();
+    try {
+      localStorage.setItem('lbb-tabs-system', 'updates');
+    } catch {
+      // ignore
+    }
+    handleNavigation('/system', false);
+  };
+
+  React.useEffect(() => {
     const handleThemeChange = () => {
       const saved = localStorage.getItem('lbb-theme');
       if (saved && (saved === 'system' || saved === 'light' || saved === 'dark' || saved === 'sepia')) {
@@ -473,12 +537,20 @@ function Menu() {
             return '';
           };
 
+          const showUpdateBadge = item.key === 'system' && shellStatus.updateAvailable;
+          const tooltipText = item.disabled && item.disabledHint
+            ? t(item.disabledHint)
+            : (!desktopOpen ? itemLabel(item) : '');
+
           return (
             <ListItem key={item.path} disablePadding>
-              <Tooltip title={!desktopOpen ? t(`mainmenue.${item.key}`) : ''} placement="right">
+              <Tooltip title={tooltipText} placement="right">
+                <Box component="span" sx={{ display: 'block', width: '100%' }}>
                 <ListItemButton
                   selected={!item.external && isActive(item.path)}
                   onClick={() => handleNavigation(item.path, item.external)}
+                  disabled={item.disabled}
+                  data-testid={`nav-${item.key}`}
                   sx={{
                     minHeight: 48,
                     justifyContent: desktopOpen ? 'initial' : 'center',
@@ -492,15 +564,33 @@ function Menu() {
                       justifyContent: 'center',
                     }}
                   >
-                    {item.icon}
+                    {showUpdateBadge && !desktopOpen ? (
+                      <Badge color="warning" variant="dot" overlap="circular">
+                        {item.icon}
+                      </Badge>
+                    ) : (
+                      item.icon
+                    )}
                   </ListItemIcon>
                   <ListItemText
-                    primary={t(`mainmenue.${item.key}`)}
+                    primary={itemLabel(item)}
                     sx={{
                       opacity: desktopOpen ? 1 : 0,
                       display: { md: desktopOpen ? 'block' : 'none' },
                     }}
                   />
+                  {desktopOpen && showUpdateBadge && (
+                    <Tooltip title={t('menu.update_available')} placement="right">
+                      <Chip
+                        label={t('menu.update_badge')}
+                        color="warning"
+                        size="small"
+                        onClick={openUpdates}
+                        data-testid="update-badge"
+                        sx={{ ml: 1 }}
+                      />
+                    </Tooltip>
+                  )}
                   {desktopOpen && item.hasInfo && (
                     <Tooltip
                       title={getInfoTooltipText()}
@@ -535,6 +625,7 @@ function Menu() {
                     />
                   )}
                 </ListItemButton>
+                </Box>
               </Tooltip>
             </ListItem>
           );
@@ -571,6 +662,18 @@ function Menu() {
           <Typography variant="h6" component="h1" sx={{ flexGrow: 0, mr: 2, fontWeight: 'inherit' }}>
             {getPageTitle()}
           </Typography>
+          {softwareBranch && softwareBranch !== 'main' && (
+            // sub-footer.php:52-54 — show the installed branch when it is not main.
+            <Chip
+              icon={<CallSplitIcon />}
+              label={`${t('menu.branch')}: ${softwareBranch}`}
+              size="small"
+              color="warning"
+              variant="outlined"
+              data-testid="branch-chip"
+              sx={{ color: 'inherit', borderColor: 'currentColor', '& .MuiChip-icon': { color: 'inherit' } }}
+            />
+          )}
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Tooltip title={t('config.lang_header') || 'Language'}>

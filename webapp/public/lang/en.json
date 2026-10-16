@@ -2,7 +2,14 @@
   "seconds_short": "s",
   "log": {
     "logmonitor": "Log monitor",
-    "refresh_button": "Refresh"
+    "refresh_button": "Refresh",
+    "download_button": "Download",
+    "clear_button": "Clear log",
+    "clear_confirm_title": "Clear the log?",
+    "clear_confirm_body": "The log is emptied and starts again with a header line. This cannot be undone.",
+    "auto_refresh": "Auto-refresh",
+    "empty": "No log content",
+    "cmd_logmonitor": "Command log"
   },
   "box": {
     "backup": {
@@ -147,7 +154,15 @@
     "device_states": "Device status",
     "info": "Info",
     "no_cameras": "No cameras detected",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "no_device_states": "No device states available",
+    "camera_model": "Camera model",
+    "camera_storages": "Storage paths",
+    "camera_folder_pattern": "For use as pattern in Settings",
+    "camera_model_folders": "Folders to sync by camera model",
+    "camera_specific_folders": "Folders to sync from specific camera",
+    "copy": "Copy to clipboard",
+    "copied": "Copied!"
   },
   "system": {
     "logs_section": "Logs",
@@ -432,6 +447,42 @@
       "select_partition_label": "Partition",
       "nvme": "NVMe SSD",
       "mounted": "mounted"
+    },
+    "none": "None",
+    "no_mounts": "No mounts",
+    "mount_success": "Mount successful",
+    "umount_success": "Unmount successful",
+    "mount_failed": "Mount failed",
+    "umount_failed": "Unmount failed",
+    "select_source_first": "Please select a source storage",
+    "select_target_first": "Please select a target storage",
+    "select_partition_first": "Please select a partition",
+    "select_partition_fstype_first": "Please select partition and file system type",
+    "select_device_action_first": "Please select device and test",
+    "fsck_check_consequence": "The file system is only checked; nothing is changed.",
+    "fsck_repair_title": "Repair file system on {device}?",
+    "format_title": "Format {device} as {fstype}?",
+    "f3_title": "Test the capacity of {device}?",
+    "help": {
+      "repair_warning": "Do not use unless you know what you are doing. It could damage your storage!",
+      "procedure": "Procedure:",
+      "repair_step1": "Check your power supply. Power interruption may damage storage beyond repair.",
+      "repair_step2": "Make sure that no backup job is running.",
+      "repair_step3": "Do not click any buttons until all check and repair operations are completed. Do not start any processes!",
+      "repair_step4": "Run filesystem check first.",
+      "repair_step5": "If you see any errors in the log, run filesystem repair.",
+      "format_warning": "Do not use this function if you do not know what you are doing. This will erase your storage and any lost data cannot be recovered.",
+      "options": "Options:",
+      "format_fat32": "Widespread, file size is limited to 4GB.",
+      "format_exfat": "Less common, no file size limit.",
+      "format_ntfs": "Limited compatibility with many devices, no file size limitation.",
+      "format_ntfs_compression": "Saves disk space, but can significantly reduce performance.",
+      "format_ntfs_no_compression": "No compression.",
+      "format_ext4": "Current Linux file system",
+      "format_ext3": "Predecessor of Ext4, only recommended if the memory also needs to be compatible with older devices that do not yet support Ext4.",
+      "f3_warning": "Do not use this function if you do not know what you are doing. This may erase your storage, and lost data cannot be recovered.",
+      "f3_destructive": "f3probe runs without attempting to keep the data.",
+      "f3_non_destructive": "f3probe is running, attempting to preserve the data."
     }
   },
   "cmd": {
@@ -447,6 +498,48 @@
     "fsck": {
       "header": "File system check",
       "warning": "The file system could be damaged!"
+    },
+    "password_label": "Device password",
+    "password_helper": "Required for format, repair, capacity test, updates and WiFi reset.",
+    "password_invalid": "Wrong password",
+    "password_not_set": "No device password has been set. You cannot continue. Please set up a device password first.",
+    "password_set_link": "Set password",
+    "demo_password_hint": "Demo password",
+    "mail_result_label": "Email me the result when it finishes",
+    "command_running": "Another command is still running. Wait until it has finished.",
+    "start_error": "The command could not be started",
+    "running": "Command running",
+    "running_hint": "Do not stop or reload the device while the command is running. You can close this dialog; the command keeps running.",
+    "finished": "Command finished",
+    "output_header": "Command output",
+    "output_waiting": "Waiting for output…",
+    "close_button": "Close",
+    "libraw_confirm_title": "Update LibRaw?",
+    "update_title": "Install the update?",
+    "update_development_title": "Install the development update?",
+    "update_warning": "Do NOT STOP or reload while running!",
+    "comitup_title": "Reset WiFi credentials?",
+    "box": {
+      "fsck_start1": "Start",
+      "fsck_start2": "file system",
+      "fsck_stop1": "Finished file",
+      "fsck_stop2": "system",
+      "format_start1": "Formatting",
+      "format_start2": "started...",
+      "format_stop1": "Formatting",
+      "format_stop2": "completed",
+      "update_start1": "Update",
+      "update_start2": "started...",
+      "update_stop1": "Update",
+      "update_stop2": "completed",
+      "f3_probe_start1": "Examination",
+      "f3_probe_start2": "started...",
+      "f3_probe_stop1": "Examination",
+      "f3_probe_stop2": "completed",
+      "f3_probe_non_destructive": "non destructive",
+      "f3_probe_destructive": "destructive",
+      "comitup_section": "comitup",
+      "reset": "reset"
     }
   },
   "view": {
@@ -629,7 +722,13 @@
     }
   },
   "menu": {
-    "yes": "Yes"
+    "yes": "Yes",
+    "update_badge": "Update",
+    "update_available": "Software update available",
+    "comitup_portal": "WiFi portal (comitup)",
+    "comitup_portal_inactive": "Available while the comitup hotspot is active",
+    "branch": "branch",
+    "display_image": "Device display"
   },
   "status": {
     "tooltip": "Device status",

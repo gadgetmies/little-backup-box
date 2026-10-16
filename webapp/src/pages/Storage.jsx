@@ -11,11 +11,6 @@ import {
   FormControl,
   FormLabel,
   InputLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Grid,
   ListSubheader,
   Table,
@@ -34,6 +29,9 @@ import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
 import DeviceSelector from '../components/DeviceSelector';
 import LogMonitor from '../components/LogMonitor';
+import ProtectedCommandDialog from '../components/ProtectedCommandDialog';
+
+const INFO_REFRESH_MS = 5000;
 
 function parseLsblkOutput(output) {
   if (!output || !output.trim()) {
@@ -87,9 +85,8 @@ function Storage() {
   const [f3Device, setF3Device] = useState('-');
   const [f3Action, setF3Action] = useState('-');
   
-  const [formatConfirmOpen, setFormatConfirmOpen] = useState(false);
-  const [f3ConfirmOpen, setF3ConfirmOpen] = useState(false);
-  const [fsckRepairConfirmOpen, setFsckRepairConfirmOpen] = useState(false);
+  // The command currently shown in the ProtectedCommandDialog (cmd.php).
+  const [pendingCommand, setPendingCommand] = useState(null);
   const [currentTab, setCurrentTab] = useState(0);
 
   const [diskSpace, setDiskSpace] = useState({ headers: [], rows: [] });
@@ -201,6 +198,18 @@ function Storage() {
     }
   };
 
+  // sysinfo.php:46 reloads every 5 s; refresh the Info tab while it is visible.
+  useEffect(() => {
+    if (currentTab !== 0) return undefined;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      loadDiskSpace();
+      loadDevices();
+      loadDeviceStates();
+    }, INFO_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [currentTab]);
+
   const loadPartitionsForStorage = async (role, storageType) => {
     try {
       const params = new URLSearchParams({
@@ -289,12 +298,12 @@ function Storage() {
         storage, 
         deviceIdentifierPreset: deviceIdentifier || '' 
       });
-      setMessage(t('tools.mount.b') || 'Mount successful');
+      setMessage(t('tools.mount_success'));
       setMessageSeverity('success');
       loadMounts();
     } catch (error) {
       console.error('Failed to mount:', error);
-      setMessage(error.response?.data?.error || 'Mount failed');
+      setMessage(error.response?.data?.error || t('tools.mount_failed'));
       setMessageSeverity('error');
     }
   };
@@ -302,19 +311,19 @@ function Storage() {
   const handleUmount = async (role, storage) => {
     try {
       await api.post('/tools/umount', { role, storage });
-      setMessage(t('tools.umount_b') || 'Unmount successful');
+      setMessage(t('tools.umount_success'));
       setMessageSeverity('success');
       loadMounts();
     } catch (error) {
       console.error('Failed to umount:', error);
-      setMessage(error.response?.data?.error || 'Unmount failed');
+      setMessage(error.response?.data?.error || t('tools.umount_failed'));
       setMessageSeverity('error');
     }
   };
 
   const handleSourceMount = async () => {
     if (!selectedSource) {
-      setMessage('Please select a source storage');
+      setMessage(t('tools.select_source_first'));
       setMessageSeverity('error');
       return;
     }
@@ -332,7 +341,7 @@ function Storage() {
 
   const handleTargetMount = async () => {
     if (!selectedTarget) {
-      setMessage('Please select a target storage');
+      setMessage(t('tools.select_target_first'));
       setMessageSeverity('error');
       return;
     }
@@ -348,102 +357,75 @@ function Storage() {
     }
   };
 
-  const handleFsckCheck = async () => {
+  const handleFsckCheck = () => {
     if (fsckPartition === '-') {
-      setMessage('Please select a partition');
+      setMessage(t('tools.select_partition_first'));
       setMessageSeverity('error');
       return;
     }
-    
-    try {
-      await api.post('/tools/fsck/check', { partition: fsckPartition });
-      setMessage(t('tools.fsck_check_m') || 'Check initiated');
-      setMessageSeverity('success');
-    } catch (error) {
-      console.error('Failed to execute fsck check:', error);
-      setMessage(error.response?.data?.error || 'fsck check failed');
-      setMessageSeverity('error');
-    }
+    // cmd.php:123-129 — the check needs no password but still shows output.
+    setPendingCommand({
+      title: `${t('cmd.fsck.header')}: ${fsckPartition}`,
+      consequence: t('tools.fsck_check_consequence'),
+      actionLabel: t('tools.fsck_check_b'),
+      requiresPassword: false,
+      destructive: false,
+      request: (body) => api.post('/tools/fsck/check', { partition: fsckPartition, ...body }),
+    });
   };
 
-  const handleFsckRepair = async () => {
+  const handleFsckRepair = () => {
     if (fsckPartition === '-') {
-      setMessage('Please select a partition');
+      setMessage(t('tools.select_partition_first'));
       setMessageSeverity('error');
       return;
     }
-    
-    setFsckRepairConfirmOpen(true);
-  };
-
-  const confirmFsckRepair = async () => {
-    setFsckRepairConfirmOpen(false);
-    
-    try {
-      await api.post('/tools/fsck/repair', { partition: fsckPartition });
-      setMessage(t('tools.fsck_autorepair_m') || 'Repair initiated');
-      setMessageSeverity('success');
-    } catch (error) {
-      console.error('Failed to execute fsck repair:', error);
-      setMessage(error.response?.data?.error || 'fsck repair failed');
-      setMessageSeverity('error');
-    }
+    setPendingCommand({
+      title: t('tools.fsck_repair_title').replace('{device}', fsckPartition),
+      consequence: t('cmd.fsck.warning'),
+      actionLabel: t('tools.fsck_autorepair_b'),
+      request: (body) => api.post('/tools/fsck/repair', { partition: fsckPartition, ...body }),
+    });
   };
 
   const handleFormat = () => {
     if (formatPartition === '-' || formatFstype === '-') {
-      setMessage('Please select partition and filesystem type');
+      setMessage(t('tools.select_partition_fstype_first'));
       setMessageSeverity('error');
       return;
     }
-    
-    setFormatConfirmOpen(true);
-  };
-
-  const confirmFormat = async () => {
-    setFormatConfirmOpen(false);
-    
-    try {
-      await api.post('/tools/format', { 
-        partition: formatPartition, 
-        fstype: formatFstype 
-      });
-      setMessage(t('tools.format_b') || 'Format initiated');
-      setMessageSeverity('success');
-    } catch (error) {
-      console.error('Failed to execute format:', error);
-      setMessage(error.response?.data?.error || 'Format failed');
-      setMessageSeverity('error');
-    }
+    setPendingCommand({
+      title: t('tools.format_title').replace('{device}', formatPartition).replace('{fstype}', formatFstype),
+      consequence: t('cmd.format.warning'),
+      details: (
+        <Typography variant="body2" sx={{ mb: 2, fontFamily: 'monospace' }}>
+          {formatPartition} → {formatFstype}
+        </Typography>
+      ),
+      actionLabel: t('tools.format_b'),
+      request: (body) => api.post('/tools/format', { partition: formatPartition, fstype: formatFstype, ...body }),
+    });
   };
 
   const handleF3 = () => {
     if (f3Device === '-' || f3Action === '-') {
-      setMessage('Please select device and action');
+      setMessage(t('tools.select_device_action_first'));
       setMessageSeverity('error');
       return;
     }
-    
-    setF3ConfirmOpen(true);
+    const destructive = f3Action === 'f3probe_destructive';
+    setPendingCommand({
+      title: t('tools.f3_title').replace('{device}', f3Device),
+      consequence: destructive ? t('cmd.f3.warning_destructive') : t('cmd.f3.warning_non_destructive'),
+      details: (
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          {f3Device} → {destructive ? t('tools.f3.probe_destructive') : t('tools.f3.probe_non_destructive')}
+        </Typography>
+      ),
+      actionLabel: t('tools.f3.b'),
+      request: (body) => api.post('/tools/f3', { device: f3Device, action: f3Action, ...body }),
+    });
   };
-
-  const confirmF3 = async () => {
-    setF3ConfirmOpen(false);
-    
-    try {
-      await api.post('/tools/f3', { 
-        device: f3Device, 
-        action: f3Action 
-      });
-      setMessage(t('tools.f3.b') || 'F3 test initiated');
-      setMessageSeverity('success');
-    } catch (error) {
-      console.error('Failed to execute f3:', error);
-      setMessage(error.response?.data?.error || 'F3 test failed');
-      setMessageSeverity('error');
-    }
-  };
-
 
   const filesystemTypes = [
     { value: 'FAT32', label: 'FAT32 (Windows®)' },
@@ -561,7 +543,7 @@ function Storage() {
                 </Paper>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  Loading...
+                  {t('sysinfo.loading')}
                 </Typography>
               )}
               </Box>
@@ -601,7 +583,7 @@ function Storage() {
                 </Paper>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  Loading...
+                  {t('sysinfo.loading')}
                 </Typography>
               )}
               </Box>
@@ -657,7 +639,7 @@ function Storage() {
                 </Box>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  {deviceStates.length === 0 ? 'No device states available' : 'Loading...'}
+                  {t('sysinfo.no_device_states')}
                 </Typography>
               )}
               </Box>
@@ -684,7 +666,7 @@ function Storage() {
               fontSize: '0.875rem',
             }}
           >
-            {mounts || 'No mounts'}
+            {mounts || t('tools.no_mounts')}
           </Typography>
         </Paper>
         
@@ -700,7 +682,7 @@ function Storage() {
                 }}
               >
                 <MenuItem value="">
-                  <em>None</em>
+                  <em>{t('tools.none')}</em>
                 </MenuItem>
                 {(() => {
                   const grouped = groupStoragesByType(mountableStorages);
@@ -807,7 +789,7 @@ function Storage() {
                 }}
               >
                 <MenuItem value="">
-                  <em>None</em>
+                  <em>{t('tools.none')}</em>
                 </MenuItem>
                 {(() => {
                   const grouped = groupStoragesByType(mountableStorages);
@@ -915,22 +897,23 @@ function Storage() {
           </Typography>
         <Box sx={{ mt: 2 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('cmd.fsck.warning') || 'Do not use unless you know what you are doing. It could damage your storage!'}
+          {t('tools.help.repair_warning')}
         </Alert>
         <Box sx={{ mb: 2 }}>
           <Typography variant="h3" gutterBottom>
-            Procedure:
+            {t('tools.help.procedure')}
           </Typography>
           <Box component="ol" sx={{ pl: 3, mb: 0 }}>
-            <li>Check your power supply. Power interruption may damage storage beyond repair.</li>
-            <li>Make sure that no backup job is running.</li>
-            <li>Do not click any buttons until all check and repair operations are completed. Do not start any processes!</li>
-            <li>Run filesystem check first.</li>
-            <li>If you see any errors in the log, run filesystem repair.</li>
+            <li>{t('tools.help.repair_step1')}</li>
+            <li>{t('tools.help.repair_step2')}</li>
+            <li>{t('tools.help.repair_step3')}</li>
+            <li>{t('tools.help.repair_step4')}</li>
+            <li>{t('tools.help.repair_step5')}</li>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <DeviceSelector
+            optionValueIsIdentifier={false}
             listPartitions={true}
             skipMounted={false}
             ignoreFs={false}
@@ -969,27 +952,28 @@ function Storage() {
           </Typography>
         <Box sx={{ mt: 2 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('cmd.format.warning') || 'Do not use this function if you do not know what you are doing. This will erase your storage and any lost data cannot be recovered.'}
+          {t('tools.help.format_warning')}
         </Alert>
         <Box sx={{ mb: 2 }}>
           <Typography variant="h3" gutterBottom>
-            Options:
+            {t('tools.help.options')}
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 0 }}>
-            <li><strong>FAT32 (Windows®)</strong>: Widespread, file size is limited to 4GB.</li>
-            <li><strong>exFAT (Windows®)</strong>: Less common, no file size limit.</li>
-            <li><strong>NTFS (Windows®)</strong>: Limited compatibility with many devices, no file size limitation.
+            <li><strong>FAT32 (Windows®)</strong>: {t('tools.help.format_fat32')}</li>
+            <li><strong>exFAT (Windows®)</strong>: {t('tools.help.format_exfat')}</li>
+            <li><strong>NTFS (Windows®)</strong>: {t('tools.help.format_ntfs')}
               <Box component="ul" sx={{ pl: 3, mt: 0.5 }}>
-                <li>NTFS (compression enabled): Saves disk space, but can significantly reduce performance.</li>
-                <li>NTFS (no compression)</li>
+                <li>NTFS (compression enabled): {t('tools.help.format_ntfs_compression')}</li>
+                <li>NTFS (no compression): {t('tools.help.format_ntfs_no_compression')}</li>
               </Box>
             </li>
-            <li><strong>Ext4 (Linux)</strong>: Current Linux file system</li>
-            <li><strong>Ext3 (Linux)</strong>: Predecessor of Ext4, only recommended if the memory also needs to be compatible with older devices that do not yet support Ext4.</li>
+            <li><strong>Ext4 (Linux)</strong>: {t('tools.help.format_ext4')}</li>
+            <li><strong>Ext3 (Linux)</strong>: {t('tools.help.format_ext3')}</li>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <DeviceSelector
+            optionValueIsIdentifier={false}
             listPartitions={true}
             skipMounted={false}
             ignoreFs={true}
@@ -1036,19 +1020,20 @@ function Storage() {
           </Typography>
         <Box sx={{ mt: 2 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('cmd.f3.warning_non_destructive') || 'Do not use this function if you do not know what you are doing. This may erase your storage, and lost data cannot be recovered.'}
+          {t('tools.help.f3_warning')}
         </Alert>
         <Box sx={{ mb: 2 }}>
           <Typography variant="h3" gutterBottom>
-            Options:
+            {t('tools.help.options')}
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 0 }}>
-            <li><strong>ERASE data (faster)</strong>: f3probe runs without attempting to keep the data.</li>
-            <li><strong>try to preserve data (slow)</strong>: f3probe is running, attempting to preserve the data.</li>
+            <li><strong>{t('tools.f3.probe_destructive')}</strong>: {t('tools.help.f3_destructive')}</li>
+            <li><strong>{t('tools.f3.probe_non_destructive')}</strong>: {t('tools.help.f3_non_destructive')}</li>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <DeviceSelector
+            optionValueIsIdentifier={false}
             listPartitions={false}
             skipMounted={false}
             ignoreFs={false}
@@ -1077,6 +1062,7 @@ function Storage() {
               color="error"
               onClick={handleF3}
               disabled={f3Device === '-' || f3Action === '-'}
+              startIcon={<WarningAmberIcon />}
             >
               {t('tools.f3.b') || 'start test'}
             </Button>
@@ -1087,65 +1073,17 @@ function Storage() {
         <LogMonitor />
       </TabPanel>
 
-      <Dialog open={formatConfirmOpen} onClose={() => setFormatConfirmOpen(false)}>
-        <DialogTitle>{t('cmd.format.header') || 'Format device'}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('cmd.format.warning') || 'Danger! This will erase all data on the selected device!'}
-            <br />
-            <strong>{formatPartition} → {formatFstype}</strong>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFormatConfirmOpen(false)}>
-            {t('main.cancel_button') || 'Cancel'}
-          </Button>
-          <Button onClick={confirmFormat} color="error" variant="contained">
-            {t('menu.yes') || 'Yes'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={f3ConfirmOpen} onClose={() => setF3ConfirmOpen(false)}>
-        <DialogTitle>{t('cmd.f3.header') || 'Check USB device for authenticity'}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {f3Action === 'f3probe_destructive' 
-              ? (t('cmd.f3.warning_destructive') || 'Attention, ALL DATA on the data medium will be deleted!')
-              : (t('cmd.f3.warning_non_destructive') || 'Attention, ALL DATA on the data medium could be deleted!')
-            }
-            <br />
-            <strong>{f3Device}</strong>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setF3ConfirmOpen(false)}>
-            {t('main.cancel_button') || 'Cancel'}
-          </Button>
-          <Button onClick={confirmF3} color="error" variant="contained">
-            {t('menu.yes') || 'Yes'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={fsckRepairConfirmOpen} onClose={() => setFsckRepairConfirmOpen(false)}>
-        <DialogTitle>{t('cmd.fsck.header') || 'File system check'}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('cmd.fsck.warning') || 'The file system could be damaged!'}
-            <br />
-            <strong>{fsckPartition}</strong>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFsckRepairConfirmOpen(false)}>
-            {t('main.cancel_button') || 'Cancel'}
-          </Button>
-          <Button onClick={confirmFsckRepair} color="error" variant="contained">
-            {t('menu.yes') || 'Yes'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ProtectedCommandDialog
+        open={Boolean(pendingCommand)}
+        onClose={() => setPendingCommand(null)}
+        title={pendingCommand?.title || ''}
+        consequence={pendingCommand?.consequence}
+        details={pendingCommand?.details}
+        actionLabel={pendingCommand?.actionLabel || ''}
+        requiresPassword={pendingCommand?.requiresPassword !== false}
+        destructive={pendingCommand?.destructive !== false}
+        onConfirm={(body) => pendingCommand.request(body)}
+      />
 
       <Box
         sx={{

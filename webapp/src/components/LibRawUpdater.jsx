@@ -1,26 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
-import BuildIcon from '@mui/icons-material/Build';
+import React, { useState } from 'react';
+import { Box, Typography, Button, Alert } from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
-import useAsyncAction from '../hooks/useAsyncAction';
-import LogMonitor from './LogMonitor';
+import ProtectedCommandDialog from './ProtectedCommandDialog';
 
+// cmd.php:115-121, 309-313 — password protected, runs in the background
+// into the command log, optional mail result.
 function LibRawUpdater() {
   const { t } = useLanguage();
-  const [success, setSuccess] = useState(false);
-
-  const updateLibRawFn = useCallback(() => api.post('/setup/update/libraw'), []);
-  const { execute, loading, error } = useAsyncAction(updateLibRawFn);
-
-  const handleUpdate = () => {
-    setSuccess(false);
-    execute()
-      .then(() => setSuccess(true))
-      .catch(() => {
-        // error shown via error state
-      });
-  };
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <Box>
@@ -31,28 +20,24 @@ function LibRawUpdater() {
         {t('maintenance.libraw_warning')}
       </Alert>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {t('maintenance.update.install_started')}
-        </Alert>
-      )}
-
       <Button
         variant="contained"
-        startIcon={loading ? <CircularProgress size={20} /> : <BuildIcon />}
-        onClick={handleUpdate}
-        disabled={loading}
+        color="error"
+        startIcon={<WarningAmberIcon />}
+        onClick={() => setDialogOpen(true)}
+        sx={{ minHeight: 44 }}
       >
         {t('maintenance.libraw_button')}
       </Button>
 
-      {loading && <LogMonitor />}
+      <ProtectedCommandDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={t('cmd.libraw_confirm_title')}
+        consequence={t('maintenance.libraw_warning')}
+        actionLabel={t('maintenance.libraw_button')}
+        onConfirm={(body) => api.post('/setup/update/libraw', body)}
+      />
     </Box>
   );
 }

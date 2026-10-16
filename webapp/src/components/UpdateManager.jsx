@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Typography,
   Button,
@@ -9,29 +9,20 @@ import {
   Chip,
 } from '@mui/material';
 import UpdateIcon from '@mui/icons-material/Update';
-import InstallIcon from '@mui/icons-material/Download';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
-import useAsyncAction from '../hooks/useAsyncAction';
+import ProtectedCommandDialog from './ProtectedCommandDialog';
 
 function UpdateManager() {
   const { t } = useLanguage();
   const [updateAvailable, setUpdateAvailable] = useState(null);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [checking, setChecking] = useState(false);
-  const [installing, setInstalling] = useState(false);
   const [message, setMessage] = useState('');
-  const [devInstallSuccess, setDevInstallSuccess] = useState(false);
-
-  const installDevUpdateFn = useCallback(
-    () => api.post('/setup/update/install', { branch: 'development' }),
-    []
-  );
-  const {
-    execute: executeDevInstall,
-    loading: devInstalling,
-    error: devInstallError,
-  } = useAsyncAction(installDevUpdateFn);
+  // 'main' | 'development' while the ProtectedCommandDialog is open
+  // (cmd.php CMD=update / CMD=update_development).
+  const [installBranch, setInstallBranch] = useState(null);
 
   const handleCheckUpdate = async () => {
     setChecking(true);
@@ -56,23 +47,13 @@ function UpdateManager() {
     }
   };
 
-  const handleInstallUpdate = async () => {
+  const handleInstallUpdate = () => {
     if (!updateAvailable) {
       setMessage(t('maintenance.update.no_update_available') || 'System is already up to date');
       return;
     }
-
-    setInstalling(true);
     setMessage('');
-    try {
-      await api.post('/setup/update/install');
-      setMessage(t('maintenance.update.install_started') || 'Update installation started');
-    } catch (error) {
-      console.error('Failed to install update:', error);
-      setMessage(t('maintenance.update.install_error') || 'Failed to install update');
-    } finally {
-      setInstalling(false);
-    }
+    setInstallBranch('main');
   };
 
   React.useEffect(() => {
@@ -135,7 +116,7 @@ function UpdateManager() {
             variant="outlined"
             startIcon={checking ? <CircularProgress size={20} /> : <UpdateIcon />}
             onClick={handleCheckUpdate}
-            disabled={checking || installing}
+            disabled={checking}
           >
             {t('config.update.check_label')}
           </Button>
@@ -143,10 +124,11 @@ function UpdateManager() {
           {updateAvailable && (
             <Button
               variant="contained"
-              color="primary"
-              startIcon={installing ? <CircularProgress size={20} /> : <InstallIcon />}
+              color="error"
+              startIcon={<WarningAmberIcon />}
               onClick={handleInstallUpdate}
-              disabled={installing || checking}
+              disabled={checking}
+              sx={{ minHeight: 44 }}
             >
               {t('config.update.linktext')}
             </Button>
@@ -175,33 +157,27 @@ function UpdateManager() {
             <Alert severity="warning" sx={{ mb: 2 }}>
               {t('maintenance.dev_update_warning')}
             </Alert>
-            {devInstallError && (
-              <Alert severity="error" sx={{ mb: 2 }} onClose={() => {}}>
-                {t('maintenance.dev_update_error')}
-              </Alert>
-            )}
-            {devInstallSuccess && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {t('maintenance.update.install_started')}
-              </Alert>
-            )}
             <Button
               variant="outlined"
-              color="warning"
-              startIcon={devInstalling ? <CircularProgress size={20} /> : <InstallIcon />}
-              onClick={() => {
-                executeDevInstall()
-                  .then(() => setDevInstallSuccess(true))
-                  .catch(() => {
-                    // error shown via devInstallError
-                  });
-              }}
-              disabled={devInstalling}
+              color="error"
+              startIcon={<WarningAmberIcon />}
+              onClick={() => setInstallBranch('development')}
+              sx={{ minHeight: 44 }}
             >
               {t('maintenance.dev_update_button')}
             </Button>
           </Box>
         )}
+
+      <ProtectedCommandDialog
+        open={Boolean(installBranch)}
+        onClose={() => setInstallBranch(null)}
+        title={installBranch === 'development' ? t('cmd.update_development_title') : t('cmd.update_title')}
+        consequence={t('cmd.update_warning')}
+        actionLabel={installBranch === 'development' ? t('maintenance.dev_update_button') : t('config.update.linktext')}
+        allowMail={false}
+        onConfirm={(body) => api.post('/setup/update/install', { ...body, branch: installBranch || 'main' })}
+      />
     </Box>
   );
 }

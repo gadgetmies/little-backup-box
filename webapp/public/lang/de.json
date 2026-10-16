@@ -1,7 +1,14 @@
 {
   "log": {
     "logmonitor": "Protokollmonitor",
-    "refresh_button": "aktualisieren"
+    "refresh_button": "aktualisieren",
+    "download_button": "Herunterladen",
+    "clear_button": "Log leeren",
+    "clear_confirm_title": "Log leeren?",
+    "clear_confirm_body": "Das Log wird geleert und beginnt neu mit einer Kopfzeile. Dies kann nicht rückgängig gemacht werden.",
+    "auto_refresh": "Automatisch aktualisieren",
+    "empty": "Kein Log-Inhalt",
+    "cmd_logmonitor": "Befehlslog"
   },
   "mainmenue": {
     "main": "Backup",
@@ -125,7 +132,15 @@
     "device_states": "Gerätestatus",
     "info": "Info",
     "no_cameras": "No cameras detected",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "no_device_states": "Keine Gerätezustände verfügbar",
+    "camera_model": "Kamera-Modell",
+    "camera_storages": "Speicherpfade",
+    "camera_folder_pattern": "Zur Verwendung als Muster in den Einstellungen",
+    "camera_model_folders": "Von Kameramodell zu synchronisierende Ordner",
+    "camera_specific_folders": "Von spezifischer Kamera zu synchronisierende Ordner",
+    "copy": "In die Zwischenablage kopieren",
+    "copied": "Kopiert!"
   },
   "config": {
     "lang_header": "Sprache auswählen/Select language",
@@ -401,6 +416,42 @@
       "select_partition_label": "Partition",
       "nvme": "NVMe SSD",
       "mounted": "eingebunden"
+    },
+    "none": "Keine",
+    "no_mounts": "Keine Einhängepunkte",
+    "mount_success": "Erfolgreich eingehängt",
+    "umount_success": "Erfolgreich ausgehängt",
+    "mount_failed": "Einhängen fehlgeschlagen",
+    "umount_failed": "Aushängen fehlgeschlagen",
+    "select_source_first": "Bitte einen Quellspeicher auswählen",
+    "select_target_first": "Bitte einen Zielspeicher auswählen",
+    "select_partition_first": "Bitte eine Partition auswählen",
+    "select_partition_fstype_first": "Bitte Partition und Dateisystem auswählen",
+    "select_device_action_first": "Bitte Gerät und Test auswählen",
+    "fsck_check_consequence": "Das Dateisystem wird nur geprüft, es wird nichts verändert.",
+    "fsck_repair_title": "Dateisystem auf {device} reparieren?",
+    "format_title": "{device} als {fstype} formatieren?",
+    "f3_title": "Kapazität von {device} prüfen?",
+    "help": {
+      "repair_warning": "Verwenden Sie diese Funktion nicht, wenn Sie nicht wissen, was Sie tun. Ihr Speicher könnte beschädigt werden und Datenverlust wäre möglich!",
+      "procedure": "Verfahren:",
+      "repair_step1": "Überprüfen Sie Ihre Stromversorgung. Eine Unterbrechung der Stromversorgung kann den Speicher irreparabel beschädigen.",
+      "repair_step2": "Stellen Sie sicher, dass gleichzeitig kein Backup-Auftrag ausgeführt wird.",
+      "repair_step3": "Klicken Sie auf keine Schaltfläche und starten Sie keine Prozesse, bevor alle Prüf- und Reparaturvorgänge abgeschlossen sind!",
+      "repair_step4": "Führen Sie zuerst die Dateisystemprüfung durch.",
+      "repair_step5": "Wenn Sie Fehler im Protokoll sehen, führen Sie die Dateisystemreparatur durch.",
+      "format_warning": "Verwenden Sie diese Funktion nicht, wenn Sie nicht wissen, was Sie tun. Ihr Speicher wird dadurch gelöscht und Datenverluste können nicht wiederhergestellt werden.",
+      "options": "Optionen:",
+      "format_fat32": "Weit verbreitet, die Dateigröße ist auf 4GB begrenzt.",
+      "format_exfat": "Weniger verbreitet, keine Begrenzung der Dateigröße.",
+      "format_ntfs": "Eingeschränkte Kompatibilität mit vielen Geräten, keine Begrenzung der Dateigröße.",
+      "format_ntfs_compression": "Komprimierung, spart Speicherplatz, kann aber die Leistung signifikant reduzieren.",
+      "format_ntfs_no_compression": "Keine Komprimierung.",
+      "format_ext4": "Aktuelles Linux-Dateisystem",
+      "format_ext3": "Vorgänger von Ext4, nur empfohlen, wenn der Speicher auch mit älteren Geräten kompatibel sein muss, die Ext4 noch nicht unterstützen.",
+      "f3_warning": "Verwenden Sie diese Funktion nicht, wenn Sie nicht wissen, was Sie tun. Ihr Speicher wird dadurch ggf. gelöscht und Datenverluste können nicht wiederhergestellt werden.",
+      "f3_destructive": "f3probe wird ausgeführt, alle Daten werden gelöscht.",
+      "f3_non_destructive": "f3probe wird ausgeführt. Dabei wird versucht, die Daten zu erhalten."
     }
   },
   "box": {
@@ -447,6 +498,48 @@
     "fsck": {
       "header": "Dateisystem-Prüfung",
       "warning": "Das Dateisystem könnte beschädigt werden!"
+    },
+    "password_label": "Gerätepasswort",
+    "password_helper": "Erforderlich für Formatieren, Reparieren, Kapazitätstest, Updates und WLAN-Reset.",
+    "password_invalid": "Falsches Passwort",
+    "password_not_set": "Es wurde kein globales Passwort festgelegt. Sie können nicht fortfahren. Richten Sie bitte zuerst ein globales Passwort ein.",
+    "password_set_link": "Passwort setzen",
+    "demo_password_hint": "Demo-Passwort",
+    "mail_result_label": "Ergebnis nach Abschluss per E-Mail senden",
+    "command_running": "Ein anderer Befehl läuft noch. Bitte warten, bis er beendet ist.",
+    "start_error": "Der Befehl konnte nicht gestartet werden",
+    "running": "Befehl läuft",
+    "running_hint": "Gerät während des Vorgangs nicht stoppen oder neu laden. Sie können diesen Dialog schließen; der Befehl läuft weiter.",
+    "finished": "Befehl beendet",
+    "output_header": "Befehlsausgabe",
+    "output_waiting": "Warte auf Ausgabe…",
+    "close_button": "Schließen",
+    "libraw_confirm_title": "LibRaw aktualisieren?",
+    "update_title": "Update installieren?",
+    "update_development_title": "Development-Update installieren?",
+    "update_warning": "Während des Vorgangs NICHT STOPPEN oder nachladen!",
+    "comitup_title": "WLAN-Zugangsdaten zurücksetzen?",
+    "box": {
+      "fsck_start1": "Start",
+      "fsck_start2": "Dateisystem",
+      "fsck_stop1": "Beendet",
+      "fsck_stop2": "Dateisystem",
+      "format_start1": "Formatierung",
+      "format_start2": "gestartet...",
+      "format_stop1": "Formatierung",
+      "format_stop2": "beendet",
+      "update_start1": "Update",
+      "update_start2": "gestartet...",
+      "update_stop1": "Update",
+      "update_stop2": "beendet",
+      "f3_probe_start1": "Überprüfung",
+      "f3_probe_start2": "gestartet...",
+      "f3_probe_stop1": "Überprüfung",
+      "f3_probe_stop2": "beendet",
+      "f3_probe_non_destructive": "erhaltend",
+      "f3_probe_destructive": "destruktiv",
+      "comitup_section": "comitup",
+      "reset": "zurücksetzen"
     }
   },
   "view": {
@@ -629,7 +722,13 @@
     }
   },
   "menu": {
-    "yes": "Ja"
+    "yes": "Ja",
+    "update_badge": "Update",
+    "update_available": "Software-Update verfügbar",
+    "comitup_portal": "WLAN-Portal (comitup)",
+    "comitup_portal_inactive": "Verfügbar, solange der comitup-Hotspot aktiv ist",
+    "branch": "Branch",
+    "display_image": "Geräteanzeige"
   },
   "status": {
     "tooltip": "Device status",
