@@ -1,69 +1,62 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('DatabaseOperations on Backup page', () => {
+// Database operations live on /maintenance → "Database" tab. They must post the
+// PHP function names (index.php:395-418): thumbnails / database / exif, which
+// the backend turns into `backup.py --SourceName <function> --TargetName <target>`.
+test.describe('DatabaseOperations on Maintenance page', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear any failure mode before each test
-    await page.goto('/');
+    await page.goto('/maintenance');
     await page.evaluate(() => {
       localStorage.setItem('lbb-mock-controls', JSON.stringify({ delay: 0, failureMode: '' }));
+      localStorage.setItem('lbb-tabs-maintenance', 'database');
     });
+    await page.goto('/maintenance');
   });
 
-  test('Expand Database Operations accordion', async ({ page }) => {
-    await page.goto('/');
-
-    // Find and expand the Database Operations accordion
-    const accordion = page.getByRole('button', { name: /database operations/i });
-    await expect(accordion).toBeVisible();
-    await accordion.click();
-
-    // The Generate thumbnails button should now be visible
-    const generateBtn = page.getByRole('button', { name: /generate thumbnails/i });
-    await expect(generateBtn).toBeVisible();
+  test('Database tab shows the three database operations', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /generate thumbnails/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /sync database/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /update exif/i })).toBeVisible();
   });
 
-  test('Clicking Generate thumbnails button disables it during execution and shows success toast', async ({
-    page,
-  }) => {
-    await page.goto('/');
-
-    // Expand accordion
-    const accordion = page.getByRole('button', { name: /database operations/i });
-    await accordion.click();
-
-    const generateBtn = page.getByRole('button', { name: /generate thumbnails/i });
-    await expect(generateBtn).toBeVisible();
-
-    await generateBtn.click();
-
-    // Button should be disabled while executing
-    await expect(generateBtn).toBeDisabled();
-
-    // Success toast should appear
-    await expect(page.getByText(/operation completed successfully/i)).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test('Shows inline Alert when failure mode is disk_full', async ({ page }) => {
-    await page.goto('/');
-
-    // Set failure mode to disk_full
-    await page.evaluate(() => {
-      localStorage.setItem(
-        'lbb-mock-controls',
-        JSON.stringify({ delay: 0, failureMode: 'disk_full' })
+  for (const [label, expected] of [
+    [/generate thumbnails/i, 'thumbnails'],
+    [/sync database/i, 'database'],
+    [/update exif/i, 'exif'],
+  ]) {
+    test(`${expected} posts the PHP function name and succeeds`, async ({ page }) => {
+      const requestPromise = page.waitForRequest(
+        (req) => req.url().includes('/api/backup/function') && req.method() === 'POST',
       );
+      const responsePromise = page.waitForResponse((res) => res.url().includes('/api/backup/function'));
+
+      await page.getByRole('button', { name: label }).click();
+
+      const request = await requestPromise;
+      expect(request.postDataJSON()).toMatchObject({ function: expected, target: 'usb' });
+      const response = await responsePromise;
+      expect(response.status()).toBe(200);
+      await expect(page.getByText(/operation completed successfully/i)).toBeVisible({ timeout: 10000 });
     });
+  }
 
-    // Expand accordion
-    const accordion = page.getByRole('button', { name: /database operations/i });
-    await accordion.click();
+  test('Backend rejects function names backup.py does not accept', async ({ request }) => {
+    const response = await request.post('/api/backup/function', {
+      data: { function: 'generate_thumbnails', target: 'usb' },
+    });
+    expect(response.status()).toBe(400);
+  });
 
-    const generateBtn = page.getByRole('button', { name: /generate thumbnails/i });
-    await generateBtn.click();
+  test('Shows inline Alert when the operation fails', async ({ page }) => {
+    await page.route('**/api/backup/function', (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Not enough disk space' }),
+      }),
+    );
 
-    // Inline error alert should appear
+    await page.getByRole('button', { name: /generate thumbnails/i }).click();
     await expect(page.getByText(/not enough disk space/i)).toBeVisible({ timeout: 10000 });
   });
 });
