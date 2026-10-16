@@ -5,17 +5,25 @@ import {
   Button,
   Box,
   Typography,
+  AlertTitle,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../utils/api';
+import { useConfig } from '../contexts/ConfigContext';
 import SectionHeader from './SectionHeader';
 
 function SettingsOperations() {
   const { t } = useLanguage();
+  const { reloadConfig } = useConfig();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [restoreResult, setRestoreResult] = useState(null);
+  const [messageIsError, setMessageIsError] = useState(false);
 
   const handleDownload = async () => {
     setLoading(true);
@@ -58,22 +66,37 @@ function SettingsOperations() {
 
     setLoading(true);
     setMessage('');
+    setMessageIsError(false);
+    setRestoreResult(null);
 
     try {
       const formData = new FormData();
       formData.append('settings', file);
 
-      await api.post('/setup/upload-settings', formData, {
+      const response = await api.post('/setup/upload-settings', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      setMessage(t('maintenance.settings.upload_success') || 'Settings uploaded successfully');
+      setRestoreResult({
+        files: response.data?.files || [],
+        password: response.data?.password,
+        wifiPasswordApplied: Boolean(response.data?.wifiPasswordApplied),
+      });
       event.target.value = '';
+      // The restored config.cfg replaces the current settings.
+      reloadConfig().catch(() => {});
     } catch (error) {
       console.error('Failed to upload settings:', error);
-      setMessage(t('maintenance.settings.upload_error') || 'Failed to upload settings');
+      const code = error?.response?.data?.error;
+      setMessage(
+        code === 'not_zip'
+          ? t('config.settings_restore_not_zip')
+          : t('config.settings_restore_problem'),
+      );
+      setMessageIsError(true);
+      event.target.value = '';
     } finally {
       setLoading(false);
     }
@@ -81,9 +104,40 @@ function SettingsOperations() {
 
   return (
     <Stack spacing={3}>
+      {restoreResult && (
+        <Alert severity="success" onClose={() => setRestoreResult(null)} data-testid="settings-restore-result">
+          <AlertTitle>{t('config.settings_restore_success')}</AlertTitle>
+          {restoreResult.files.length > 0 ? (
+            <List dense disablePadding>
+              {restoreResult.files.map((name) => (
+                <ListItem key={name} disableGutters sx={{ py: 0 }}>
+                  <ListItemText primary={name} primaryTypographyProps={{ variant: 'body2', fontFamily: 'monospace' }} />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2">{t('config.settings_restore_no_files')}</Typography>
+          )}
+          {restoreResult.password === 'set' && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {t('config.settings_restore_password_set')}
+            </Typography>
+          )}
+          {restoreResult.password === 'removed' && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {t('config.settings_restore_password_removed')}
+            </Typography>
+          )}
+          {restoreResult.wifiPasswordApplied && (
+            <Typography variant="body2">{t('config.settings_restore_wifi_password')}</Typography>
+          )}
+        </Alert>
+      )}
+
       {message && (
         <Alert
           severity={
+            messageIsError ||
             message.includes('error') || message.includes('Error') || message.includes('invalid') || message.includes('Please')
               ? 'error'
               : 'success'

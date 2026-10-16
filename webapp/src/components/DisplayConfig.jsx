@@ -20,6 +20,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
+import { isConfigTrue } from '../utils/configValue';
 
 const DEFAULTS = {
   conf_DISP: '0',
@@ -144,7 +145,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.conf_DISP === '1' || formData.conf_DISP === true}
+                  checked={isConfigTrue(formData.conf_DISP)}
                   onChange={(e) => handleChange('conf_DISP', e.target.checked ? '1' : '0')}
                 />
               }
@@ -202,7 +203,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.conf_DISP_IP_REPEAT === '1' || formData.conf_DISP_IP_REPEAT === true}
+                  checked={isConfigTrue(formData.conf_DISP_IP_REPEAT)}
                   onChange={(e) => handleChange('conf_DISP_IP_REPEAT', e.target.checked ? '1' : '0')}
                 />
               }
@@ -212,7 +213,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.conf_DISP_SHOW_STATUSBAR === '1' || formData.conf_DISP_SHOW_STATUSBAR === true}
+                  checked={isConfigTrue(formData.conf_DISP_SHOW_STATUSBAR)}
                   onChange={(e) => handleChange('conf_DISP_SHOW_STATUSBAR', e.target.checked ? '1' : '0')}
                 />
               }
@@ -311,7 +312,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.conf_DISP_BACKLIGHT_ENABLED === '1' || formData.conf_DISP_BACKLIGHT_ENABLED === true}
+                  checked={isConfigTrue(formData.conf_DISP_BACKLIGHT_ENABLED)}
                   onChange={(e) => handleChange('conf_DISP_BACKLIGHT_ENABLED', e.target.checked ? '1' : '0')}
                 />
               }
@@ -544,7 +545,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControl sx={{ maxWidth: 400 }}>
               <InputLabel>{t('config.display.color.notation_label') || 'Color notation'}</InputLabel>
               <Select
-                value={formData.conf_DISP_COLOR_BGR === '1' || formData.conf_DISP_COLOR_BGR === true ? 'BGR' : 'RGB'}
+                value={isConfigTrue(formData.conf_DISP_COLOR_BGR) ? 'BGR' : 'RGB'}
                 onChange={(e) => handleChange('conf_DISP_COLOR_BGR', e.target.value === 'BGR' ? '1' : '0')}
                 label={t('config.display.color.notation_label') || 'Color notation'}
               >
@@ -560,7 +561,7 @@ function DisplayConfig({ onSavedStateChange }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.conf_DISP_COLOR_INVERSE === '1' || formData.conf_DISP_COLOR_INVERSE === true}
+                  checked={isConfigTrue(formData.conf_DISP_COLOR_INVERSE)}
                   onChange={(e) => handleChange('conf_DISP_COLOR_INVERSE', e.target.checked ? '1' : '0')}
                 />
               }

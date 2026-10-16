@@ -10,8 +10,17 @@ import {
 } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
+import { isConfigTrue, toConfigBool } from '../utils/configValue';
 
-const LOG_KEYS = ['conf_log_level', 'conf_log_sync', 'conf_display_images_keep'];
+// Keys as written by scripts/setup.php (note the PHP spelling conf_DIPLAY_IMAGES_KEEP).
+const LOG_KEYS = ['conf_LOGLEVEL', 'conf_LOG_SYNC', 'conf_DIPLAY_IMAGES_KEEP'];
+
+// setup.php:1860-1880: 1 = minimum, 2 = medium, 3 = maximum.
+const LOG_LEVELS = [
+  { value: '1', labelKey: 'config.log_level_minimum' },
+  { value: '2', labelKey: 'config.log_level_medium' },
+  { value: '3', labelKey: 'config.log_level_maximum' },
+];
 
 function LogConfig() {
   const { t } = useLanguage();
@@ -67,22 +76,23 @@ function LogConfig() {
       <FormControl sx={{ maxWidth: 400 }}>
         <InputLabel>{t('config.log_level')}</InputLabel>
         <Select
-          value={formData.conf_log_level || 'ERROR'}
-          onChange={(e) => setFormData({ ...formData, conf_log_level: e.target.value })}
+          value={formData.conf_LOGLEVEL || '1'}
+          onChange={(e) => setFormData({ ...formData, conf_LOGLEVEL: e.target.value })}
           label={t('config.log_level')}
         >
-          <MenuItem value="ERROR">ERROR</MenuItem>
-          <MenuItem value="WARNING">WARNING</MenuItem>
-          <MenuItem value="INFO">INFO</MenuItem>
-          <MenuItem value="DEBUG">DEBUG</MenuItem>
+          {LOG_LEVELS.map((level) => (
+            <MenuItem key={level.value} value={level.value}>
+              {level.value}, {t(level.labelKey)}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
       <FormControlLabel
         control={
           <Checkbox
-            checked={formData.conf_log_sync === 'true'}
+            checked={isConfigTrue(formData.conf_LOG_SYNC)}
             onChange={(e) =>
-              setFormData({ ...formData, conf_log_sync: e.target.checked ? 'true' : 'false' })
+              setFormData({ ...formData, conf_LOG_SYNC: toConfigBool(e.target.checked) })
             }
           />
         }
@@ -91,9 +101,9 @@ function LogConfig() {
       <FormControlLabel
         control={
           <Checkbox
-            checked={formData.conf_display_images_keep === 'true'}
+            checked={isConfigTrue(formData.conf_DIPLAY_IMAGES_KEEP)}
             onChange={(e) =>
-              setFormData({ ...formData, conf_display_images_keep: e.target.checked ? 'true' : 'false' })
+              setFormData({ ...formData, conf_DIPLAY_IMAGES_KEEP: toConfigBool(e.target.checked) })
             }
           />
         }

@@ -44,7 +44,34 @@ const mockData = {
     conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
     conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
     conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
+    conf_POPUP_MESSAGES: 'true',
+    conf_BACKGROUND_IMAGE: '',
+    conf_VIRTUAL_KEYBOARD_ENABLED: 'true',
+    conf_BACKUP_DEFAULT_SOURCE: 'usb',
+    conf_BACKUP_DEFAULT_TARGET: 'usb',
+    conf_BACKUP_DEFAULT_MOVE_FILES: 'false',
+    conf_BACKUP_DEFAULT_SOURCE2: 'usb',
+    conf_BACKUP_DEFAULT_TARGET2: 'cloud:dropbox',
+    conf_BACKUP_DEFAULT2_MOVE_FILES: 'false',
+    conf_BACKUP_TARGET_SIZE_MIN: '1073741824',
+    conf_POWER_OFF_IDLE_TIME: '30',
+    conf_BACKUP_CAMERA_FOLDER_MASK: 'Canon EOS R6:!/store_00020001/DCIM;iPhone_0001A4:/DCIM/*APPLE;*:/DCIM',
+    conf_VIEW_WRITE_RATING_EXIF: 'true',
+    conf_VIEW_CONVERT_HEIC: 'false',
+    conf_LOGLEVEL: '1',
+    conf_LOG_SYNC: 'true',
+    conf_DIPLAY_IMAGES_KEEP: 'false',
+    conf_FAN_PWM_TEMP_C: '60',
+    conf_FAN_PWM_GPIO: '18',
+    conf_WIFI_PASSWORD_TYPE: 'static',
+    conf_WIFI_PASSWORD: 'bGl0dGxlLWJhY2t1cC1ib3gtaG90c3BvdA==',
+    conf_SOCIAL_PUBLISH_DATE: 'true',
+    conf_SOCIAL_PUBLISH_FILENAME: 'false',
   },
+  // Device password state for the Preferences > Security tab. The password
+  // itself is never part of the config sent to the client.
+  passwordSet: true,
+  backgroundImages: ['lbb/andromeda.jpg', 'lbb/paris.jpg', 'lbb/river-fog.jpg', 'lbb/river.jpg'],
   constants: {
     const_STORAGE_NVME_MASK: 'nvme',
     const_MEDIA_DIR: '/media',
@@ -232,6 +259,18 @@ function resolveDisplayStatus() {
   return { status, severity };
 }
 
+// axios has already serialised JSON bodies by the time the mock adapter runs.
+function parseBody(config) {
+  if (typeof config.data === 'string') {
+    try {
+      return JSON.parse(config.data);
+    } catch {
+      return {};
+    }
+  }
+  return config.data || {};
+}
+
 function generateBackupId() {
   return Date.now();
 }
@@ -357,20 +396,76 @@ export function createMockApiInterceptor() {
     }
 
     if (url === '/config' || url === '/config/') {
-      return { data: { config: mockData.config, constants: mockData.constants } };
+      return {
+        data: {
+          config: { ...mockData.config, conf_PASSWORD: '' },
+          constants: mockData.constants,
+          password_set: mockData.passwordSet,
+        },
+      };
+    }
+
+    if (url === '/config/background-images') {
+      return {
+        data: {
+          images: mockData.backgroundImages,
+          directory: `${mockData.constants.const_MEDIA_DIR}/${mockData.constants.const_BACKGROUND_IMAGES_DIR}`,
+        },
+      };
+    }
+
+    if (url === '/security/status') {
+      return {
+        data: {
+          password_set: mockData.passwordSet,
+          wifi_password_type: mockData.config.conf_WIFI_PASSWORD_TYPE || 'static',
+        },
+      };
+    }
+
+    if (url === '/security/password' && method === 'post') {
+      const body = parseBody(config);
+      const password = (body.password || '').trim();
+      if (password !== (body.repeat || '').trim()) {
+        return Promise.reject({ response: { status: 400, data: { error: 'not_identical' } } });
+      }
+      if (password.length < 5) {
+        return Promise.reject({ response: { status: 400, data: { error: 'too_short', min: 5 } } });
+      }
+      mockData.passwordSet = true;
+      return { data: { success: true, password_set: true } };
+    }
+
+    if (url === '/security/password/remove' && method === 'post') {
+      mockData.passwordSet = false;
+      return { data: { success: true, password_set: false } };
+    }
+
+    if (url === '/security/wifi-password' && method === 'post') {
+      const body = parseBody(config);
+      const password = (body.password || '').trim();
+      if (body.type !== 'static' && body.type !== 'dynamic') {
+        return Promise.reject({ response: { status: 400, data: { error: 'invalid_type' } } });
+      }
+      if (password && (password.length < 8 || password.length > 63 || /[^\x20-\x7e]/.test(password))) {
+        return Promise.reject({ response: { status: 400, data: { error: password.length < 8 ? 'too_short' : password.length > 63 ? 'too_long' : 'not_ascii' } } });
+      }
+      mockData.config.conf_WIFI_PASSWORD_TYPE = body.type;
+      mockData.config.conf_WIFI_PASSWORD = password ? btoa(password) : '';
+      return { data: { success: true } };
     }
     
     if (url === '/config/save' && method === 'post') {
-      const saveData = config.data || {};
+      const saveData = parseBody(config);
       const saveFailureMode = mockSettings.failureMode;
-      if (saveFailureMode === 'invalid_timezone' && saveData.conf_timezone !== undefined) {
+      if (saveFailureMode === 'invalid_timezone' && saveData.conf_TIME_ZONE !== undefined) {
         return Promise.reject({
           response: { status: 400, data: { error: 'Unknown timezone identifier' } },
         });
       }
       if (
         saveFailureMode === 'gpio_conflict' &&
-        ('conf_MENU_BUTTON_COMBINATION' in saveData || 'conf_FAN_GPIO_PIN' in saveData)
+        ('conf_MENU_BUTTON_COMBINATION' in saveData || 'conf_FAN_PWM_GPIO' in saveData)
       ) {
         return Promise.reject({
           response: { status: 422, data: { error: 'GPIO pin already in use' } },
@@ -429,7 +524,7 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/save' && method === 'post') {
-      Object.assign(mockData.config, config.data);
+      Object.assign(mockData.config, parseBody(config));
       return { data: { success: true } };
     }
     
@@ -470,7 +565,18 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/setup/upload-settings' && method === 'post') {
-      return { data: { success: true, message: 'Settings uploaded (mock)' } };
+      const file = config.data && typeof config.data.get === 'function' ? config.data.get('settings') : null;
+      if (file && file.name && !file.name.toLowerCase().endsWith('.zip')) {
+        return Promise.reject({ response: { status: 400, data: { error: 'not_zip' } } });
+      }
+      return {
+        data: {
+          success: true,
+          files: ['config.cfg', 'rclone.conf', 'buttons.private.cfg', 'wg0.conf', 'paris.jpg'],
+          password: mockData.passwordSet ? 'set' : 'removed',
+          wifiPasswordApplied: true,
+        },
+      };
     }
     
     if (url === '/view/image') {
@@ -721,6 +827,30 @@ export function createMockApiInterceptor() {
       return { data: { success: true } };
     }
     
+    if (url === '/social/matrix/token' && method === 'post') {
+      const body = parseBody(config);
+      if (!body.homeserver || !body.username || !body.password) {
+        return Promise.reject({ response: { status: 400, data: { ok: false, error: 'missing_parameters' } } });
+      }
+      if (body.password === 'wrong') {
+        return { data: { ok: false, error: 'invalid_credentials', status: 403 } };
+      }
+      const localpart = String(body.username).replace(/^@/, '').split(':')[0] || 'bot';
+      let host = 'matrix.example.org';
+      try {
+        host = new URL(body.homeserver).hostname;
+      } catch {
+        // keep the example host
+      }
+      return {
+        data: {
+          ok: true,
+          token: `syt_${btoa(localpart).replace(/=+$/, '')}_mockAccessToken0123456789`,
+          user_id: String(body.username).startsWith('@') ? body.username : `@${localpart}:${host}`,
+        },
+      };
+    }
+
     if (url === '/cloud/remotes') {
       return { data: { remotes: ['Dropbox', 'Google Drive'] } };
     }

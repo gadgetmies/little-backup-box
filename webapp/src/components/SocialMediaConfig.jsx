@@ -25,9 +25,12 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
 import SendIcon from '@mui/icons-material/Send';
+import KeyIcon from '@mui/icons-material/Key';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
+import { isConfigTrue, toConfigBool } from '../utils/configValue';
+import MatrixTokenDialog from './MatrixTokenDialog';
 
 function SocialMediaConfig({ onSavedStateChange, onMessage }) {
   const { t } = useLanguage();
@@ -39,6 +42,7 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
   };
   const [telegramDialogOpen, setTelegramDialogOpen] = useState(false);
   const [matrixDialogOpen, setMatrixDialogOpen] = useState(false);
+  const [matrixTokenDialogOpen, setMatrixTokenDialogOpen] = useState(false);
   const [telegramChats, setTelegramChats] = useState([]);
   const [matrixRooms, setMatrixRooms] = useState([]);
   const [selectedTelegramChat, setSelectedTelegramChat] = useState(null);
@@ -63,8 +67,8 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
     }
     if (config) {
       const socialConfig = {
-        conf_SOCIAL_PUBLISH_DATE: config.conf_SOCIAL_PUBLISH_DATE || '0',
-        conf_SOCIAL_PUBLISH_FILENAME: config.conf_SOCIAL_PUBLISH_FILENAME || '0',
+        conf_SOCIAL_PUBLISH_DATE: toConfigBool(isConfigTrue(config.conf_SOCIAL_PUBLISH_DATE ?? 'true')),
+        conf_SOCIAL_PUBLISH_FILENAME: toConfigBool(isConfigTrue(config.conf_SOCIAL_PUBLISH_FILENAME)),
         conf_SOCIAL_TELEGRAM_TOKEN: config.conf_SOCIAL_TELEGRAM_TOKEN || '',
         conf_SOCIAL_TELEGRAM_CHAT_ID: config.conf_SOCIAL_TELEGRAM_CHAT_ID || '',
         conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER: config.conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER || '',
@@ -263,8 +267,8 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
         <FormControlLabel
           control={
             <Checkbox
-              checked={formData.conf_SOCIAL_PUBLISH_DATE === '1'}
-              onChange={(e) => setFormData({ ...formData, conf_SOCIAL_PUBLISH_DATE: e.target.checked ? '1' : '0' })}
+              checked={isConfigTrue(formData.conf_SOCIAL_PUBLISH_DATE)}
+              onChange={(e) => setFormData({ ...formData, conf_SOCIAL_PUBLISH_DATE: toConfigBool(e.target.checked) })}
             />
           }
           label={t('config.social.general.date_label') || 'Publish recording date'}
@@ -272,8 +276,8 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
         <FormControlLabel
           control={
             <Checkbox
-              checked={formData.conf_SOCIAL_PUBLISH_FILENAME === '1'}
-              onChange={(e) => setFormData({ ...formData, conf_SOCIAL_PUBLISH_FILENAME: e.target.checked ? '1' : '0' })}
+              checked={isConfigTrue(formData.conf_SOCIAL_PUBLISH_FILENAME)}
+              onChange={(e) => setFormData({ ...formData, conf_SOCIAL_PUBLISH_FILENAME: toConfigBool(e.target.checked) })}
             />
           }
           label={t('config.social.general.filename_label') || 'Publish file name'}
@@ -435,6 +439,14 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
                 onChange={(e) => setFormData({ ...formData, conf_SOCIAL_MATRIX_TOKEN: e.target.value })}
                 sx={{ maxWidth: 400 }}
               />
+              <Button
+                variant="outlined"
+                startIcon={<KeyIcon />}
+                onClick={() => setMatrixTokenDialogOpen(true)}
+                sx={{ alignSelf: 'flex-start', minHeight: 44 }}
+              >
+                {t('integrations.matrix_token.open_button')}
+              </Button>
               <TextField
                 label={t('config.social.matrix.room_id_label') || 'Matrix room ID'}
                 value={formData.conf_SOCIAL_MATRIX_ROOM_ID && formData.conf_SOCIAL_MATRIX_ROOM_IDENTIFIER
@@ -545,6 +557,20 @@ function SocialMediaConfig({ onSavedStateChange, onMessage }) {
             </Button>
           </DialogActions>
       </Dialog>
+
+      <MatrixTokenDialog
+        open={matrixTokenDialogOpen}
+        initialHomeserver={formData.conf_SOCIAL_MATRIX_HOMESERVER || ''}
+        onClose={() => setMatrixTokenDialogOpen(false)}
+        onApply={({ token, homeserver }) => {
+          setFormData((prev) => ({
+            ...prev,
+            conf_SOCIAL_MATRIX_TOKEN: token,
+            conf_SOCIAL_MATRIX_HOMESERVER: prev.conf_SOCIAL_MATRIX_HOMESERVER?.trim() ? prev.conf_SOCIAL_MATRIX_HOMESERVER : homeserver,
+          }));
+          setMatrixTokenDialogOpen(false);
+        }}
+      />
     </>
   );
 }

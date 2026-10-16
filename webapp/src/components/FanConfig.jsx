@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Stack, TextField } from '@mui/material';
+import { Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
+
+// GPIO pins offered by scripts/setup.php:1822 ('-' = fan control off).
+const FAN_GPIO_OPTIONS = ['-', '14', '15', '18', '23', '24'];
 
 function FanConfig({ onSavedStateChange }) {
   const { t } = useLanguage();
@@ -14,7 +17,7 @@ function FanConfig({ onSavedStateChange }) {
     if (!config) return;
     const initial = {
       conf_FAN_PWM_TEMP_C: config.conf_FAN_PWM_TEMP_C ?? '',
-      conf_FAN_GPIO_PIN: config.conf_FAN_GPIO_PIN ?? '',
+      conf_FAN_PWM_GPIO: config.conf_FAN_PWM_GPIO ?? '-',
     };
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData(initial);
@@ -32,7 +35,7 @@ function FanConfig({ onSavedStateChange }) {
   };
 
   const handleFanGpioChange = (value) => {
-    setFormData((prev) => ({ ...prev, conf_FAN_GPIO_PIN: value }));
+    setFormData((prev) => ({ ...prev, conf_FAN_PWM_GPIO: value }));
   };
 
   const [saveCount, setSaveCount] = useState(0);
@@ -66,15 +69,27 @@ function FanConfig({ onSavedStateChange }) {
         />
       </Box>
       <Box>
-        <TextField
-          label={t('hardware.fan_gpio_pin')}
-          helperText={t('hardware.fan_gpio_pin_help')}
-          type="number"
-          sx={{ maxWidth: 400 }}
-          value={formData.conf_FAN_GPIO_PIN ?? ''}
-          onChange={(e) => handleFanGpioChange(e.target.value)}
-          inputProps={{ min: 2, max: 27 }}
-        />
+        <FormControl sx={{ minWidth: 200, maxWidth: 400 }}>
+          <InputLabel id="fan-gpio-label">{t('hardware.fan_gpio_pin')}</InputLabel>
+          <Select
+            labelId="fan-gpio-label"
+            label={t('hardware.fan_gpio_pin')}
+            value={formData.conf_FAN_PWM_GPIO ?? '-'}
+            onChange={(e) => handleFanGpioChange(e.target.value)}
+          >
+            {[
+              ...FAN_GPIO_OPTIONS,
+              ...(formData.conf_FAN_PWM_GPIO && !FAN_GPIO_OPTIONS.includes(formData.conf_FAN_PWM_GPIO)
+                ? [formData.conf_FAN_PWM_GPIO]
+                : []),
+            ].map((pin) => (
+              <MenuItem key={pin} value={pin}>
+                {pin === '-' ? t('config.fan_gpio_off') : `GPIO ${pin}`}
+              </MenuItem>
+            ))}
+          </Select>
+          <FormHelperText>{t('hardware.fan_gpio_pin_help')}</FormHelperText>
+        </FormControl>
       </Box>
     </Stack>
   );
