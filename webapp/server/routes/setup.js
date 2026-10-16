@@ -5,6 +5,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { execCommand } from '../utils/execCommand.js';
 import { getTempDir, getIdletimeLockfile } from '../utils/paths.js';
+import {
+  displayCommand,
+  getCurrentConfig,
+  isMailConfigured,
+  requireDevicePassword,
+  runInBackground,
+  serverT,
+} from '../utils/commandRunner.js';
 import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -147,39 +155,53 @@ router.get('/update/status', async (req, res) => {
   }
 });
 
-router.post('/update/libraw', async (req, res) => {
+// cmd.php:309-313 — LibRaw update runs in the background into the command
+// log, with display start/stop messages and the optional mail result.
+router.post('/update/libraw', requireDevicePassword, async (req, res) => {
   try {
-    const command = `sudo bash ${req.WORKING_DIR}/mods/update_libraw.sh`;
-    const result = await execCommand(command, { logger: req.logger });
+    const config = req.currentConfig || getCurrentConfig(req);
+    const tr = (key) => serverT(config, key);
+    const commandLine = [
+      displayCommand(req.WORKING_DIR, [tr('cmd.box.update_start1'), tr('cmd.box.update_start2')]),
+      `sudo bash ${req.WORKING_DIR}/mods/update_libraw.sh`,
+      displayCommand(req.WORKING_DIR, [tr('cmd.box.update_stop1'), tr('cmd.box.update_stop2')]),
+    ].join(';');
+    const mail = req.body?.mailResult === true && isMailConfigured(config);
 
-    if (result.success) {
-      req.logger.info('LibRaw update completed');
-      res.json({ success: true, message: 'LibRaw update completed' });
-    } else {
-      const errorMessage = result.stderr || result.error || 'LibRaw compilation failed';
-      req.logger.error('LibRaw update failed', { error: errorMessage });
-      res.status(500).json({ error: errorMessage });
-    }
+    runInBackground(req, { cmd: 'update_libraw', commandLine, mail });
+
+    req.logger.info('LibRaw update started');
+    res.json({ success: true, started: true });
   } catch (error) {
+    if (error.code === 'command_running') {
+      return res.status(409).json({ error: error.message, code: error.code });
+    }
     req.logger.error('Failed to update LibRaw', { error: error.message });
     res.status(500).json({ error: 'Failed to update LibRaw' });
   }
 });
 
-router.post('/update/install', async (req, res) => {
+// cmd.php:297-307 — 'update' installs the main branch, 'update_development'
+// the development branch. Password protected, no mail option.
+router.post('/update/install', requireDevicePassword, async (req, res) => {
   try {
-    const branch = req.body?.branch || req.constants?.const_SOFTWARE_BRANCH || 'main';
+    const config = req.currentConfig || getCurrentConfig(req);
+    const branch = req.body?.branch === 'development' ? 'development' : 'main';
+    const cmd = branch === 'development' ? 'update_development' : 'update';
+    const commandLine = [
+      displayCommand(req.WORKING_DIR, [serverT(config, 'cmd.box.update_start1'), serverT(config, 'cmd.box.update_start2')]),
+      `sudo -u pi curl -sSL https://raw.githubusercontent.com/outdoorbits/little-backup-box/${branch}/install-little-backup-box.sh -o ~pi/install-little-backup-box.sh`,
+      `sudo -u pi bash ~pi/install-little-backup-box.sh ${branch}`,
+    ].join(';');
 
-    let command = `sudo python3 ${req.WORKING_DIR}/lib_display.py ':Update' ':started...'`;
-    command += `;sudo -u pi curl -sSL https://raw.githubusercontent.com/outdoorbits/little-backup-box/${branch}/install-little-backup-box.sh -o ~pi/install-little-backup-box.sh`;
-    command += `;sudo -u pi bash ~pi/install-little-backup-box.sh ${branch}`;
-    command += ' > /dev/null 2>&1 &';
-
-    await execCommand(command, { logger: req.logger });
+    runInBackground(req, { cmd, commandLine, mail: false });
 
     req.logger.info(`Update installation started for branch: ${branch}`);
-    res.json({ success: true, message: 'Update installation started' });
+    res.json({ success: true, started: true, message: 'Update installation started' });
   } catch (error) {
+    if (error.code === 'command_running') {
+      return res.status(409).json({ error: error.message, code: error.code });
+    }
     req.logger.error('Failed to install update', { error: error.message });
     res.status(500).json({ error: 'Failed to install update' });
   }

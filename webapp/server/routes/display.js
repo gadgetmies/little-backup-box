@@ -1,7 +1,8 @@
 import express from 'express';
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
-import { getDisplayContentPath, getDisplayContentOldFilePath } from '../utils/paths.js';
+import { getDisplayContentPath, getDisplayContentOldFilePath, getTempDir } from '../utils/paths.js';
+import { mockDisplaySvg, shouldMock } from '../utils/mockSystem.js';
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ function severityFor(status) {
   return status === '' || status === 'Ready' ? 'ready' : 'info';
 }
 
-router.get('/status', (req, res) => {
+function currentStatus(req) {
   const dir = getDisplayContentPath(req.WORKING_DIR, req.constants);
   const oldFile = getDisplayContentOldFilePath(req.WORKING_DIR, req.constants);
 
@@ -27,7 +28,7 @@ router.get('/status', (req, res) => {
     const fromQueue = readLatestFrame(dir);
     if (fromQueue !== null && fromQueue.trim() !== '') {
       const status = fromQueue.trim();
-      return res.json({ status, severity: severityFor(status) });
+      return { status, severity: severityFor(status) };
     }
   } catch (error) {
     // Directory missing or unreadable — fall through to old-file fallback.
@@ -38,13 +39,33 @@ router.get('/status', (req, res) => {
     const fromOld = readFileSync(oldFile, 'utf-8');
     if (fromOld.trim() !== '') {
       const status = fromOld.trim();
-      return res.json({ status, severity: severityFor(status) });
+      return { status, severity: severityFor(status) };
     }
   } catch {
     // Old file missing — return empty status.
   }
 
-  return res.json({ status: '', severity: 'ready' });
+  return { status: '', severity: 'ready' };
+}
+
+router.get('/status', (req, res) => {
+  res.json(currentStatus(req));
+});
+
+// sub-display.php:28-34 — the rendered image of the physical display
+// (const_DISPLAY_IMAGE_EXPORT_FILE, written by display.py). In mock mode an
+// SVG rendition of the current status text is returned instead.
+router.get('/image', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (shouldMock()) {
+    return res.type('image/svg+xml').send(mockDisplaySvg(currentStatus(req).status));
+  }
+  const file = req.constants?.const_DISPLAY_IMAGE_EXPORT_FILE
+    || path.join(getTempDir(req.WORKING_DIR, req.constants), 'display.png');
+  if (!existsSync(file)) {
+    return res.status(404).json({ error: 'No display image available' });
+  }
+  return res.type('image/png').sendFile(path.resolve(file));
 });
 
 export default router;

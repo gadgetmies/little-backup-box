@@ -1,3 +1,4 @@
+import { appendFileSync, writeFileSync } from 'fs';
 import { shouldUseMocks } from './systemDetector.js';
 import { getRunningSimulatedBackups, formatSimulatedBackupForPs } from './simulatedBackups.js';
 
@@ -216,6 +217,19 @@ NAME="nvme0n1" FSTYPE="ext4" UUID="9876-5432-1098-7654" MODEL="NVMe SSD"`,
   }
   
   if (command.includes('smartctl -a')) {
+    // smartctl's exit status is a bitmask; real devices often exit non-zero
+    // while still printing data. Mock one device that way.
+    if (command.includes('sdb')) {
+      return {
+        success: false,
+        error: 'Command failed with exit code 4',
+        stdout: `smartctl 7.3 2022-02-28 r5338 [aarch64-linux-6.1.21-v8+] (local build)
+Device Model:     Backup Drive
+Serial Number:    BKP-998877
+SMART support is: Unavailable - device lacks SMART capability.`,
+        stderr: '',
+      };
+    }
     return {
       success: true,
       stdout: `SMART overall-health self-assessment test result: PASSED
@@ -259,7 +273,7 @@ Canon EOS Rebel T7i              usb:001,005`,
   if (command.includes('gphoto2 --camera') && command.includes('--storage-info')) {
     return {
       success: true,
-      stdout: 'basedir=/store_00010001\nbasedir=/store_00010002',
+      stdout: '/store_00010001\n/store_00010002',
       stderr: '',
     };
   }
@@ -360,9 +374,10 @@ Canon EOS Rebel T7i              usb:001,005`,
   
   if (command.includes('lib_git.py')) {
     if (command.includes('--update-available')) {
+      // 'True' so the sidebar "Update" badge and the install button are demo-able.
       return {
         success: true,
-        stdout: 'False',
+        stdout: 'True',
         stderr: '',
       };
     }
@@ -454,6 +469,22 @@ Canon EOS Rebel T7i              usb:001,005`,
     };
   }
   
+  if (command.includes('lib_comitup.py --hotspot_active')) {
+    return {
+      success: true,
+      stdout: 'active',
+      stderr: '',
+    };
+  }
+
+  if (command.trim() === 'which comitup') {
+    return {
+      success: true,
+      stdout: '/usr/bin/comitup',
+      stderr: '',
+    };
+  }
+
   if (command.includes('lib_comitup.py')) {
     return {
       success: true,
@@ -501,6 +532,142 @@ Canon EOS Rebel T7i              usb:001,005`,
     stdout: `[MOCK] Command executed: ${command}`,
     stderr: '',
   };
+}
+
+// Mock of the rendered device display (const_DISPLAY_IMAGE_EXPORT_FILE):
+// a small monochrome "OLED" with the current status lines.
+export function mockDisplaySvg(statusText = '') {
+  const escape = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const lines = (String(statusText).trim() || 'Little Backup Box\nReady')
+    .split('\n')
+    .map((l) => l.replace(/^[:+-]/, '').trim())
+    .slice(0, 5);
+  const text = lines
+    .map((line, i) => `<text x="6" y="${16 + i * 12}" font-family="monospace" font-size="10" fill="#fff">${escape(line)}</text>`)
+    .join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><rect width="128" height="64" fill="#000"/>${text}</svg>`;
+}
+
+// Realistic log output for the protected commands (cmd.php) in mock mode.
+export function mockCommandOutput(cmd, param1 = '', param2 = '') {
+  const dev = `/dev/${param1}`;
+  switch (cmd) {
+    case 'fsck':
+      return [
+        `sudo fsck.ext4 ${param2 === 'repair' ? '-f -p ' : ''}'${dev}'`,
+        '',
+        'e2fsck 1.47.0 (5-Feb-2023)',
+        'Pass 1: Checking inodes, blocks, and sizes',
+        'Pass 2: Checking directory structure',
+        'Pass 3: Checking directory connectivity',
+        'Pass 4: Checking reference counts',
+        'Pass 5: Checking group summary information',
+        `${param1}: 1532/7815168 files (0.4% non-contiguous), 712345/31258368 blocks`,
+        '',
+        'FINISHED.',
+      ];
+    case 'format':
+      return [
+        `sudo mkfs.exfat '${dev}'`,
+        '',
+        'exfatprogs version : 1.2.0',
+        'Creating exFAT filesystem(' + dev + ', cluster size=131072)',
+        'Writing volume boot record: done',
+        'Writing backup volume boot record: done',
+        'Fat table creation: done',
+        'Allocation bitmap creation: done',
+        'Upcase table creation: done',
+        'Writing root directory entry: done',
+        'Synchronizing...',
+        'exFAT format complete!',
+        '',
+        `Disk ${dev}: 59.48 GiB, 63864569856 bytes, 124735488 sectors`,
+        '',
+        'NAME FSTYPE FSVER LABEL UUID      FSAVAIL FSUSE% MOUNTPOINTS',
+        `${param1} exfat 1.0         1A2B-3C4D`,
+        '',
+        'FINISHED.',
+      ];
+    case 'f3':
+      return [
+        `sudo f3probe ${param2 === 'f3probe_destructive' ? '--destructive ' : ''}--time-ops '${dev}'`,
+        '',
+        'F3 probe 8.0',
+        'Copyright (C) 2010 Digirati Internet LTDA.',
+        'This is free software; see the source for copying conditions.',
+        '',
+        'WARNING: Probing normally takes from a few seconds to 15 minutes, but',
+        '         it can take longer. Please be patient.',
+        '',
+        'Good news: The device `' + dev + "' is the real thing",
+        '',
+        'Device geometry:',
+        '\t         *Usable* size: 59.48 GB (124735488 blocks)',
+        '\t        Announced size: 59.48 GB (124735488 blocks)',
+        '\t                Module: 64.00 GB (2^36 Bytes)',
+        '\tApproximate cache size: 0.00 Byte (0 blocks), need-reset=no',
+        '\t   Physical block size: 512.00 Byte (2^9 Bytes)',
+        '',
+        'Probe time: 1\'13"',
+        '',
+        'FINISHED.',
+      ];
+    case 'update_libraw':
+      return [
+        'Cloning into \'LibRaw\'...',
+        'checking for a BSD-compatible install... /usr/bin/install -c',
+        'checking whether build environment is sane... yes',
+        'make  all-am',
+        '  CXX      src/libraw_la-libraw_datastream.lo',
+        '  CXX      src/libraw_la-libraw_c_api.lo',
+        '  CXXLD    libraw.la',
+        'Libraries have been installed in: /usr/local/lib',
+        'LibRaw update finished.',
+      ];
+    case 'update':
+    case 'update_development':
+      return [
+        `Downloading install-little-backup-box.sh (${cmd === 'update' ? 'main' : 'development'})`,
+        'Updating package lists...',
+        'Installing Little Backup Box...',
+        'Little Backup Box has been updated. The device will reboot now.',
+      ];
+    case 'comitup_reset':
+      return [
+        'sudo python3 /var/www/little-backup-box/lib_comitup.py --reset',
+        '',
+        'comitup: WiFi credentials deleted, switching to hotspot mode',
+        '',
+        'FINISHED.',
+      ];
+    default:
+      return [`[MOCK] ${cmd} ${param1} ${param2}`.trim(), '', 'FINISHED.'];
+  }
+}
+
+// Emulates a background command for the protected-command dialog: writes the
+// given lines to the command log one by one so the UI can poll it growing,
+// then calls onDone.
+export function simulateCommandRun(logfile, lines, onDone, intervalMs = 400) {
+  try {
+    writeFileSync(logfile, '', 'utf-8');
+  } catch {
+    // ignore — the log endpoint will just return ''
+  }
+  let index = 0;
+  const timer = setInterval(() => {
+    if (index >= lines.length) {
+      clearInterval(timer);
+      Promise.resolve(onDone && onDone()).catch(() => {});
+      return;
+    }
+    try {
+      appendFileSync(logfile, `${lines[index]}\n`, 'utf-8');
+    } catch {
+      // ignore
+    }
+    index += 1;
+  }, intervalMs);
 }
 
 export function shouldMock() {

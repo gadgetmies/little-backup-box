@@ -1,5 +1,13 @@
 import express from 'express';
 import { execCommand } from '../utils/execCommand.js';
+import {
+  displayCommand,
+  getCurrentConfig,
+  isMailConfigured,
+  requireDevicePassword,
+  runInBackground,
+  serverT,
+} from '../utils/commandRunner.js';
 
 const router = express.Router();
 
@@ -64,20 +72,37 @@ router.get('/qr-links', async (req, res) => {
   }
 });
 
-router.post('/comitup/reset', async (req, res) => {
+// cmd.php:528-537 — print the reset script's commands, run it, then show
+// "comitup / reset" on the display. Background + command log + mail option.
+router.post('/comitup/reset', requireDevicePassword, async (req, res) => {
   try {
-    const command = `sudo bash ${req.WORKING_DIR}/comitup-reset.sh`;
-    const result = await execCommand(command, { logger: req.logger });
-
-    if (!result.success && result.stderr && result.stderr.includes('not found')) {
-      return res.status(400).json({ error: 'Comitup is not installed on this device' });
+    const which = await execCommand('which comitup', { logger: req.logger });
+    if (!which.success) {
+      return res.status(400).json({ error: 'Comitup is not installed on this device', code: 'comitup_missing' });
     }
 
-    req.logger.info('Comitup WiFi credentials reset initiated');
-    res.json({});
+    const config = req.currentConfig || getCurrentConfig(req);
+    const script = `${req.WORKING_DIR}/comitup-reset.sh`;
+    const commandLine = [
+      `cat ${script} | grep '^[^# ]'`,
+      "echo ''",
+      `sudo ${script}`,
+      "echo ''",
+      "echo 'FINISHED.'",
+      displayCommand(req.WORKING_DIR, [serverT(config, 'cmd.box.comitup_section'), serverT(config, 'cmd.box.reset')]),
+    ].join(';');
+    const mail = req.body?.mailResult === true && isMailConfigured(config);
+
+    runInBackground(req, { cmd: 'comitup_reset', commandLine, mail });
+
+    req.logger.info('Comitup WiFi credentials reset started');
+    res.json({ success: true, started: true });
   } catch (error) {
+    if (error.code === 'command_running') {
+      return res.status(409).json({ error: error.message, code: error.code });
+    }
     req.logger.error('Failed to reset Comitup WiFi credentials', { error: error.message });
-    res.status(400).json({ error: 'Comitup is not installed on this device' });
+    res.status(500).json({ error: 'Failed to reset Comitup WiFi credentials' });
   }
 });
 
