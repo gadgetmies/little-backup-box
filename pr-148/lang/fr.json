@@ -40,7 +40,22 @@
     "wifi_reset_confirm_title": "Reset WiFi Credentials?",
     "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
     "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
-    "wifi_reset_error": "Comitup is not installed on this device"
+    "wifi_reset_error": "Comitup is not installed on this device",
+    "hotspot": {
+      "header": "Mot de passe du point d'accès",
+      "type_label": "Lorsque la box ouvre son propre WiFi",
+      "static": "Mot de passe fixe",
+      "dynamic": "Nouveau mot de passe aléatoire à chaque démarrage",
+      "dynamic_desc": "Le WiFi n'est alors accessible que via le code QR de l'écran. Nécessite un écran activé d'au moins 64 × 64 pixels.",
+      "password_label": "Mot de passe",
+      "password_help": "8 à 63 caractères. Laisser vide pour un point d'accès ouvert.",
+      "too_short": "Au moins 8 caractères",
+      "too_long": "Au maximum 63 caractères",
+      "not_ascii": "Seuls les caractères ASCII sont autorisés.",
+      "invalid": "Le mot de passe du point d'accès n'est pas valide.",
+      "qr_length_warning": "Plus de 13 caractères — le code QR WiFi de l'écran ne fonctionne que jusqu'à 13 caractères.",
+      "qr_chars_warning": "Évitez « ; » et « : » — le code QR WiFi ne peut pas les représenter."
+    }
   },
   "scrape": {
     "title": "Pages archivées",
@@ -102,7 +117,26 @@
       "internal_storage": "Stockage interne",
       "partitions": "Partitions",
       "local_storage": "Stockage Local",
-      "logs": "Backup logs"
+      "logs": "Backup logs",
+      "group_local": "Local",
+      "group_network": "Réseau",
+      "group_social": "Réseaux sociaux",
+      "disallowed_same": "Identique à la source",
+      "disallowed_rsync": "Impossible depuis cette source : sauvegardez d'abord sur un stockage local",
+      "disallowed_social": "Les réseaux sociaux nécessitent un stockage local comme source",
+      "target_chat": "Discussion",
+      "target_room": "Salon",
+      "preset_source_usb_only": "Utilisé uniquement lorsque la source est un stockage USB",
+      "telegram_chat_label": "Discussion Telegram pour cette exécution",
+      "telegram_chat_default": "discussion configurée",
+      "telegram_chats_error": "Impossible de charger la liste des discussions Telegram. La discussion configurée sera utilisée.",
+      "rename_warning_info": "À propos du renommage des fichiers",
+      "local_options_not_applicable": "Le renommage, les miniatures et l'EXIF ne s'appliquent qu'aux cibles de stockage local.",
+      "start_stops_running": "Démarrer une sauvegarde arrête la sauvegarde en cours.",
+      "stop_all": "Arrêter toutes les sauvegardes",
+      "none_running": "Aucune sauvegarde n'est en cours.",
+      "help": "Aide",
+      "help_txt": "<ul>\n<li>tous USB : tous les périphériques USB connectés, caméras et stockage, sont sauvegardés.</li>\n<li>Serveur rsync cible: les caméras ne peuvent pas être sauvegardées directement sur un serveur rsync. La mise en cache locale est requise ici.</li>\n</ul>\n<p> Veuillez lire le <a href='https://github.com/outdoorbits/little-backup-box/wiki/05.-Operation' target='_blank' rel='noopener noreferrer'>Wiki</a>.</p>"
     },
     "logout_button": "Se déconnecter",
     "nvme_button": "NVMe SSD",
@@ -135,34 +169,10 @@
     "view_theme_dark": "foncé",
     "view_theme_sepia": "sépia",
     "view_theme_system": "Système",
-    "popup_messages": "Show popup notifications",
-    "camera_folder_mask": "Camera folder mask",
-    "camera_folder_mask_help": "Folder name pattern to back up from cameras (e.g. DCIM)",
-    "camera_folder_mask_no_slash": "Folder mask must not contain /",
-    "target_size_minimum": "Target size minimum",
-    "target_size_minimum_help": "GB · 0 = disabled",
-    "idle_power_off": "Idle power-off",
-    "idle_power_off_help": "Minutes · 0 = disabled",
-    "write_rating_to_exif": "Write rating to EXIF",
     "timezone": "Timezone",
-    "background_image": "Background image",
-    "background_image_help": "Path to an image file on the device",
-    "background_image_path_traversal": "Path traversal not allowed",
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
-    "default_backup_mode_section": "Default backup modes",
-    "backup_mode_copy": "Copy",
-    "backup_mode_move": "Move",
-    "source_camera": "Camera",
-    "source_usb": "USB",
-    "source_internal": "Internal",
-    "source_nvme": "NVMe",
-    "target_usb": "USB",
-    "target_internal": "Internal",
-    "target_nvme": "NVMe",
-    "target_cloud": "Cloud",
-    "target_rsync": "Rsync",
     "rsync_server_label": "Adresse du serveur rsync",
     "rsync_port_label": "Port du serveur rsync (par défaut :",
     "rsync_user_label": "Nom d'utilisateur pour le serveur rsync",
@@ -374,7 +384,19 @@
         "desc": "Selon votre fournisseur de services cloud, cette configuration peut n'être valable que pour une durée limitée."
       }
     },
-    "save_settings_upload_text": "Téléchargez une archive zip contenant vos paramètres"
+    "save_settings_upload_text": "Téléchargez une archive zip contenant vos paramètres",
+    "log_level_minimum": "minimum",
+    "log_level_medium": "moyen",
+    "log_level_maximum": "maximum",
+    "fan_gpio_off": "Désactivé (pas de contrôle du ventilateur)",
+    "save_partial_error": "Certains paramètres n'ont pas pu être enregistrés",
+    "settings_restore_success": "Paramètres restaurés. Ces fichiers ont été installés :",
+    "settings_restore_no_files": "L'archive ne contenait aucun fichier de paramètres.",
+    "settings_restore_password_set": "Mot de passe de l'appareil de l'archive défini. Prend effet après un redémarrage.",
+    "settings_restore_password_removed": "L'archive ne contient pas de mot de passe ; la protection a été supprimée. Prend effet après un redémarrage.",
+    "settings_restore_wifi_password": "Le mot de passe du point d'accès de l'archive a été appliqué.",
+    "settings_restore_not_zip": "Le fichier envoyé n'est pas un fichier .zip. Veuillez réessayer.",
+    "settings_restore_problem": "Un problème est survenu lors de l'envoi. Veuillez réessayer."
   },
   "tools": {
     "umount_b": "Supprimer",
@@ -623,7 +645,61 @@
     "tab": {
       "display": "Affichage",
       "locale": "Langue et région",
-      "backup": "Valeurs par défaut"
+      "backup": "Valeurs par défaut",
+      "security": "Sécurité"
+    },
+    "display": {
+      "background_label": "Image d'arrière-plan",
+      "background_none": "Aucune",
+      "background_help": "Les images sont lues depuis",
+      "popup_label": "Afficher les messages contextuels"
+    },
+    "backup": {
+      "startup_header": "Sauvegarde automatique au démarrage",
+      "default_label": "Sauvegarde par défaut",
+      "default_help": "S’exécute lorsqu’une source est branchée. Choisissez « pas de sauvegarde automatique » pour la désactiver.",
+      "move_files": "Déplacer les fichiers au lieu de les copier",
+      "second_label": "Ensuite continuer avec",
+      "second_help": "Seconde sauvegarde facultative, enchaînée après la première.",
+      "second_move_files": "Déplacer les fichiers lors de la seconde sauvegarde",
+      "camera": "Appareil photo"
+    },
+    "library": {
+      "header": "Bibliothèque",
+      "write_rating": "Écrire les notes dans les fichiers image (EXIF)",
+      "convert_heic": "Convertir les images HEIC pour la visionneuse"
+    },
+    "limits": {
+      "header": "Limites de sécurité",
+      "target_size_label": "Arrêter lorsque la cible a moins de",
+      "target_size_ignore": "Ignorer l'espace libre",
+      "free": "libres",
+      "idle_label": "Éteindre après une inactivité de",
+      "idle_never": "Jamais",
+      "minutes": "minutes"
+    },
+    "camera": {
+      "header": "Dossiers de l'appareil",
+      "label": "Dossiers à sauvegarder par appareil — un par ligne",
+      "help": "Format MODÈLE[_SÉRIE]:dossier, p. ex. *:DCIM. Copiez les modèles depuis Système › Appareils."
+    },
+    "security": {
+      "header": "Mot de passe de l'appareil",
+      "status_set": "Un mot de passe est défini. Il protège cette interface web, le navigateur de fichiers, l’interface rclone, ssh et les partages Samba (utilisateur « lbb »).",
+      "status_not_set": "Aucun mot de passe. L’interface web, le navigateur de fichiers et les partages sont ouverts à tout le réseau.",
+      "new_password": "Nouveau mot de passe",
+      "repeat_password": "Répéter le mot de passe",
+      "mismatch": "Les mots de passe ne correspondent pas",
+      "too_short": "Au moins 5 caractères",
+      "help": "Au moins 5 caractères. Prend effet après un redémarrage.",
+      "set_button": "Définir le mot de passe",
+      "remove_button": "Supprimer le mot de passe",
+      "remove_confirm_title": "Supprimer le mot de passe de l'appareil ?",
+      "remove_confirm_body": "Après le prochain redémarrage, l’interface web, le navigateur de fichiers et les partages Samba ne demanderont plus de mot de passe. Les mots de passe des utilisateurs Linux (lbb, pi) ne sont pas supprimés.",
+      "applied_note": "Appliqué immédiatement — pas via le bouton Enregistrer de la page, car cela modifie des comptes système.",
+      "set_success": "Mot de passe défini. Les modifications prendront effet après un redémarrage.",
+      "remove_success": "Mot de passe supprimé. Les modifications prendront effet après un redémarrage.",
+      "apply_error": "Le mot de passe n'a pas pu être appliqué."
     }
   },
   "integrations": {
@@ -633,18 +709,9 @@
       "test_bluesky": "Tester la Connexion",
       "test_matrix": "Tester la Connexion"
     },
-    "social_general": "General",
-    "social_publish_date": "Publish date format",
-    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
-    "social_publish_filename": "Include filename in post",
     "cloud_services": {
       "no_services": "Aucun service cloud configuré. Veuillez configurer rclone d'abord."
     },
-    "cloud_target_dir": "Target base directory",
-    "cloud_sync_method": "Sync method",
-    "cloud_sync_rclone": "rclone",
-    "cloud_sync_rsync": "rsync",
-    "cloud_files_stay": "Files stay in place",
     "vpn": {
       "title": "VPN",
       "file_uploaded": "Fichier de configuration VPN téléchargé",
@@ -656,6 +723,26 @@
       "cloud": "Cloud",
       "social": "Social",
       "mail": "Mail"
+    },
+    "rclone_login_default": "Connexion : utilisateur 'lbb', mot de passe 'lbb'.",
+    "rclone_login_device_password": "Connexion : utilisateur 'lbb', mot de passe défini dans Préférences › Sécurité.",
+    "matrix_token": {
+      "open_button": "Obtenir le jeton…",
+      "title": "Obtenir un jeton Matrix",
+      "description": "Connectez-vous avec votre compte Matrix pour générer un jeton d’accès pour le bot. Le mot de passe ne sera pas enregistré.",
+      "username_label": "Nom d'utilisateur Matrix (p. ex. @bot:example.org)",
+      "password_label": "Mot de passe",
+      "fetch_button": "Obtenir le jeton",
+      "enter_username_first": "Veuillez d'abord saisir le nom d'utilisateur Matrix.",
+      "enter_password_first": "Veuillez d'abord saisir le mot de passe.",
+      "fetching": "Récupération du jeton …",
+      "success": "Jeton récupéré avec succès pour",
+      "error_invalid_credentials": "Échec de la connexion. Vérifiez le nom d'utilisateur et le mot de passe.",
+      "error_missing_parameters": "Saisie manquante. Veuillez remplir tous les champs.",
+      "error_bad_api_response": "Réponse inattendue du serveur Matrix.",
+      "error_unreachable": "Le serveur Matrix n'a pas pu être joint.",
+      "error_no_token": "Connexion réussie, mais aucun jeton d'accès n'a été renvoyé.",
+      "error_exception": "Erreur lors de la récupération du jeton."
     }
   },
   "mock_controls": {
