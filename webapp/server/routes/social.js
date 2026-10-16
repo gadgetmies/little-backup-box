@@ -4,6 +4,8 @@ import { parse } from 'ini';
 import path from 'path';
 import { execCommand } from '../utils/execCommand.js';
 import axios from 'axios';
+import { shouldUseMocks } from '../utils/systemDetector.js';
+import { getMockTelegramChats } from '../utils/mockSystem.js';
 
 const router = express.Router();
 
@@ -172,6 +174,10 @@ router.post('/test/matrix', async (req, res) => {
 router.post('/telegram/chat-id', async (req, res) => {
   try {
     const { token } = req.body;
+
+    if (shouldUseMocks()) {
+      return res.json({ ok: true, chats: getMockTelegramChats() });
+    }
     
     if (!token || !/^\d+:[A-Za-z0-9_-]+$/.test(token)) {
       return res.status(400).json({ ok: false, error: 'invalid_token' });

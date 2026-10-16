@@ -10,6 +10,7 @@ import {
   stopAllSimulatedBackups as stopAllSimulated
 } from '../utils/simulatedBackups.js';
 import { getTempDir } from '../utils/paths.js';
+import { shouldUseMocks } from '../utils/systemDetector.js';
 
 const router = express.Router();
 
@@ -30,7 +31,8 @@ router.get('/services', async (req, res) => {
     
     const CloudServices_marked = CloudServices.map(s => `cloud:${s}`);
     
-    const rsync_configurated = !(
+    // In mock mode pretend an rsync server is configured so the demo shows it.
+    const rsync_configurated = shouldUseMocks() || !(
       !req.config.conf_RSYNC_SERVER ||
       !req.config.conf_RSYNC_PORT ||
       !req.config.conf_RSYNC_USER ||
@@ -120,6 +122,10 @@ router.post('/start', async (req, res) => {
     if (!sourceDevice || !targetDevice) {
       return res.status(400).json({ error: 'Source and target devices are required' });
     }
+
+    // PHP (index.php:484-486) only honours a source partition preset for the
+    // 'usb' source; for every other source it is cleared.
+    const effectivePresetSource = sourceDevice === 'usb' ? (presetSource || '') : '';
     
     if (shouldUseSimulatedBackups()) {
       const backupConfig = {
@@ -131,21 +137,16 @@ router.post('/start', async (req, res) => {
         updateExif,
         checksum,
         powerOff,
-        presetSource,
+        presetSource: effectivePresetSource,
         presetTarget,
         secSourceName,
         secTargetName,
         telegramChatId,
       };
       
-      const result = startSimulatedBackup(backupConfig);
-      
-      if (result.alreadyRunning) {
-        return res.status(409).json({ 
-          error: 'A backup with this configuration is already running',
-          alreadyRunning: true 
-        });
-      }
+      // Mirror PHP (index.php:488): every start stops whatever is running first.
+      stopAllSimulated();
+      startSimulatedBackup(backupConfig);
       
       const historyEntry = {
         sourceDevice,
@@ -156,8 +157,9 @@ router.post('/start', async (req, res) => {
         updateExif,
         checksum,
         powerOff,
-        presetSource: presetSource || '',
+        presetSource: effectivePresetSource,
         presetTarget: presetTarget || '',
+        telegramChatId: telegramChatId || '',
         timestamp: new Date().toISOString(),
       };
       
@@ -173,55 +175,11 @@ router.post('/start', async (req, res) => {
       return;
     }
     
-    const runningBackupsResult = await execCommand(
-      `ps -ef | grep "${req.WORKING_DIR}/backup.py" | grep -v grep`,
-      { logger: req.logger }
-    );
-    
-    if (runningBackupsResult.success && runningBackupsResult.stdout.trim()) {
-      const lines = runningBackupsResult.stdout.trim().split('\n');
-      for (const line of lines) {
-        const fullCommand = line.substring(line.indexOf('backup.py'));
-        const extractArg = (cmd, argName) => {
-          const regex = new RegExp(`--${argName}\\s+(?:'([^']*)'|"([^"]*)"|([^\\s]+))`);
-          const match = cmd.match(regex);
-          if (match) {
-            return match[1] || match[2] || match[3] || null;
-          }
-          return null;
-        };
-        
-        const runningSource = extractArg(fullCommand, 'SourceName');
-        const runningTarget = extractArg(fullCommand, 'TargetName');
-        const runningPresetSource = extractArg(fullCommand, 'device-identifier-preset-source') || '';
-        const runningPresetTarget = extractArg(fullCommand, 'device-identifier-preset-target') || '';
-        const runningMoveFiles = extractArg(fullCommand, 'move-files') === 'True';
-        const runningRenameFiles = extractArg(fullCommand, 'rename-files') === 'True';
-        const runningGenerateThumbnails = extractArg(fullCommand, 'generate-thumbnails') === 'True';
-        const runningUpdateExif = extractArg(fullCommand, 'update-exif') === 'True';
-        const runningChecksum = extractArg(fullCommand, 'checksum') === 'True';
-        const runningPowerOff = extractArg(fullCommand, 'power-off') === 'True';
-        
-        if (
-          runningSource === sourceDevice &&
-          runningTarget === targetDevice &&
-          (runningPresetSource || '') === (presetSource || '') &&
-          (runningPresetTarget || '') === (presetTarget || '') &&
-          runningMoveFiles === moveFiles &&
-          runningRenameFiles === renameFiles &&
-          runningGenerateThumbnails === generateThumbnails &&
-          runningUpdateExif === updateExif &&
-          runningChecksum === checksum &&
-          runningPowerOff === powerOff
-        ) {
-          return res.status(409).json({ 
-            error: 'A backup with this configuration is already running',
-            alreadyRunning: true 
-          });
-        }
-      }
-    }
-    
+    // PHP (index.php:488) runs stop_backup.sh before every start, so only one
+    // backup.py runs at a time. stop_backup.sh also resets the PWR LED, cleans the
+    // display queue and resets the FTP root.
+    await execCommand(`sudo ${req.WORKING_DIR}/stop_backup.sh`, { logger: req.logger });
+
     let command = `sudo python3 ${req.WORKING_DIR}/backup.py `;
     command += `--SourceName ${escapeShellArg(sourceDevice)} `;
     command += `--TargetName ${escapeShellArg(targetDevice)} `;
@@ -231,7 +189,7 @@ router.post('/start', async (req, res) => {
     command += `--generate-thumbnails ${generateThumbnails ? 'True' : 'False'} `;
     command += `--update-exif ${updateExif ? 'True' : 'False'} `;
     command += `--checksum ${checksum ? 'True' : 'False'} `;
-    command += `--device-identifier-preset-source ${escapeShellArg(presetSource || '')} `;
+    command += `--device-identifier-preset-source ${escapeShellArg(effectivePresetSource)} `;
     command += `--device-identifier-preset-target ${escapeShellArg(presetTarget || '')} `;
     command += `--power-off ${powerOff ? 'True' : 'False'} `;
     
@@ -257,8 +215,9 @@ router.post('/start', async (req, res) => {
       updateExif,
       checksum,
       powerOff,
-      presetSource: presetSource || '',
+      presetSource: effectivePresetSource,
       presetTarget: presetTarget || '',
+      telegramChatId: telegramChatId || '',
       timestamp: new Date().toISOString(),
     };
     
@@ -277,17 +236,30 @@ router.post('/start', async (req, res) => {
   }
 });
 
+// PHP (index.php:494-541) posts backup_function=<function>_<target>, e.g.
+// thumbnails_usb, database_internal, exif_nvme, rename_usb, and runs
+// backup.py --SourceName <function> --TargetName <target>.
+const BACKUP_FUNCTIONS = ['thumbnails', 'database', 'exif', 'rename'];
+const BACKUP_FUNCTION_TARGETS = ['usb', 'internal', 'nvme'];
+
 router.post('/function', async (req, res) => {
   try {
     const { function: func, target, presetSource, presetTarget, powerOff } = req.body;
-    
-    const [functionType, targetType] = func.split('_');
-    
+
+    // Accept both the bare function name ('thumbnails' + target) and PHP's
+    // combined form ('thumbnails_usb'), split once like PHP's explode('_', ..., 2).
+    const [functionType, combinedTarget] = String(func || '').split(/_(.*)/s);
+    const targetType = target || combinedTarget;
+
+    if (!BACKUP_FUNCTIONS.includes(functionType) || !BACKUP_FUNCTION_TARGETS.includes(targetType)) {
+      return res.status(400).json({ error: `Unknown backup function: ${func} on ${targetType}` });
+    }
+
     let syncDatabase = 'False';
     let renameFiles = 'False';
     let generateThumbnails = 'False';
     let updateExif = 'False';
-    
+
     if (functionType === 'thumbnails') {
       generateThumbnails = 'True';
     } else if (functionType === 'database') {
@@ -297,11 +269,11 @@ router.post('/function', async (req, res) => {
     } else if (functionType === 'rename') {
       renameFiles = 'True';
     }
-    
+
     let command = `sudo ${req.WORKING_DIR}/stop_backup.sh && `;
     command += `sudo python3 ${req.WORKING_DIR}/backup.py `;
     command += `--SourceName ${functionType} `;
-    command += `--TargetName ${target} `;
+    command += `--TargetName ${targetType} `;
     command += `--rename-files ${renameFiles} `;
     command += `--force-sync-database ${syncDatabase} `;
     command += `--generate-thumbnails ${generateThumbnails} `;
@@ -310,11 +282,11 @@ router.post('/function', async (req, res) => {
     command += `--device-identifier-preset-target ${escapeShellArg(presetTarget || '')} `;
     command += `--power-off ${powerOff ? 'True' : 'False'} `;
     command += '> /dev/null 2>&1 &';
-    
+
     await execCommand(command, { logger: req.logger });
-    
-    req.logger.info(`Backup function started: ${functionType} on ${target}`);
-    res.json({ success: true, message: `${functionType} on ${target} initiated` });
+
+    req.logger.info(`Backup function started: ${functionType} on ${targetType}`);
+    res.json({ success: true, message: `${functionType} on ${targetType} initiated` });
   } catch (error) {
     req.logger.error('Failed to start backup function', { error: error.message });
     res.status(500).json({ error: 'Failed to start backup function' });
@@ -405,11 +377,23 @@ router.post('/stop', async (req, res) => {
     }
     
     if (pid) {
-      const command = `sudo kill ${pid}`;
-      await execCommand(command, { logger: req.logger });
+      if (!/^\d+$/.test(String(pid))) {
+        return res.status(400).json({ error: 'Invalid PID' });
+      }
+      await execCommand(`sudo kill ${pid}`, { logger: req.logger });
+      // When the last backup.py is gone, run the same cleanup PHP's "Stop backup"
+      // does (stop_backup.sh: PWR LED, display queue, FTP root, display message).
+      const remaining = await execCommand(
+        `ps -ef | grep "${req.WORKING_DIR}/backup.py" | grep -v grep`,
+        { logger: req.logger }
+      );
+      if (!remaining.success || !remaining.stdout.trim()) {
+        await execCommand(`sudo ${req.WORKING_DIR}/stop_backup.sh`, { logger: req.logger });
+      }
       req.logger.info(`Backup stopped (PID: ${pid})`);
       res.json({ success: true, message: `Backup stopped (PID: ${pid})` });
     } else {
+      // "Stop all backups" — PHP index.php:544-547.
       const command = `sudo ${req.WORKING_DIR}/stop_backup.sh`;
       await execCommand(command, { logger: req.logger });
       req.logger.info('All backups stopped');
@@ -533,10 +517,12 @@ async function getSocialServices(req) {
     
     if (!result.success) return [];
     
+    // lib_socialmedia.py prints a ';'-joined list (lib_socialmedia.py:300,
+    // parsed with explode(';') in sub-socialmedia.php). Accept newlines too.
     return result.stdout
-      .trim()
-      .split('\n')
-      .filter(line => line.trim());
+      .split(/[;\n]/)
+      .map(service => service.trim())
+      .filter(Boolean);
   } catch (error) {
     return [];
   }

@@ -31,7 +31,13 @@ sda         64G   50G    10G    17%   /media/usb_target
 sdb        128G   100G   20G    17%   /media/usb_source
 nvme0n1    256G   200G   40G    17%   /media/nvme_target`,
   cloudServices: ['google-drive', 'dropbox', 'onedrive'],
-  socialServices: ['telegram', 'matrix'],
+  // lib_socialmedia.py prints these ';'-joined (see lib_socialmedia.py:300).
+  socialServices: ['telegram', 'matrix', 'mastodon'],
+  telegramChats: [
+    { id: -1001234567890, type: 'channel', name: 'LBB Photo Channel' },
+    { id: -987654321, type: 'group', name: 'Family Photos' },
+    { id: 123456789, type: 'private', name: 'Jane Doe' },
+  ],
   wifiCountry: 'US',
   wifiCountries: [
     { code: 'US', name: 'United States' },
@@ -308,7 +314,7 @@ Canon EOS Rebel T7i              usb:001,005`,
   if (command.includes('lib_socialmedia.py --action get_social_services_configured')) {
     return {
       success: true,
-      stdout: mockData.socialServices.join('\n'),
+      stdout: mockData.socialServices.join(';'),
       stderr: '',
     };
   }
@@ -316,7 +322,7 @@ Canon EOS Rebel T7i              usb:001,005`,
   if (command.includes('lib_socialmedia.py --action get_social_services')) {
     return {
       success: true,
-      stdout: mockData.socialServices.join('\n'),
+      stdout: mockData.socialServices.join(';'),
       stderr: '',
     };
   }
@@ -501,6 +507,12 @@ Canon EOS Rebel T7i              usb:001,005`,
     stdout: `[MOCK] Command executed: ${command}`,
     stderr: '',
   };
+}
+
+// Chats the Telegram getUpdates API would report for the mock bot
+// (used by POST /api/social/telegram/chat-id in mock mode).
+export function getMockTelegramChats() {
+  return mockData.telegramChats.map((chat) => ({ ...chat }));
 }
 
 export function shouldMock() {
