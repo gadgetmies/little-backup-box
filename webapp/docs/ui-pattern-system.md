@@ -205,7 +205,7 @@ Concretely:
 
 The point is that the (source == target) blank cells then form a true top-left-to-bottom-right diagonal in the shared sub-grid, so a reader scanning the table immediately sees the "X cannot back up to itself" pattern. Off-diagonals introduced by source-only or target-only entries fall *outside* the shared sub-grid and are fine.
 
-Today the only call site is the Default backup modes matrix on `/preferences`:
+There is currently no call site: the Default backup modes matrix on `/preferences` was replaced by the PHP-style "Automatic backup at startup" selectors (`conf_BACKUP_DEFAULT_SOURCE/TARGET`). Apply the rule to any future matrix, e.g.:
 
 ```js
 const sources = ['usb', 'internal', 'nvme', 'camera']; // shared first, source-only last
@@ -213,6 +213,24 @@ const targets = ['usb', 'internal', 'nvme', 'cloud', 'rsync']; // shared first, 
 ```
 
 The formal rule lives in `openspec/specs/webapp-ui-pattern-system/spec.md` under "Symmetric source/target matrices align shared axes at the same index"; this doc mirrors it for contributor reference.
+
+## Informational popups honour `conf_POPUP_MESSAGES`
+
+The legacy UI (`scripts/sub-popup.php`) suppresses every informational popup when the user turns off "Show popup messages" (`conf_POPUP_MESSAGES = 'false'`, `/preferences` → Display). The webapp does the same through the `usePopupMessages()` hook in `webapp/src/hooks/usePopupMessages.js`:
+
+```jsx
+import usePopupMessages from '../hooks/usePopupMessages';
+
+const { notifyInfo, popupsEnabled } = usePopupMessages();
+
+// success / informational toast — suppressed when popups are off
+notifyInfo(setMessage, t('config.message_settings_saved'));
+
+// errors and warnings are always shown — call the setter directly
+setMessage(errorText);
+```
+
+Use `notifyInfo` for every "it worked" toast or Snackbar ("Settings saved", "Password set", …). Never route errors, warnings, or results the user explicitly asked for (a test message result, a restore file list) through it. `popupsEnabled` is available for components that render their own success `<Alert>` conditionally.
 
 ## Things that aren't sections
 
