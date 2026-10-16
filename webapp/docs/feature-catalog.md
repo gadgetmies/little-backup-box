@@ -91,25 +91,25 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Browse the media gallery
 
-- **Purpose**: see backed-up images as a paginated grid, filtered and sorted to taste.
+- **Purpose**: see backed-up media as a paginated grid with date headers (when sorted by date), rating-coloured borders, a comment indicator, and per-service social state icons; missing thumbnails fall back to `/img/unknown.JPG`.
 - **Audience**: users culling photos after a shoot.
 - **UI location**: `/view` → "Gallery" section
-- **Backend**: `GET /api/view/media`, `GET /api/view/images`, `GET /api/view/stats`, `GET /api/view/image?variant=thumb`
+- **Backend**: `GET /api/view/media`, `GET /api/view/init` (runs `lib_view.py --action init`), `GET /api/view/images`, `GET /api/view/stats`, `GET /api/view/social-services`, `GET /api/view/image?variant=thumb`
 - **Prerequisites**: at least one backup completed and indexed in the media database.
 - **Related**: Filter the gallery; Sort and paginate the gallery; Open a single image.
 
 ### Filter the gallery
 
-- **Purpose**: narrow the grid by rating, date range, filename, camera model, file type, source directory, file extension, or social-publish status.
+- **Purpose**: narrow the grid by rating, day or date range, filename, camera model (including "–" for none), file type, folder, file extension, social queue/published state, or any EXIF column and value. Every option shows a count computed with the other active filters applied (as in `scripts/view.php`).
 - **Audience**: any gallery user.
-- **UI location**: `/view` → "Gallery" section → FilterBar
-- **Backend**: `GET /api/view/images` (with filter params), `GET /api/view/stats`
+- **UI location**: `/view` → "Gallery" section → "Filter" accordion
+- **Backend**: `GET /api/view/images` (with filter params), `GET /api/view/stats` (faceted counts, EXIF column list, values for the chosen column)
 - **Prerequisites**: gallery loaded.
 - **Related**: Browse the media gallery.
 
 ### Sort and paginate the gallery
 
-- **Purpose**: change sort field, sort direction, page size, and grid column count.
+- **Purpose**: change sort field, sort direction, page size (`const_VIEW_GRID_COLUMNS` × 5/10/20/50/100), and grid column count.
 - **Audience**: any gallery user.
 - **UI location**: `/view` → "Gallery" section → grid controls header
 - **Backend**: `GET /api/view/images` (with `sort`, `dir`, `page`, `per_page` params); column count is client-side and persisted in `localStorage`.
@@ -118,83 +118,110 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Choose backup source to view
 
-- **Purpose**: pick which of the available backup destinations the gallery should browse.
-- **Audience**: users with multiple backup mediums (USB / internal / NVMe).
+- **Purpose**: pick which storage the gallery browses: USB target / USB source / NVMe target / NVMe source (when NVMe exists) / internal. The default is the first mounted one, like `scripts/view.php`.
+- **Audience**: users with multiple backup mediums.
 - **UI location**: `/view` → "Gallery" section → medium selector in the controls header
-- **Backend**: `GET /api/view/media`
+- **Backend**: `GET /api/view/media` (`df -h`, `lib_storage.py --Action get_available_partitions`)
 - **Prerequisites**: at least one indexed backup destination.
 - **Related**: Browse the media gallery.
 
 ### Open a single image
 
-- **Purpose**: replace the grid with a single full-window image view.
-- **Audience**: users inspecting one photo at a time.
-- **UI location**: `/view` → "Single view" overlay (entered by clicking a grid card)
-- **Backend**: `GET /api/view/image`
+- **Purpose**: replace the grid with the single view: header bar, the real media on the stage (web images as-is; RAW/HEIC/TIF via the `tims/` preview with a low-resolution notice for RAW/TIF; video in a player, GoPro H.265 via the `.LRV` proxy; audio with its thumbnail and a player; text files as their thumbnail) and an info panel.
+- **Audience**: users inspecting one file at a time.
+- **UI location**: `/view` → "Single view" (entered by clicking a grid card)
+- **Backend**: `GET /api/view/details`, `GET /api/view/image?variant=display` (supports HTTP Range for seeking)
 - **Prerequisites**: an image is selected from the grid.
 - **Related**: Navigate between images; Zoom and pan; Rate an image.
 
 ### Navigate between images
 
-- **Purpose**: step through the filtered/sorted result set with first / previous / next / last controls or arrow keys.
+- **Purpose**: step through the filtered/sorted result set with first / previous / next / last controls or arrow keys; the active filters are kept across page boundaries and shown as a "filtered" hint next to the position.
 - **Audience**: users in single view.
-- **UI location**: `/view` → "Single view" overlay → navigation controls
-- **Backend**: none (uses the already-loaded result set).
+- **UI location**: `/view` → "Single view" → header bar
+- **Backend**: `GET /api/view/images` when moving to another page.
 - **Prerequisites**: single view is open.
 - **Related**: Open a single image.
 
 ### Zoom and pan an image
 
-- **Purpose**: magnify the displayed image and pan around the zoomed view (mouse wheel or pinch).
+- **Purpose**: magnify the displayed image and pan around it (mouse wheel, drag, or pinch). Uses the same loaded image; the maximum zoom is `const_VIEW_MAGNIFYING_GLASS_ZOOM`.
 - **Audience**: users checking image detail.
-- **UI location**: `/view` → "Single view" overlay → zoom controls
-- **Backend**: `GET /api/view/image` (full-resolution variant)
-- **Prerequisites**: single view is open.
+- **UI location**: `/view` → "Single view" → magnifier button on the stage
+- **Backend**: none beyond the displayed image.
+- **Prerequisites**: single view is open on an image.
 - **Related**: Open a single image.
+
+### View the full-window overlay
+
+- **Purpose**: show the current file on a black full-window overlay; closes with Esc, the × button, or a click on the backdrop.
+- **Audience**: users presenting or reviewing.
+- **UI location**: `/view` → "Single view" → full-screen button
+- **Backend**: none.
+- **Prerequisites**: single view is open.
+- **Related**: Run a slideshow.
 
 ### Run a slideshow
 
-- **Purpose**: auto-advance through the result set at a configurable interval.
+- **Purpose**: auto-advance through the result set at a chosen interval inside the full-window overlay (wraps to the first file; videos autoplay). Closing the overlay stops it.
 - **Audience**: users presenting or reviewing a set hands-free.
-- **UI location**: `/view` → "Single view" overlay → slideshow controls
+- **UI location**: `/view` → "Single view" → slideshow interval and play button
 - **Backend**: none (client-side timer).
 - **Prerequisites**: single view is open.
-- **Related**: Navigate between images.
+- **Related**: Navigate between images; View the full-window overlay.
+
+### Download the original file
+
+- **Purpose**: download the untouched original (RAW, video, …).
+- **Audience**: users who need the full-quality file.
+- **UI location**: `/view` → "Single view" → "Download original"
+- **Backend**: `GET /api/view/image?variant=original&download=1`
+- **Prerequisites**: single view is open.
+- **Related**: Open a single image.
 
 ### Rate an image
 
-- **Purpose**: assign a 0–5-star rating (or "rejected") to the current image.
+- **Purpose**: assign a 0–5-star rating (or "rejected") from a grid card or the single view; autosaves and shows "Changes saved".
 - **Audience**: photographers triaging a shoot.
-- **UI location**: `/view` → "Single view" overlay → rating widget
-- **Backend**: `POST /api/view/rating`
-- **Prerequisites**: media database available; optionally `conf_write_rating_to_exif` to also write the rating to EXIF.
-- **Related**: Comment on an image; Delete rejected images; Toggle "write rating to EXIF" (Configure backup defaults).
+- **UI location**: `/view` → grid cards and "Single view" → rating widget under the stage
+- **Backend**: `POST /api/view/rating`: always updates `LbbRating`; only when `conf_VIEW_WRITE_RATING_EXIF` is `'true'` also the `Rating` column and `lib_metadata.py --rating`.
+- **Prerequisites**: media database available.
+- **Related**: Comment on an image; Delete rejected images.
 
 ### Comment on an image
 
-- **Purpose**: attach free-text notes to an image.
+- **Purpose**: attach free-text notes to a file (no length cap; character counter); autosaves and shows "Changes saved".
 - **Audience**: users keeping editorial notes.
-- **UI location**: `/view` → "Single view" overlay → comment field
-- **Backend**: `POST /api/view/rating` (with `comment` parameter)
+- **UI location**: `/view` → "Single view" → "Comment"
+- **Backend**: `POST /api/view/rating` (with `comment`) → DB `Comment` + `lib_metadata.py --comment`
 - **Prerequisites**: media database available.
 - **Related**: Rate an image.
 
-### Publish an image to social media
+### Queue an image for social media
 
-- **Purpose**: push the current image to one of the configured social-media accounts.
-- **Audience**: users publishing photos on Instagram, Twitter, etc.
-- **UI location**: `/view` → "Single view" overlay → SocialPublishPanel
-- **Backend**: `POST /api/social/publish`, `GET /api/social/services`
+- **Purpose**: mark the file for publication on each configured service (one toggle per service, showing not queued / queued / published). Nothing is posted immediately: the next backup run posts queued files.
+- **Audience**: users publishing photos on Telegram, Mastodon, Bluesky or Matrix.
+- **UI location**: `/view` → "Single view" → "Publish to social media"; state icons on grid cards
+- **Backend**: `GET /api/view/social-services` (`lib_socialmedia.py --action get_social_services_configured`), `POST /api/view/social-publish` (toggles the service bit in `EXIF_DATA.social_publish`)
 - **Prerequisites**: at least one social account configured (Connections → Social).
 - **Related**: Configure social media accounts and publish defaults.
 
+### Inspect file metadata
+
+- **Purpose**: see key EXIF rows (taken, camera, lens, exposure, duration, folder, size) and, on demand, every non-empty metadata field except `ID` and `ExifTool_Version_Number`.
+- **Audience**: users checking capture details.
+- **UI location**: `/view` → "Single view" → "File info"
+- **Backend**: the `EXIF_DATA` row from `GET /api/view/images`.
+- **Prerequisites**: single view is open.
+- **Related**: Filter the gallery (any metadata field).
+
 ### Delete rejected images
 
-- **Purpose**: permanently remove every image marked rejected from the current medium.
+- **Purpose**: permanently remove the rejected files on the current page (file, `tims/` thumbnail and `.xmp` sidecar, then the database row), like `scripts/view.php`.
 - **Audience**: users finalising a triage pass.
-- **UI location**: `/view` → "Gallery" section → bulk-action toolbar (only visible when rejected images exist)
-- **Backend**: `POST /api/view/delete-rejected`
-- **Prerequisites**: at least one rejected image present.
+- **UI location**: `/view` → "Gallery" section → controls header (only when the rating filter is exactly "Rejected")
+- **Backend**: `POST /api/view/delete-rejected` with the page's image IDs
+- **Prerequisites**: rating filter set to "Rejected" and rejected files on the page.
 - **Related**: Rate an image.
 
 ## Maintain stored media
@@ -513,7 +540,7 @@ These settings affect every future backup; they are not per-run options.
 - **UI location**: `/integrations` → "Social" tab
 - **Backend**: `webapp/server/routes/social.js`; `scripts/social_*.py`
 - **Prerequisites**: account credentials (OAuth tokens, API keys).
-- **Related**: Publish an image to social media.
+- **Related**: Queue an image for social media.
 
 ## Configure device hardware
 

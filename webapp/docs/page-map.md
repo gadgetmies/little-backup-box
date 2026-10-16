@@ -62,10 +62,10 @@ Cross-references on this page:
 
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
-| 1 | Gallery | `PageSection.plain` | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
-| 2 | Single view | overlay (not a `PageSection`; entered from the Gallery) | Open a single image; Navigate between images; Zoom and pan an image; Run a slideshow; Rate an image; Comment on an image; Publish an image to social media |
+| 1 | Gallery | `PageSection.plain` (filters in a `PageSection.accordion`, key `lbb-accordion-view-filter`) | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
+| 2 | Single view | replaces the Gallery (not a `PageSection`; entered from a grid card): header bar, media stage, info panel of `PageSection.card`s (Comment / Publish to social media / File info), plus a full-window overlay | Open a single image; Navigate between images; Zoom and pan an image; View the full-window overlay; Run a slideshow; Download the original file; Rate an image; Comment on an image; Queue an image for social media; Inspect file metadata |
 
-The Single view is a full-window overlay rather than a peer section; this is the one documented exception to the "every section is a `PageSection`" rule and is justified by Plan 04 owning this page.
+The Single view replaces the Gallery rather than being a peer section; this is the one documented exception to the "every section is a `PageSection`" rule (its info panel does use `PageSection.card`s for the h2 sections). The slideshow runs inside the full-window overlay, as in `scripts/view.php` + `js/slideshow.js`.
 
 ### `/maintenance` — Maintenance
 
