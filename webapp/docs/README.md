@@ -6,4 +6,6 @@ This directory holds the structural reference for the Little Backup Box web UI. 
 2. **[page-map.md](page-map.md)** — routes, page titles, sidebar order, and the per-page breakdown of which catalog feature lives in which section. Source of truth for "where do I find feature X?" and "what UI pattern does that section use?".
 3. **[ui-pattern-system.md](ui-pattern-system.md)** — the rubric for choosing between Card / Accordion / Tabs, the heading scale, the shared `<PageSection>` and `<SectionHeader>` primitives, and naming conventions for accordion `localStorage` keys.
 
-Update all three together when you add, move, or remove a user-facing feature in the same PR as the code change.
+A fourth, point-in-time document — **[php-parity-audit.md](php-parity-audit.md)** — lists what the legacy PHP UI did that the webapp did not, and which change closes each gap.
+
+Update the first three together when you add, move, or remove a user-facing feature in the same PR as the code change.
