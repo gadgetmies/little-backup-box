@@ -29,8 +29,10 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ProtectedCommandDialog from '../components/ProtectedCommandDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
+import usePopupMessages from '../hooks/usePopupMessages';
 import api from '../utils/api';
 import VPNConfig from '../components/VPNConfig';
+import HotspotPasswordSettings from '../components/HotspotPasswordSettings';
 import SectionHeader from '../components/SectionHeader';
 import PageSaveBar from '../components/PageSaveBar';
 import { useDrawer } from '../contexts/DrawerContext';
@@ -289,9 +291,25 @@ const COMPLETE_COUNTRIES = [
   { code: 'ZW', name: 'Zimbabwe' },
 ];
 
+// Defined outside Network so tab content keeps its state across Network re-renders.
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`network-tabpanel-${index}`}
+      aria-labelledby={`network-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 function Network() {
   const { t } = useLanguage();
   const { updateConfig } = useConfig();
+  const { notifyInfo } = usePopupMessages();
   const { desktopOpen } = useDrawer();
   const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
   const [wifiCountries, setWifiCountries] = useState([]);
@@ -309,6 +327,7 @@ function Network() {
   const [comitupDialogOpen, setComitupDialogOpen] = useState(false);
   const [comitupStatus, setComitupStatus] = useState({ installed: false, hotspotActive: false });
   const [vpnState, setVpnState] = useState({ isSaved: true, save: null });
+  const [hotspotState, setHotspotState] = useState({ isSaved: true, save: null });
   const [isSaving, setIsSaving] = useState(false);
 
   // sub-menu.php:41-43 — comitup portal availability for the WiFi recovery section.
@@ -423,10 +442,14 @@ function Network() {
   };
 
   const isWifiDirty = currentWifiCountry !== wifiCountryLastSaved.current;
-  const isAnyDirty = isWifiDirty || !vpnState.isSaved;
+  const isAnyDirty = isWifiDirty || !vpnState.isSaved || !hotspotState.isSaved;
 
   const handleVpnState = useCallback((isSaved, save) => {
     setVpnState({ isSaved, save });
+  }, []);
+
+  const handleHotspotState = useCallback((isSaved, save) => {
+    setHotspotState({ isSaved, save });
   }, []);
 
   const handleSavePage = async () => {
@@ -444,12 +467,15 @@ function Network() {
     if (!vpnState.isSaved && vpnState.save) {
       tasks.push(['VPN', vpnState.save]);
     }
+    if (!hotspotState.isSaved && hotspotState.save) {
+      tasks.push([t('network.hotspot.header'), hotspotState.save]);
+    }
     const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
     const failures = results
       .map((r, i) => (r.status === 'rejected' ? `${tasks[i][0]}: ${r.reason?.message || 'error'}` : null))
       .filter(Boolean);
     if (failures.length === 0) {
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
+      notifyInfo(setMessage, t('config.message_settings_saved'));
     } else {
       setMessage(`${t('config.save_partial_error') || 'Some settings failed to save'}: ${failures.join('; ')}`);
     }
@@ -462,20 +488,6 @@ function Network() {
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
       </Box>
-    );
-  }
-
-  function TabPanel({ children, value, index, ...other }) {
-    return (
-      <div
-        role="tabpanel"
-        hidden={value !== index}
-        id={`network-tabpanel-${index}`}
-        aria-labelledby={`network-tab-${index}`}
-        {...other}
-      >
-        {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-      </div>
     );
   }
 
@@ -527,6 +539,8 @@ function Network() {
           <Typography variant="body2" color="text.secondary">
             {t('config.wifi_country_label') || 'Select the country in which this Little Backup Box is to be used'}
           </Typography>
+
+          <HotspotPasswordSettings onSavedStateChange={handleHotspotState} />
 
           {networkInfo.wifi.length > 0 && (
             <Box>

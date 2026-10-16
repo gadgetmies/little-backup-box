@@ -41,6 +41,7 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
         pointerEvents: disabled ? 'none' : 'auto',
       }}
       aria-label="rating widget"
+      data-rating={value}
     >
       {/* Reject button */}
       <IconButton
@@ -51,6 +52,7 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
         sx={{
           color: value === -1 ? 'error.main' : 'action.active',
           padding: size === 'small' ? '2px' : '4px',
+          ...(size === 'small' ? {} : { minWidth: 44, minHeight: 44 }),
         }}
       >
         <CloseIcon fontSize={iconFontSize} />
@@ -67,6 +69,7 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
           sx={{
             color: value >= star ? 'warning.main' : 'action.active',
             padding: size === 'small' ? '2px' : '4px',
+            ...(size === 'small' ? {} : { minWidth: 44, minHeight: 44 }),
           }}
         >
           {value >= star ? (

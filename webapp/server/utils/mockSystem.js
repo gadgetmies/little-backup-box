@@ -32,7 +32,14 @@ sda         64G   50G    10G    17%   /media/usb_target
 sdb        128G   100G   20G    17%   /media/usb_source
 nvme0n1    256G   200G   40G    17%   /media/nvme_target`,
   cloudServices: ['google-drive', 'dropbox', 'onedrive'],
-  socialServices: ['telegram', 'matrix'],
+  backgroundImages: ['lbb/andromeda.jpg', 'lbb/paris.jpg', 'lbb/river-fog.jpg', 'lbb/river.jpg'],
+  // lib_socialmedia.py prints these ';'-joined (see lib_socialmedia.py:300).
+  socialServices: ['telegram', 'matrix', 'mastodon'],
+  telegramChats: [
+    { id: -1001234567890, type: 'channel', name: 'LBB Photo Channel' },
+    { id: -987654321, type: 'group', name: 'Family Photos' },
+    { id: 123456789, type: 'private', name: 'Jane Doe' },
+  ],
   wifiCountry: 'US',
   wifiCountries: [
     { code: 'US', name: 'United States' },
@@ -57,9 +64,11 @@ nvme0n1    256G   200G   40G    17%   /media/nvme_target`,
 };
 
 export function mockCommand(command, options = {}) {
-  const { logger } = options;
+  const { logger, logCommand = true } = options;
   
-  if (logger) {
+  // logCommand: false keeps secrets (passwords passed to lib_password.py /
+  // lib_comitup.py) out of the log, as execCommand does for real commands.
+  if (logger && logCommand) {
     logger.info(`[MOCK] Executing: ${command}`);
   }
   
@@ -310,6 +319,17 @@ Canon EOS Rebel T7i              usb:001,005`,
     };
   }
   
+  // Background images listing (setup.php:873-885 find | file --mime-type).
+  if (command.includes('file --mime-type')) {
+    const dirMatch = command.match(/find '([^']+)'/);
+    const dir = dirMatch ? dirMatch[1] : '/media/backgroundimages';
+    return {
+      success: true,
+      stdout: mockData.backgroundImages.map((image) => `${dir}/${image}`).join('\n'),
+      stderr: '',
+    };
+  }
+
   if (command.includes('rclone config show')) {
     const services = mockData.cloudServices.map(s => `[${s}]`).join('\n');
     return {
@@ -320,9 +340,10 @@ Canon EOS Rebel T7i              usb:001,005`,
   }
   
   if (command.includes('lib_socialmedia.py --action get_social_services_configured')) {
+    // lib_socialmedia.py prints the services ';'-separated (sub-socialmedia.php).
     return {
       success: true,
-      stdout: mockData.socialServices.join('\n'),
+      stdout: mockData.socialServices.join(';'),
       stderr: '',
     };
   }
@@ -330,7 +351,7 @@ Canon EOS Rebel T7i              usb:001,005`,
   if (command.includes('lib_socialmedia.py --action get_social_services')) {
     return {
       success: true,
-      stdout: mockData.socialServices.join('\n'),
+      stdout: mockData.socialServices.join(';'),
       stderr: '',
     };
   }
@@ -668,6 +689,12 @@ export function simulateCommandRun(logfile, lines, onDone, intervalMs = 400) {
     }
     index += 1;
   }, intervalMs);
+}
+
+// Chats the Telegram getUpdates API would report for the mock bot
+// (used by POST /api/social/telegram/chat-id in mock mode).
+export function getMockTelegramChats() {
+  return mockData.telegramChats.map((chat) => ({ ...chat }));
 }
 
 export function shouldMock() {

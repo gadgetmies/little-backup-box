@@ -1,6 +1,5 @@
 import express from 'express';
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
-import { parse, stringify } from 'ini';
+import { existsSync, unlinkSync } from 'fs';
 import path from 'path';
 import { execCommand } from '../utils/execCommand.js';
 import multer from 'multer';
@@ -18,8 +17,7 @@ const upload = multer({ dest: uploadDir });
 
 router.get('/config', async (req, res) => {
   try {
-    const configPath = path.join(req.WORKING_DIR, 'config.cfg');
-    const config = parse(readFileSync(configPath, 'utf-8'));
+    const config = req.config;
     
     res.json({
       config: {

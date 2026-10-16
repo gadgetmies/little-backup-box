@@ -22,6 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
 import api from '../utils/api';
+import { isConfigTrue } from '../utils/configValue';
 
 const FALLBACK_ACTIONS = [
   'backup_start',
@@ -128,7 +129,7 @@ function ButtonHardwareConfig({ onSavedStateChange }) {
         <FormControlLabel
           control={
             <Checkbox
-              checked={formData.conf_MENU_ENABLED === '1' || formData.conf_MENU_ENABLED === true}
+              checked={isConfigTrue(formData.conf_MENU_ENABLED)}
               onChange={(e) => handleChange('conf_MENU_ENABLED', e.target.checked ? '1' : '0')}
             />
           }

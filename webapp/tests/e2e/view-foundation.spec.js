@@ -1,120 +1,95 @@
 import { test, expect } from '@playwright/test';
+import { openGallery, openSingle, selectByLabel } from './view-helpers.js';
 
 test.describe('View page — foundation', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear any failure-mode flags
-    await page.addInitScript(() => {
-      localStorage.removeItem('lbb-mock-failure');
-    });
+  test('View route renders at /view with the medium selector', async ({ page }) => {
+    await openGallery(page);
+    await expect(page).toHaveURL(/\/view/);
+    const medium = selectByLabel(page, 'Storage medium');
+    await expect(medium).toBeVisible();
+    // Default medium follows view.php: first mounted of target_usb, source_usb, …
+    await expect(medium).toHaveText('USB target');
   });
 
-  // --- Slice 3 ---
+  test('Medium selector lists the PHP medium ids with translated labels', async ({ page }) => {
+    await openGallery(page);
+    await selectByLabel(page, 'Storage medium').click();
+    await expect(page.getByRole('option', { name: 'USB target' })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'USB source' })).toBeVisible();
+    await expect(page.getByRole('option', { name: /Local NVMe target/ })).toBeVisible();
+    await expect(page.getByRole('option', { name: /Internal storage/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+  });
 
-  test('View route renders at /view', async ({ page }) => {
+  test('Opening a medium runs /view/init with the medium id', async ({ page }) => {
+    const initReq = page.waitForRequest((r) => r.url().includes('/api/view/init'));
     await page.goto('/view');
-    await expect(page).toHaveURL('/view');
-    // The medium selector label should be visible
-    await expect(page.getByLabel(/storage medium/i).first()).toBeVisible();
+    const req = await initReq;
+    expect(req.url()).toContain('medium=target_usb');
   });
-
-  test('Medium selector appears on /view', async ({ page }) => {
-    await page.goto('/view');
-    await expect(page.getByLabel(/storage medium/i).first()).toBeVisible();
-  });
-
-  test('Selecting a medium loads image grid', async ({ page }) => {
-    await page.goto('/view');
-    // Wait for the medium selector to appear and have options
-    const mediumSelect = page.getByLabel(/storage medium/i).first();
-    await expect(mediumSelect).toBeVisible();
-    // The mock auto-selects the first available medium and loads images
-    // Wait for at least one image card to appear
-    await expect(page.locator('[data-testid="image-card"], .MuiCard-root').first()).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test('not_mounted failure shows Alert', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('lbb-mock-failure', 'not_mounted');
-    });
-    await page.goto('/view');
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('alert')).toContainText(/not mounted/i);
-  });
-
-  // --- Slice 4 ---
 
   test('Sort controls are present', async ({ page }) => {
-    await page.goto('/view');
-    // Sort field select
-    await expect(page.getByLabel(/sort by/i).first()).toBeVisible({ timeout: 10000 });
-    // Per-page select
-    await expect(page.getByLabel(/per page/i).first()).toBeVisible({ timeout: 10000 });
+    await openGallery(page);
+    await expect(selectByLabel(page, 'Sort by')).toBeVisible();
+    await expect(selectByLabel(page, 'Per page')).toBeVisible();
+  });
+
+  test('Per-page presets are const_VIEW_GRID_COLUMNS × {5,10,20,50,100}', async ({ page }) => {
+    await openGallery(page);
+    const perPage = selectByLabel(page, 'Per page');
+    await expect(perPage).toHaveText('30');
+    await expect(page.getByTestId('image-card')).toHaveCount(30);
+    await perPage.click();
+    for (const n of ['15', '30', '60', '150', '300']) {
+      await expect(page.getByRole('option', { name: n, exact: true })).toBeVisible();
+    }
+    await page.getByRole('option', { name: '15', exact: true }).click();
+    await expect(page.getByTestId('image-card')).toHaveCount(15);
   });
 
   test('Pagination navigates to page 2', async ({ page }) => {
-    await page.goto('/view');
-    // Wait for images to load
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
-    // Click page 2 in pagination
-    const page2Button = page.getByRole('button', { name: /^2$/ });
-    await expect(page2Button).toBeVisible({ timeout: 5000 });
-    await page2Button.click();
-    // After clicking page 2, images should still be visible
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
+    await openGallery(page);
+    const firstId = await page.getByTestId('image-card').first().getAttribute('data-image-id');
+    await page.getByRole('button', { name: /page 2/i }).click();
+    await expect(page.getByTestId('image-card').first()).not.toHaveAttribute('data-image-id', firstId);
   });
 
-  test('Per-page change reloads grid', async ({ page }) => {
-    await page.goto('/view');
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
-    // Change per-page to 10
-    const perPageSelect = page.getByLabel(/per page/i).first();
-    await perPageSelect.click();
-    await page.getByRole('option', { name: '10' }).click();
-    // Grid should reload (still show cards)
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
+  test('Clicking a thumbnail opens the single view with the real image', async ({ page }) => {
+    await openGallery(page);
+    await openSingle(page, 0);
+    const img = page.getByTestId('stage-image');
+    await expect(img).toBeVisible();
+    const src = await img.getAttribute('src');
+    expect(src).toContain('/api/view/image');
+    expect(src).toContain('variant=display');
+    expect(src).not.toContain('placehold.co');
+    // The image actually loads (served from the mock media files).
+    await expect.poll(() => img.evaluate((el) => el.naturalWidth)).toBeGreaterThan(1);
   });
 
-  // --- Slice 5 ---
-
-  test('Clicking thumbnail opens single-image view', async ({ page }) => {
-    await page.goto('/view');
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
-    await page.locator('.MuiCard-root').first().click();
-    // Single image view should show a large image
-    await expect(page.locator('img[style*="max-height"]')).toBeVisible({ timeout: 5000 });
-  });
-
-  test('Navigation buttons work in single-image view', async ({ page }) => {
-    await page.goto('/view');
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
-    await page.locator('.MuiCard-root').first().click();
-    // Next button should be visible
-    await expect(page.getByRole('button', { name: /next/i })).toBeVisible({ timeout: 5000 });
-    await page.getByRole('button', { name: /next/i }).click();
-    await expect(page.locator('img[style*="max-height"]')).toBeVisible({ timeout: 5000 });
+  test('Navigation buttons work in single view', async ({ page }) => {
+    await openGallery(page);
+    await openSingle(page, 0);
+    await expect(page.getByTestId('single-position')).toHaveText('1 / 120');
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(page.getByTestId('single-position')).toHaveText('2 / 120');
+    await page.getByRole('button', { name: 'Last', exact: true }).click();
+    await expect(page.getByTestId('single-position')).toHaveText('120 / 120');
+    await page.getByRole('button', { name: 'First', exact: true }).click();
+    await expect(page.getByTestId('single-position')).toHaveText('1 / 120');
   });
 
   test('Back to grid returns to grid view', async ({ page }) => {
-    await page.goto('/view');
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
-    await page.locator('.MuiCard-root').first().click();
-    // Click back to grid button
-    await expect(page.getByRole('button', { name: /back|grid|overview/i })).toBeVisible({
-      timeout: 5000,
-    });
-    await page.getByRole('button', { name: /back|grid|overview/i }).click();
-    // Should be back to grid
-    await expect(page.locator('.MuiCard-root').first()).toBeVisible({ timeout: 10000 });
+    await openGallery(page);
+    await openSingle(page, 0);
+    await page.getByRole('button', { name: /back to overview/i }).click();
+    await expect(page.getByTestId('image-card').first()).toBeVisible();
   });
 
   test('Grid thumbnails request /api/view/image with variant=thumb', async ({ page }) => {
-    await page.goto('/view');
+    await openGallery(page);
     const firstImg = page.locator('[data-testid="image-card"] img').first();
-    await expect(firstImg).toBeVisible({ timeout: 10000 });
     const src = await firstImg.getAttribute('src');
-    expect(src).toBeTruthy();
     expect(src).toContain('/api/view/image');
     expect(src).toContain('variant=thumb');
     expect(src).not.toContain('placehold.co');

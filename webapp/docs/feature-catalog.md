@@ -17,21 +17,30 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Configure and start a backup
 
-- **Purpose**: pick a source and target, optionally tweak file-handling and post-run options, and kick off a backup.
+- **Purpose**: pick a source and target, optionally tweak file-handling and post-run options, and kick off a backup. Sources: any USB, USB, internal, NVMe, camera, FTP, rsync server, each rclone cloud remote. Targets: USB, internal, NVMe, rsync server, each cloud remote, and configured social media (Telegram, Matrix, Mastodon, Bluesky). Disallowed source/target pairs are shown disabled with a reason (mirrors `HideDisallowedButtons` in `scripts/index.php`). Starting a backup first runs `stop_backup.sh`, like PHP, so only one backup runs at a time.
 - **Audience**: every user; this is the device's primary job.
 - **UI location**: `/` → "Run a backup" section
-- **Backend**: `GET /api/backup/services`, `GET /api/backup/partitions`, `POST /api/backup/start`; `scripts/backup.py`
+- **Backend**: `GET /api/backup/services`, `GET /api/backup/partitions`, `POST /api/backup/start`; `scripts/stop_backup.sh`, `scripts/backup.py`
 - **Prerequisites**: at least one source device and one valid target available.
-- **Related**: Stop a running backup; Configure secondary backup destination; Save backup options as defaults.
+- **Related**: Stop a running backup; Configure secondary backup destination; Save backup options as defaults; Preset source/target partitions; Choose the Telegram chat for one run.
 
 ### Stop a running backup
 
 - **Purpose**: halt one in-progress backup process.
 - **Audience**: any user who started a backup that needs to be cancelled.
 - **UI location**: `/` → "Running backups" section (per-row stop button)
-- **Backend**: `POST /api/backup/stop`; `scripts/backup.py`
+- **Backend**: `POST /api/backup/stop` with `pid` (`kill <pid>`; when no `backup.py` remains, `scripts/stop_backup.sh` runs for cleanup)
 - **Prerequisites**: at least one backup is currently running.
-- **Related**: Monitor running backups.
+- **Related**: Monitor running backups; Stop all backups.
+
+### Stop all backups
+
+- **Purpose**: stop every running backup and reset the box (PWR LED, display queue, FTP root), like the PHP "Stop backup" button.
+- **Audience**: any user who needs to halt the box's backup activity.
+- **UI location**: `/` → "Running backups" section header → "Stop all backups"
+- **Backend**: `POST /api/backup/stop` without `pid`; `scripts/stop_backup.sh`
+- **Prerequisites**: none.
+- **Related**: Stop a running backup.
 
 ### Monitor running backups
 
@@ -69,6 +78,15 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Prerequisites**: none.
 - **Related**: Monitor running backups.
 
+### Read backup help
+
+- **Purpose**: short help on backup sources and targets, linking to the project wiki (PHP `L::main_help_txt`).
+- **Audience**: new users.
+- **UI location**: `/` → "Help" section (collapsible)
+- **Backend**: none (translated text in `public/lang`).
+- **Prerequisites**: none.
+- **Related**: Configure and start a backup.
+
 ### Save current backup options as defaults
 
 - **Purpose**: persist the currently-selected file-handling, comparison, secondary-destination, and notification options as the device's defaults.
@@ -87,29 +105,47 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Prerequisites**: rsync server configured (Connections → Cloud → rsync subsection) or at least one cloud remote configured (Connections → Cloud).
 - **Related**: Configure rclone cloud remotes; Configure rsync server target.
 
+### Preset source/target partitions
+
+- **Purpose**: pin a backup to a specific partition instead of the automatic choice (`--device-identifier-preset-source/-target`).
+- **Audience**: users with several USB drives attached.
+- **UI location**: `/` → "Options" accordion → "Primary backup" → "Set source partition" / "Set target partition"
+- **Backend**: `GET /api/backup/partitions` (`lib_storage.py --Action get_available_partitions`); `POST /api/backup/start`
+- **Prerequisites**: the source preset only applies to the USB storage source (as in PHP); source and target presets must differ.
+- **Related**: Configure and start a backup.
+
+### Choose the Telegram chat for one run
+
+- **Purpose**: send this backup to a different Telegram chat than the configured one (`backup.py --telegram-chat-id`).
+- **Audience**: users whose bot is in several chats.
+- **UI location**: `/` → "Options" accordion → "Primary backup" → "Telegram chat for this run" (only when the target is Telegram)
+- **Backend**: `POST /api/social/telegram/chat-id` (chat list), `POST /api/backup/start` (`telegramChatId`)
+- **Prerequisites**: Telegram configured under Connections → Social.
+- **Related**: Configure and start a backup.
+
 ## Browse and triage media
 
 ### Browse the media gallery
 
-- **Purpose**: see backed-up images as a paginated grid, filtered and sorted to taste.
+- **Purpose**: see backed-up media as a paginated grid with date headers (when sorted by date), rating-coloured borders, a comment indicator, and per-service social state icons; missing thumbnails fall back to `/img/unknown.JPG`.
 - **Audience**: users culling photos after a shoot.
 - **UI location**: `/view` → "Gallery" section
-- **Backend**: `GET /api/view/media`, `GET /api/view/images`, `GET /api/view/stats`, `GET /api/view/image?variant=thumb`
+- **Backend**: `GET /api/view/media`, `GET /api/view/init` (runs `lib_view.py --action init`), `GET /api/view/images`, `GET /api/view/stats`, `GET /api/view/social-services`, `GET /api/view/image?variant=thumb`
 - **Prerequisites**: at least one backup completed and indexed in the media database.
 - **Related**: Filter the gallery; Sort and paginate the gallery; Open a single image.
 
 ### Filter the gallery
 
-- **Purpose**: narrow the grid by rating, date range, filename, camera model, file type, source directory, file extension, or social-publish status.
+- **Purpose**: narrow the grid by rating, day or date range, filename, camera model (including "–" for none), file type, folder, file extension, social queue/published state, or any EXIF column and value. Every option shows a count computed with the other active filters applied (as in `scripts/view.php`).
 - **Audience**: any gallery user.
-- **UI location**: `/view` → "Gallery" section → FilterBar
-- **Backend**: `GET /api/view/images` (with filter params), `GET /api/view/stats`
+- **UI location**: `/view` → "Gallery" section → "Filter" accordion
+- **Backend**: `GET /api/view/images` (with filter params), `GET /api/view/stats` (faceted counts, EXIF column list, values for the chosen column)
 - **Prerequisites**: gallery loaded.
 - **Related**: Browse the media gallery.
 
 ### Sort and paginate the gallery
 
-- **Purpose**: change sort field, sort direction, page size, and grid column count.
+- **Purpose**: change sort field, sort direction, page size (`const_VIEW_GRID_COLUMNS` × 5/10/20/50/100), and grid column count.
 - **Audience**: any gallery user.
 - **UI location**: `/view` → "Gallery" section → grid controls header
 - **Backend**: `GET /api/view/images` (with `sort`, `dir`, `page`, `per_page` params); column count is client-side and persisted in `localStorage`.
@@ -118,83 +154,110 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Choose backup source to view
 
-- **Purpose**: pick which of the available backup destinations the gallery should browse.
-- **Audience**: users with multiple backup mediums (USB / internal / NVMe).
+- **Purpose**: pick which storage the gallery browses: USB target / USB source / NVMe target / NVMe source (when NVMe exists) / internal. The default is the first mounted one, like `scripts/view.php`.
+- **Audience**: users with multiple backup mediums.
 - **UI location**: `/view` → "Gallery" section → medium selector in the controls header
-- **Backend**: `GET /api/view/media`
+- **Backend**: `GET /api/view/media` (`df -h`, `lib_storage.py --Action get_available_partitions`)
 - **Prerequisites**: at least one indexed backup destination.
 - **Related**: Browse the media gallery.
 
 ### Open a single image
 
-- **Purpose**: replace the grid with a single full-window image view.
-- **Audience**: users inspecting one photo at a time.
-- **UI location**: `/view` → "Single view" overlay (entered by clicking a grid card)
-- **Backend**: `GET /api/view/image`
+- **Purpose**: replace the grid with the single view: header bar, the real media on the stage (web images as-is; RAW/HEIC/TIF via the `tims/` preview with a low-resolution notice for RAW/TIF; video in a player, GoPro H.265 via the `.LRV` proxy; audio with its thumbnail and a player; text files as their thumbnail) and an info panel.
+- **Audience**: users inspecting one file at a time.
+- **UI location**: `/view` → "Single view" (entered by clicking a grid card)
+- **Backend**: `GET /api/view/details`, `GET /api/view/image?variant=display` (supports HTTP Range for seeking)
 - **Prerequisites**: an image is selected from the grid.
 - **Related**: Navigate between images; Zoom and pan; Rate an image.
 
 ### Navigate between images
 
-- **Purpose**: step through the filtered/sorted result set with first / previous / next / last controls or arrow keys.
+- **Purpose**: step through the filtered/sorted result set with first / previous / next / last controls or arrow keys; the active filters are kept across page boundaries and shown as a "filtered" hint next to the position.
 - **Audience**: users in single view.
-- **UI location**: `/view` → "Single view" overlay → navigation controls
-- **Backend**: none (uses the already-loaded result set).
+- **UI location**: `/view` → "Single view" → header bar
+- **Backend**: `GET /api/view/images` when moving to another page.
 - **Prerequisites**: single view is open.
 - **Related**: Open a single image.
 
 ### Zoom and pan an image
 
-- **Purpose**: magnify the displayed image and pan around the zoomed view (mouse wheel or pinch).
+- **Purpose**: magnify the displayed image and pan around it (mouse wheel, drag, or pinch). Uses the same loaded image; the maximum zoom is `const_VIEW_MAGNIFYING_GLASS_ZOOM`.
 - **Audience**: users checking image detail.
-- **UI location**: `/view` → "Single view" overlay → zoom controls
-- **Backend**: `GET /api/view/image` (full-resolution variant)
-- **Prerequisites**: single view is open.
+- **UI location**: `/view` → "Single view" → magnifier button on the stage
+- **Backend**: none beyond the displayed image.
+- **Prerequisites**: single view is open on an image.
 - **Related**: Open a single image.
+
+### View the full-window overlay
+
+- **Purpose**: show the current file on a black full-window overlay; closes with Esc, the × button, or a click on the backdrop.
+- **Audience**: users presenting or reviewing.
+- **UI location**: `/view` → "Single view" → full-screen button
+- **Backend**: none.
+- **Prerequisites**: single view is open.
+- **Related**: Run a slideshow.
 
 ### Run a slideshow
 
-- **Purpose**: auto-advance through the result set at a configurable interval.
+- **Purpose**: auto-advance through the result set at a chosen interval inside the full-window overlay (wraps to the first file; videos autoplay). Closing the overlay stops it.
 - **Audience**: users presenting or reviewing a set hands-free.
-- **UI location**: `/view` → "Single view" overlay → slideshow controls
+- **UI location**: `/view` → "Single view" → slideshow interval and play button
 - **Backend**: none (client-side timer).
 - **Prerequisites**: single view is open.
-- **Related**: Navigate between images.
+- **Related**: Navigate between images; View the full-window overlay.
+
+### Download the original file
+
+- **Purpose**: download the untouched original (RAW, video, …).
+- **Audience**: users who need the full-quality file.
+- **UI location**: `/view` → "Single view" → "Download original"
+- **Backend**: `GET /api/view/image?variant=original&download=1`
+- **Prerequisites**: single view is open.
+- **Related**: Open a single image.
 
 ### Rate an image
 
-- **Purpose**: assign a 0–5-star rating (or "rejected") to the current image.
+- **Purpose**: assign a 0–5-star rating (or "rejected") from a grid card or the single view; autosaves and shows "Changes saved".
 - **Audience**: photographers triaging a shoot.
-- **UI location**: `/view` → "Single view" overlay → rating widget
-- **Backend**: `POST /api/view/rating`
-- **Prerequisites**: media database available; optionally `conf_write_rating_to_exif` to also write the rating to EXIF.
+- **UI location**: `/view` → grid cards and "Single view" → rating widget under the stage
+- **Backend**: `POST /api/view/rating`: always updates `LbbRating`; only when `conf_VIEW_WRITE_RATING_EXIF` is `'true'` also the `Rating` column and `lib_metadata.py --rating`.
+- **Prerequisites**: media database available.
 - **Related**: Comment on an image; Delete rejected images; Toggle "write rating to EXIF" (Configure backup defaults).
 
 ### Comment on an image
 
-- **Purpose**: attach free-text notes to an image.
+- **Purpose**: attach free-text notes to a file (no length cap; character counter); autosaves and shows "Changes saved".
 - **Audience**: users keeping editorial notes.
-- **UI location**: `/view` → "Single view" overlay → comment field
-- **Backend**: `POST /api/view/rating` (with `comment` parameter)
+- **UI location**: `/view` → "Single view" → "Comment"
+- **Backend**: `POST /api/view/rating` (with `comment`) → DB `Comment` + `lib_metadata.py --comment`
 - **Prerequisites**: media database available.
 - **Related**: Rate an image.
 
-### Publish an image to social media
+### Queue an image for social media
 
-- **Purpose**: push the current image to one of the configured social-media accounts.
-- **Audience**: users publishing photos on Instagram, Twitter, etc.
-- **UI location**: `/view` → "Single view" overlay → SocialPublishPanel
-- **Backend**: `POST /api/social/publish`, `GET /api/social/services`
+- **Purpose**: mark the file for publication on each configured service (one toggle per service, showing not queued / queued / published). Nothing is posted immediately: the next backup run posts queued files.
+- **Audience**: users publishing photos on Telegram, Mastodon, Bluesky or Matrix.
+- **UI location**: `/view` → "Single view" → "Publish to social media"; state icons on grid cards
+- **Backend**: `GET /api/view/social-services` (`lib_socialmedia.py --action get_social_services_configured`), `POST /api/view/social-publish` (toggles the service bit in `EXIF_DATA.social_publish`)
 - **Prerequisites**: at least one social account configured (Connections → Social).
 - **Related**: Configure social media accounts and publish defaults.
 
+### Inspect file metadata
+
+- **Purpose**: see key EXIF rows (taken, camera, lens, exposure, duration, folder, size) and, on demand, every non-empty metadata field except `ID` and `ExifTool_Version_Number`.
+- **Audience**: users checking capture details.
+- **UI location**: `/view` → "Single view" → "File info"
+- **Backend**: the `EXIF_DATA` row from `GET /api/view/images`.
+- **Prerequisites**: single view is open.
+- **Related**: Filter the gallery (any metadata field).
+
 ### Delete rejected images
 
-- **Purpose**: permanently remove every image marked rejected from the current medium.
+- **Purpose**: permanently remove the rejected files on the current page (file, `tims/` thumbnail and `.xmp` sidecar, then the database row), like `scripts/view.php`.
 - **Audience**: users finalising a triage pass.
-- **UI location**: `/view` → "Gallery" section → bulk-action toolbar (only visible when rejected images exist)
-- **Backend**: `POST /api/view/delete-rejected`
-- **Prerequisites**: at least one rejected image present.
+- **UI location**: `/view` → "Gallery" section → controls header (only when the rating filter is exactly "Rejected")
+- **Backend**: `POST /api/view/delete-rejected` with the page's image IDs
+- **Prerequisites**: rating filter set to "Rejected" and rejected files on the page.
 - **Related**: Rate an image.
 
 ## Maintain stored media
@@ -204,7 +267,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: walk a target storage and create (or recreate) thumbnails for indexed media.
 - **Audience**: users who imported media outside the normal backup flow, or whose thumbnails are stale.
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'generate_thumbnails'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'thumbnails'` → `backup.py --SourceName thumbnails`); `scripts/backup.py`
 - **Prerequisites**: target storage selected; media database initialised on that target.
 - **Related**: Sync the media database; Update EXIF in stored media.
 
@@ -213,7 +276,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: re-scan a target storage and reconcile the media database with what's actually on disk.
 - **Audience**: users whose database has drifted from disk content (manual deletions, file moves).
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'sync'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'database'` → `backup.py --SourceName database --force-sync-database True`); `scripts/backup.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Generate or refresh thumbnails.
 
@@ -222,7 +285,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: rewrite EXIF metadata on stored files using current settings.
 - **Audience**: users whose backup ran before EXIF settings changed, or who toggled "write rating to EXIF" later.
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'update_exif'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'exif'` → `backup.py --SourceName exif`); `scripts/backup.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Toggle "write rating to EXIF" (Configure backup defaults).
 
@@ -246,11 +309,11 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Import device settings
 
-- **Purpose**: upload a previously-exported config file and apply it.
+- **Purpose**: upload a previously-exported settings archive and apply it; the UI lists every file that was restored.
 - **Audience**: users restoring or migrating a device.
 - **UI location**: `/maintenance` → "Settings" tab → "Upload settings" action
-- **Backend**: `POST /api/setup/upload-settings`
-- **Prerequisites**: a previously-exported settings file.
+- **Backend**: `POST /api/setup/upload-settings` — follows `scripts/setup.php` `upload_settings()`: validates the zip, restores `config.cfg`, the rclone config, the private buttons config, VPN configs (`chmod 700`) and `bg-images/*`, runs `dos2unix` on each restored file, migrates the config with `scripts/lib_setup.py`, re-applies the device password (`lib_password.py`) and the hotspot password (`lib_comitup.py --config`) from the restored config, and cleans the temp directory.
+- **Prerequisites**: a previously-exported settings archive (`.zip`).
 - **Related**: Export device settings.
 
 ### Update LibRaw camera-format library
@@ -369,10 +432,10 @@ These settings affect every future backup; they are not per-run options.
 
 ### Set the camera-folder mask
 
-- **Purpose**: define the folder pattern used to locate photos on connected cameras (default `DCIM`).
+- **Purpose**: define, per camera model (and optionally serial), which folders are backed up — one `MODEL[_SERIAL]:folder` entry per line (default `*:DCIM`).
 - **Audience**: users with non-standard camera folder layouts.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Camera folder mask"
-- **Backend**: `POST /api/config/save` (writes `conf_camera_folder_mask`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Camera folders"
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_CAMERA_FOLDER_MASK`, lines joined with `;` as `scripts/setup.php` does)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -380,8 +443,8 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: refuse to start a backup if the target has less than the chosen amount of free space.
 - **Audience**: users protecting against accidental over-fill.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Target free-space minimum"
-- **Backend**: `POST /api/config/save` (writes `conf_target_size_minimum`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Safety limits" → "Stop when target has less than" (PHP presets: ignore, 100 MB, 512 MB, 1 GB, 512 GB, 1 TB)
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_TARGET_SIZE_MIN` in bytes)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -389,17 +452,17 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: auto-shutdown the device after the chosen number of minutes of inactivity.
 - **Audience**: battery-powered users.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Idle power-off"
-- **Backend**: `POST /api/config/save` (writes `conf_idle_power_off`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Safety limits" → "Power off when idle for" (never, 2, 5, 10, 15, 20, 30 minutes)
+- **Backend**: `POST /api/config/save` (writes `conf_POWER_OFF_IDLE_TIME`)
 - **Prerequisites**: none.
 - **Related**: Power off after backup (option in Run a backup).
 
-### Set default backup mode per source/target pair
+### Set the automatic backup at startup
 
-- **Purpose**: pick the default copy/move mode for every (source, target) combination, so the Backup page pre-fills correctly.
-- **Audience**: users with mixed workflows across media types.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Default mode" subsection (matrix)
-- **Backend**: `POST /api/config/save` (writes `conf_default_backup_*` keys)
+- **Purpose**: choose the backup that runs automatically when a source is plugged in (source → target pair, or none), whether it moves instead of copies, and an optional second backup chained after it.
+- **Audience**: users who run the box headless and want it to back up on its own.
+- **UI location**: `/preferences` → "Backup defaults" tab → "Automatic backup at startup"
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_DEFAULT_SOURCE`, `conf_BACKUP_DEFAULT_TARGET`, `conf_BACKUP_DEFAULT_MOVE_FILES`, `conf_BACKUP_DEFAULT_SOURCE2`, `conf_BACKUP_DEFAULT_TARGET2`, `conf_BACKUP_DEFAULT2_MOVE_FILES`); options mirror `scripts/setup.php` and `get_secondary_backup_selector()` in `scripts/sub-common.php`, built from `GET /api/backup/services` (NVMe, cloud remotes, rsync).
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -407,10 +470,19 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: persist gallery star-ratings into image EXIF metadata, not just the local DB.
 - **Audience**: users who want ratings to travel with the file.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Write rating to EXIF"
-- **Backend**: `POST /api/config/save` (writes `conf_write_rating_to_exif`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Library" → "Write star ratings into the image files (EXIF)"
+- **Backend**: `POST /api/config/save` (writes `conf_VIEW_WRITE_RATING_EXIF`)
 - **Prerequisites**: none.
 - **Related**: Rate an image.
+
+### Toggle HEIC conversion for the viewer
+
+- **Purpose**: convert HEIC images so they can be shown in the gallery.
+- **Audience**: users with phones or cameras that shoot HEIC.
+- **UI location**: `/preferences` → "Backup defaults" tab → "Library" → "Convert HEIC images for the viewer"
+- **Backend**: `POST /api/config/save` (writes `conf_VIEW_CONVERT_HEIC`)
+- **Prerequisites**: none.
+- **Related**: Browse the media gallery.
 
 ## Configure connectivity
 
@@ -419,9 +491,18 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: set the regulatory domain so WiFi behaves correctly for the user's location.
 - **Audience**: users setting up a new device or moving regions.
 - **UI location**: `/network` → "WiFi" card → country selector
-- **Backend**: `POST /api/config/save`; `scripts/setup.sh`
+- **Backend**: `POST /api/config/save` (writes `conf_WIFI_COUNTRY`; when it differs from `raspi-config nonint get_wifi_country`, runs `sudo raspi-config nonint do_wifi_country <cc>` like `scripts/setup.php`)
 - **Prerequisites**: WiFi adapter present.
-- **Related**: View WiFi interface info.
+- **Related**: View WiFi interface info; Set the hotspot password.
+
+### Set the hotspot password
+
+- **Purpose**: choose the password of the access point the box opens when it has no known WiFi — a fixed password (8–63 printable ASCII characters, empty = open) or a new random one on every start.
+- **Audience**: users who reach the box through its own hotspot.
+- **UI location**: `/network` → "WiFi" tab → "Hotspot password" (saved with the page Save bar)
+- **Backend**: `POST /api/security/wifi-password` (writes `conf_WIFI_PASSWORD_TYPE`, `conf_WIFI_PASSWORD` base64-encoded; for a fixed password runs `sudo python3 scripts/lib_comitup.py --config '<pwd>'`)
+- **Prerequisites**: comitup installed. The random password is only shown on a display of at least 64 × 64 pixels.
+- **Related**: Set the device password; Reset WiFi to access-point mode.
 
 ### View WiFi interface info
 
@@ -501,8 +582,8 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: create, edit, or remove rclone remotes (Google Drive, Dropbox, S3, etc.) used as backup destinations.
 - **Audience**: users with off-site cloud backup.
-- **UI location**: `/integrations` → "Cloud" tab
-- **Backend**: `GET /api/cloud/remotes`, `POST /api/cloud/*`; `rclone` CLI under the hood
+- **UI location**: `/integrations` → "Cloud" tab (target folder, sync method and "files stay in place" per remote, plus the rclone GUI login hint)
+- **Backend**: `GET /api/cloud/remotes`, `POST /api/cloud/*`, `POST /api/config/save` (writes the `|;|`-packed `conf_BACKUP_CLOUDS_TARGET_BASEDIR`, `conf_BACKUP_SYNC_METHOD_CLOUDS`, `conf_BACKUP_CLOUDS_TARGET_FILES_STAY_IN_PLACE`); `rclone` CLI under the hood
 - **Prerequisites**: cloud provider credentials.
 - **Related**: Open the rclone GUI (external sidebar link); Configure secondary backup destination.
 
@@ -520,9 +601,18 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: link social-media accounts (Instagram, Twitter, etc.) and configure default captions, hashtags, and publishing options.
 - **Audience**: users publishing photos.
 - **UI location**: `/integrations` → "Social" tab
-- **Backend**: `webapp/server/routes/social.js`; `scripts/social_*.py`
+- **Backend**: `webapp/server/routes/social.js`; `scripts/social_*.py`; `POST /api/config/save` (writes `conf_SOCIAL_*`, including `conf_SOCIAL_PUBLISH_DATE` / `conf_SOCIAL_PUBLISH_FILENAME`)
 - **Prerequisites**: account credentials (OAuth tokens, API keys).
-- **Related**: Publish an image to social media.
+- **Related**: Queue an image for social media; Fetch a Matrix access token.
+
+### Fetch a Matrix access token
+
+- **Purpose**: log in with the bot's Matrix user to obtain an access token instead of copying it by hand; the password is not stored.
+- **Audience**: users setting up Matrix publishing.
+- **UI location**: `/integrations` → "Social" tab → "Matrix" → "Fetch token…" dialog
+- **Backend**: `POST /api/social/matrix/token` (password login against `<homeserver>/_matrix/client/v3/login`, like `scripts/matrix_get_token.php`); fills `conf_SOCIAL_MATRIX_TOKEN` (and the homeserver when empty).
+- **Prerequisites**: a Matrix account for the bot.
+- **Related**: Configure social media accounts and publish defaults.
 
 ## Configure device hardware
 
@@ -549,7 +639,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: set the temperature threshold and GPIO pin used for PWM fan control.
 - **Audience**: users with a PWM-controlled fan.
 - **UI location**: `/hardware` → "Fan" tab
-- **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_GPIO_PIN`)
+- **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_PWM_GPIO` — GPIO 14/15/18/23/24 or `-` for off, as in `scripts/setup.php`); `scripts/set_hardware.sh` applies it after every save
 - **Prerequisites**: PWM fan connected.
 - **Related**: View system information.
 
@@ -674,10 +764,10 @@ These settings affect every future backup; they are not per-run options.
 
 ### Set log level
 
-- **Purpose**: tune logging verbosity (ERROR / WARNING / INFO / DEBUG).
+- **Purpose**: tune logging verbosity (1 minimum / 2 medium / 3 maximum).
 - **Audience**: developers debugging.
 - **UI location**: `/system` → "Logs" tab → "Log level" control
-- **Backend**: `POST /api/config/save` (writes `conf_log_level`)
+- **Backend**: `POST /api/config/save` (writes `conf_LOGLEVEL`)
 - **Prerequisites**: none.
 - **Related**: View live logs.
 
@@ -686,7 +776,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: enable/disable shipping logs to an external server.
 - **Audience**: deployments collecting logs centrally.
 - **UI location**: `/system` → "Logs" tab → "Log sync" control
-- **Backend**: `POST /api/config/save` (writes `conf_log_sync`)
+- **Backend**: `POST /api/config/save` (writes `conf_LOG_SYNC`)
 - **Prerequisites**: external log target configured at the OS level.
 - **Related**: Set log level.
 
@@ -695,7 +785,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: retain the on-display image artefacts so a developer can inspect what the front display rendered.
 - **Audience**: display-firmware developers.
 - **UI location**: `/system` → "Logs" tab → "Keep display images" control
-- **Backend**: `POST /api/config/save` (writes `conf_display_images_keep`)
+- **Backend**: `POST /api/config/save` (writes `conf_DIPLAY_IMAGES_KEEP` — PHP spelling)
 - **Prerequisites**: device has a front display.
 - **Related**: Configure the physical display.
 
@@ -724,27 +814,36 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: configure the device's system timezone so timestamps in logs and EXIF are correct.
 - **Audience**: any user; mandatory after first install.
 - **UI location**: `/preferences` → "Locale" tab → "Timezone"
-- **Backend**: `POST /api/config/save` (writes `conf_timezone`)
+- **Backend**: `POST /api/config/save` (writes `conf_TIME_ZONE`; when it changed, runs `sudo raspi-config nonint do_change_timezone <tz>` like `scripts/setup.php`)
 - **Prerequisites**: none.
 - **Related**: Set UI language.
 
 ### Set background image
 
-- **Purpose**: pick an on-disk image to use as the UI background.
+- **Purpose**: pick an image from `<media>/<background images dir>` (e.g. `/media/backgroundimages`) as the UI background.
 - **Audience**: users personalising the UI.
 - **UI location**: `/preferences` → "Display" tab → "Background image"
-- **Backend**: `POST /api/config/save` (writes `conf_background_image`)
-- **Prerequisites**: an image file accessible to the device.
+- **Backend**: `GET /api/config/background-images` (same `find … file --mime-type` listing as `scripts/setup.php`), `GET /api/config/background-image?file=…` (serves the image), `POST /api/config/save` (writes `conf_BACKGROUND_IMAGE`)
+- **Prerequisites**: image files in the background images directory (the installer ships some under `lbb/`).
 - **Related**: Set UI theme.
 
 ### Toggle popup messages
 
-- **Purpose**: turn UI toast/popup notifications on or off.
+- **Purpose**: turn informational popups (e.g. "settings saved") on or off; errors are always shown. Mirrors `scripts/sub-popup.php`.
 - **Audience**: users who find toasts noisy.
-- **UI location**: `/preferences` → "Display" tab → "Popup messages"
-- **Backend**: `POST /api/config/save` (writes `conf_popup_messages`)
+- **UI location**: `/preferences` → "Display" tab → "Show popup messages"
+- **Backend**: `POST /api/config/save` (writes `conf_POPUP_MESSAGES`); honoured client-side by the `usePopupMessages()` hook
 - **Prerequisites**: none.
 - **Related**: Enable email notifications for backup (the silent alternative).
+
+### Set the device password
+
+- **Purpose**: set or remove the password protecting the web UI, file browser, rclone GUI, ssh and Samba shares (user `lbb`); takes effect after a reboot.
+- **Audience**: anyone who exposes the box on a shared network.
+- **UI location**: `/preferences` → "Security" tab → "Device password" (own Set / Remove buttons, not the page Save bar)
+- **Backend**: `POST /api/security/password`, `POST /api/security/password/remove` — run `sudo python3 scripts/lib_password.py '<pwd>'` (or without argument to remove) and store `conf_PASSWORD` base64-encoded like `scripts/setup.php`. `GET /api/config` only exposes `password_set`, never the password.
+- **Prerequisites**: none. Minimum 5 characters.
+- **Related**: Set the hotspot password.
 
 ### Enable virtual keyboard
 

@@ -49,13 +49,14 @@ Protected commands (format, fsck repair, f3, updates, LibRaw, comitup reset) all
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
 | 1 | Run a backup | `PageSection.plain` | Configure and start a backup |
-| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination |
-| 3 | Running backups | `PageSection.plain` (only renders when backups are running) | Stop a running backup; Monitor running backups |
+| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination; Preset source/target partitions; Choose the Telegram chat for one run |
+| 3 | Running backups | `PageSection.plain` (always rendered; empty state when nothing runs) | Stop a running backup; Stop all backups; Monitor running backups |
 | 4 | Previous runs | `PageSection.plain` (only renders when history exists) | View backup history; Re-run a previous backup |
 | 5 | Backup logs | `PageSection.accordion` (`lbb-accordion-backup-logs`, default collapsed) | Stream backup logs |
+| 6 | Help | `PageSection.accordion` (`lbb-accordion-backup-help`, default collapsed) | Read backup help |
 
 Cross-references on this page:
-- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
+- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". Source and Target are grouped selects (Local / Network / Social media); combinations the PHP UI forbids are shown disabled with the reason. The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
 
 ### `/view` — Library
 
@@ -65,10 +66,10 @@ Cross-references on this page:
 
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
-| 1 | Gallery | `PageSection.plain` | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
-| 2 | Single view | overlay (not a `PageSection`; entered from the Gallery) | Open a single image; Navigate between images; Zoom and pan an image; Run a slideshow; Rate an image; Comment on an image; Publish an image to social media |
+| 1 | Gallery | `PageSection.plain` (filters in a `PageSection.accordion`, key `lbb-accordion-view-filter`) | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
+| 2 | Single view | replaces the Gallery (not a `PageSection`; entered from a grid card): header bar, media stage, info panel of `PageSection.card`s (Comment / Publish to social media / File info), plus a full-window overlay | Open a single image; Navigate between images; Zoom and pan an image; View the full-window overlay; Run a slideshow; Download the original file; Rate an image; Comment on an image; Queue an image for social media; Inspect file metadata |
 
-The Single view is a full-window overlay rather than a peer section; this is the one documented exception to the "every section is a `PageSection`" rule and is justified by Plan 04 owning this page.
+The Single view replaces the Gallery rather than being a peer section; this is the one documented exception to the "every section is a `PageSection`" rule (its info panel does use `PageSection.card`s for the h2 sections). The slideshow runs inside the full-window overlay, as in `scripts/view.php` + `js/slideshow.js`.
 
 ### `/maintenance` — Maintenance
 
@@ -97,7 +98,7 @@ This page uses `Tabs` because the three panels are mutually exclusive views of t
 | # | Tab label | Features assigned |
 | --- | --- | --- |
 | 1 | Cloud | Configure rclone cloud remotes; Configure rsync server target |
-| 2 | Social | Configure social media accounts and publish defaults |
+| 2 | Social | Configure social media accounts and publish defaults; Fetch a Matrix access token |
 | 3 | Mail | Configure SMTP and email-notification recipients; Send a test email |
 
 VPN lives on `/network` (it's a connectivity primitive, not a third-party integration). No intro line above the tab strip — the three short tab labels are self-explanatory.
@@ -142,7 +143,7 @@ This page uses `Tabs` for the three configuration domains (WiFi / Network info /
 
 | # | Tab label | Features assigned |
 | --- | --- | --- |
-| 1 | WiFi | Set the WiFi country (regulatory domain); View WiFi interface info |
+| 1 | WiFi | Set the WiFi country (regulatory domain); Set the hotspot password; View WiFi interface info |
 | 2 | Network info | View internet connectivity status; View device IP addresses and access links; View QR codes for device access |
 | 3 | VPN | Configure VPN |
 
@@ -169,16 +170,17 @@ Reboot / Power off / Stop LBB / Logout do not live on this page — they live in
 ### `/preferences` — Preferences
 
 - **Sidebar position**: 8
-- **Purpose**: personal preferences (UI display, locale, system-wide backup defaults).
+- **Purpose**: personal preferences (UI display, locale, system-wide backup defaults, device password).
 - **Legacy redirects**: none (the legacy `/setup` redirect was removed in commit 6b853f1).
 
-This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (user preferences). Selected tab persists in `localStorage` under `lbb-tabs-preferences` as the symbolic tab name (`'display'`, `'locale'`, `'backup'`). Saves are debounced and apply page-wide regardless of active tab.
+This page uses `Tabs` because the four panels are mutually exclusive views of the same subject (user preferences). Selected tab persists in `localStorage` under `lbb-tabs-preferences` as the symbolic tab name (`'display'`, `'locale'`, `'backup'`, `'security'`). Display / Locale / Backup defaults are saved together with the page Save bar, regardless of active tab. The Security tab's device password acts immediately through its own Set / Remove buttons (it changes system accounts) and is not part of the Save bar.
 
 | # | Tab label | Features assigned |
 | --- | --- | --- |
 | 1 | Display | Set UI theme; Set background image; Toggle popup messages; Enable virtual keyboard |
 | 2 | Locale | Set UI language; Set the device timezone |
-| 3 | Backup defaults | Set the camera-folder mask; Set the target free-space minimum; Set idle power-off threshold; Set default backup mode per source/target pair; Toggle "write rating to EXIF" |
+| 3 | Backup defaults | Set the automatic backup at startup; Toggle "write rating to EXIF"; Toggle HEIC conversion for the viewer; Set the target free-space minimum; Set idle power-off threshold; Set the camera-folder mask |
+| 4 | Security | Set the device password |
 
 "Backup defaults" lives here (rather than on `/`) because they are system-wide policy, not per-run options.
 

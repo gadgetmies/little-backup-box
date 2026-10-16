@@ -47,7 +47,22 @@
     "wifi_reset_confirm_title": "Reset WiFi Credentials?",
     "wifi_reset_confirm_body": "This will erase stored WiFi credentials and reboot into access point mode. This device will become unreachable on the current network.",
     "wifi_reset_rebooting": "Device is rebooting into AP mode. This page will become unreachable.",
-    "wifi_reset_error": "Comitup is not installed on this device"
+    "wifi_reset_error": "Comitup is not installed on this device",
+    "hotspot": {
+      "header": "Contraseña del punto de acceso",
+      "type_label": "Cuando la caja abre su propia WiFi",
+      "static": "Contraseña fija",
+      "dynamic": "Nueva contraseña aleatoria en cada inicio",
+      "dynamic_desc": "La WiFi solo será accesible mediante el código QR de la pantalla. Requiere una pantalla activada de al menos 64 × 64 píxeles.",
+      "password_label": "Contraseña",
+      "password_help": "8–63 caracteres. Déjela vacía para un punto de acceso abierto.",
+      "too_short": "Al menos 8 caracteres",
+      "too_long": "Como máximo 63 caracteres",
+      "not_ascii": "Solo se permiten caracteres ASCII.",
+      "invalid": "La contraseña del punto de acceso no es válida.",
+      "qr_length_warning": "Más de 13 caracteres: el código QR de la WiFi en la pantalla solo funciona hasta 13 caracteres.",
+      "qr_chars_warning": "Evite «;» y «:»: el código QR de la WiFi no puede representarlos."
+    }
   },
   "scrape": {
     "title": "Páginas capturadas",
@@ -109,7 +124,26 @@
       "internal_storage": "Almacenamiento interno",
       "partitions": "Particiones",
       "local_storage": "Almacenamiento Local",
-      "logs": "Backup logs"
+      "logs": "Backup logs",
+      "group_local": "Local",
+      "group_network": "Red",
+      "group_social": "Redes sociales",
+      "disallowed_same": "Igual que el origen",
+      "disallowed_rsync": "No es posible desde este origen: primero haga una copia en un almacenamiento local",
+      "disallowed_social": "Las redes sociales necesitan un almacenamiento local como origen",
+      "target_chat": "Chat",
+      "target_room": "Sala",
+      "preset_source_usb_only": "Solo se usa cuando el origen es un almacenamiento USB",
+      "telegram_chat_label": "Chat de Telegram para esta ejecución",
+      "telegram_chat_default": "chat configurado",
+      "telegram_chats_error": "No se pudo cargar la lista de chats de Telegram. Se usará el chat configurado.",
+      "rename_warning_info": "Acerca de renombrar archivos",
+      "local_options_not_applicable": "Renombrar, miniaturas y EXIF solo se aplican a destinos de almacenamiento local.",
+      "start_stops_running": "Iniciar una copia de seguridad detiene la copia que se está ejecutando.",
+      "stop_all": "Detener todas las copias",
+      "none_running": "No hay copias de seguridad en curso.",
+      "help": "Ayuda",
+      "help_txt": "<ul>\n<li>todo USB: se realiza una copia de seguridad de todos los dispositivos USB conectados, tanto cámaras como almacenamiento.</li>\n<li>Servidor rsync de destino: no se puede realizar una copia de seguridad de las cámaras directamente en un servidor rsync. Aquí se requiere almacenamiento en caché local.</li>\n</ul>\n<p> Lea la <a href='https://github.com/outdoorbits/little-backup-box/wiki/05.-Operation' target='_blank' rel='noopener noreferrer'>Wiki</a>.</p>"
     },
     "logout_button": "Cerrar sesión",
     "nvme_button": "NVMe SSD",
@@ -150,34 +184,10 @@
     "view_theme_dark": "oscuro",
     "view_theme_sepia": "sepia",
     "view_theme_system": "Sistema",
-    "popup_messages": "Show popup notifications",
-    "camera_folder_mask": "Camera folder mask",
-    "camera_folder_mask_help": "Folder name pattern to back up from cameras (e.g. DCIM)",
-    "camera_folder_mask_no_slash": "Folder mask must not contain /",
-    "target_size_minimum": "Target size minimum",
-    "target_size_minimum_help": "GB · 0 = disabled",
-    "idle_power_off": "Idle power-off",
-    "idle_power_off_help": "Minutes · 0 = disabled",
-    "write_rating_to_exif": "Write rating to EXIF",
     "timezone": "Timezone",
-    "background_image": "Background image",
-    "background_image_help": "Path to an image file on the device",
-    "background_image_path_traversal": "Path traversal not allowed",
     "log_level": "Log level",
     "log_sync": "Log sync protocol",
     "display_images_keep": "Keep display images",
-    "default_backup_mode_section": "Default backup modes",
-    "backup_mode_copy": "Copy",
-    "backup_mode_move": "Move",
-    "source_camera": "Camera",
-    "source_usb": "USB",
-    "source_internal": "Internal",
-    "source_nvme": "NVMe",
-    "target_usb": "USB",
-    "target_internal": "Internal",
-    "target_nvme": "NVMe",
-    "target_cloud": "Cloud",
-    "target_rsync": "Rsync",
     "rsync_server_label": "Dirección del servidor rsync",
     "rsync_port_label": "Puerto del servidor rsync (predeterminado:",
     "rsync_user_label": "Nombre de usuario para el servidor rsync",
@@ -389,7 +399,19 @@
         "desc": "Dependiendo de su servicio en la nube, esta configuración puede ser válida solo por un tiempo limitado."
       }
     },
-    "save_settings_upload_text": "Suba un archivo zip con su configuración"
+    "save_settings_upload_text": "Suba un archivo zip con su configuración",
+    "log_level_minimum": "mínimo",
+    "log_level_medium": "medio",
+    "log_level_maximum": "máximo",
+    "fan_gpio_off": "Apagado (sin control del ventilador)",
+    "save_partial_error": "No se pudieron guardar algunos ajustes",
+    "settings_restore_success": "Ajustes restaurados. Se instalaron estos archivos:",
+    "settings_restore_no_files": "El archivo no contenía archivos de ajustes.",
+    "settings_restore_password_set": "Contraseña del dispositivo del archivo establecida. Se aplicará tras reiniciar.",
+    "settings_restore_password_removed": "El archivo no contiene contraseña; se eliminó la protección. Se aplicará tras reiniciar.",
+    "settings_restore_wifi_password": "Se aplicó la contraseña del punto de acceso del archivo.",
+    "settings_restore_not_zip": "El archivo que intenta subir no es un .zip. Inténtelo de nuevo.",
+    "settings_restore_problem": "Hubo un problema con la subida. Inténtelo de nuevo."
   },
   "tools": {
     "umount_b": "Eliminar",
@@ -597,7 +619,75 @@
     "slideshow_stop": "Detener presentación",
     "zoom_in": "Acercar",
     "zoom_out": "Alejar",
-    "zoom_file_missing": "Archivo original no disponible"
+    "zoom_file_missing": "Archivo original no disponible",
+    "date_format": "d.m.Y",
+    "medium_options": {
+      "target_usb": "USB de destino",
+      "source_usb": "USB de origen",
+      "target_nvme": "Destino NVMe local",
+      "source_nvme": "Origen NVMe local",
+      "internal": "Almacenamiento int.",
+      "not_mounted": "no montado"
+    },
+    "social_services": {
+      "telegram": "Telegram",
+      "matrix": "Matrix",
+      "mastodon": "Mastodon",
+      "bluesky": "Bluesky"
+    },
+    "grid": {
+      "comment_indicator": "Tiene un comentario",
+      "summary": "{count} archivos · página {page} / {pages}",
+      "sort_ascending": "Orden ascendente",
+      "sort_descending": "Orden descendente"
+    },
+    "filter_extra": {
+      "day": "Día",
+      "none": "–",
+      "advanced": "Avanzado: cualquier campo de metadatos",
+      "variable": "Campo de metadatos",
+      "variable_value": "Valor",
+      "active": "{count} activos"
+    },
+    "single": {
+      "first": "Primero",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "last": "Último",
+      "filtered_hint": "filtrado",
+      "fullscreen": "Pantalla completa",
+      "close": "Cerrar",
+      "download": "Descargar original",
+      "zoom": "Lupa",
+      "zoom_exit": "Salir de la lupa",
+      "low_res_image": "Archivo RAW o TIFF: se muestra una vista previa de baja resolución.",
+      "low_res_video": "Vídeo GoPro H.265: se reproduce la vista previa de baja resolución (.LRV).",
+      "unsupported": "Este tipo de archivo no tiene vista previa. Use \"Descargar original\".",
+      "saved": "Cambios guardados",
+      "comment_title": "Comentario",
+      "characters": "{count} caracteres",
+      "social_title": "Publicar en redes sociales",
+      "social_caption": "Las imágenes marcadas se publican en la próxima copia de seguridad.",
+      "social_none": "No hay ningún servicio de redes sociales configurado. Configúrelo en Conexiones → Social.",
+      "social_state_nothing": "no marcado",
+      "social_state_publish": "marcado",
+      "social_state_published": "publicado",
+      "social_state_combined": "publicado, marcado de nuevo",
+      "social_toggle_on": "Marcar para publicar en {service}",
+      "social_toggle_off": "Quitar la marca de {service}",
+      "social_error": "No se pudo actualizar la cola de publicación.",
+      "info_title": "Información del archivo",
+      "info_taken": "Tomada",
+      "info_camera": "Cámara",
+      "info_lens": "Objetivo",
+      "info_exposure": "Exposición",
+      "info_duration": "Duración",
+      "info_folder": "Carpeta",
+      "info_size": "Tamaño",
+      "show_all_fields": "Mostrar los {count} campos de metadatos",
+      "hide_all_fields": "Ocultar los campos de metadatos"
+    },
+    "delete_rejected_page_confirm": "¿Eliminar los {count} archivos rechazados de esta página de {medium}? Se eliminan el archivo, su miniatura y su archivo XMP. Esta acción no se puede deshacer."
   },
   "maintenance": {
     "update": {
@@ -648,7 +738,61 @@
     "tab": {
       "display": "Pantalla",
       "locale": "Idioma y zona horaria",
-      "backup": "Predeterminados de copia"
+      "backup": "Predeterminados de copia",
+      "security": "Seguridad"
+    },
+    "display": {
+      "background_label": "Imagen de fondo",
+      "background_none": "Ninguna",
+      "background_help": "Las imágenes se leen de",
+      "popup_label": "Mostrar mensajes emergentes"
+    },
+    "backup": {
+      "startup_header": "Copia automática al iniciar",
+      "default_label": "Copia predeterminada",
+      "default_help": "Se ejecuta al conectar un origen. Elija «sin copia automática» para desactivarla.",
+      "move_files": "Mover archivos en lugar de copiarlos",
+      "second_label": "Después continuar con",
+      "second_help": "Segunda copia opcional, encadenada tras la primera.",
+      "second_move_files": "Mover archivos en la segunda copia",
+      "camera": "Cámara"
+    },
+    "library": {
+      "header": "Biblioteca",
+      "write_rating": "Escribir las valoraciones en los archivos de imagen (EXIF)",
+      "convert_heic": "Convertir imágenes HEIC para el visor"
+    },
+    "limits": {
+      "header": "Límites de seguridad",
+      "target_size_label": "Detener cuando el destino tenga menos de",
+      "target_size_ignore": "Ignorar el espacio libre",
+      "free": "libres",
+      "idle_label": "Apagar tras inactividad de",
+      "idle_never": "Nunca",
+      "minutes": "minutos"
+    },
+    "camera": {
+      "header": "Carpetas de cámara",
+      "label": "Carpetas a copiar por cámara: una por línea",
+      "help": "Formato MODELO[_SERIE]:carpeta, p. ej. *:DCIM. Copie los modelos de Sistema › Cámaras."
+    },
+    "security": {
+      "header": "Contraseña del dispositivo",
+      "status_set": "Hay una contraseña establecida. Protege esta interfaz web, el explorador de archivos, la GUI de rclone, ssh y los recursos Samba (usuario «lbb»).",
+      "status_not_set": "No hay contraseña. La interfaz web, el explorador de archivos y los recursos compartidos están abiertos a toda la red.",
+      "new_password": "Nueva contraseña",
+      "repeat_password": "Repetir contraseña",
+      "mismatch": "Las contraseñas no coinciden",
+      "too_short": "Al menos 5 caracteres",
+      "help": "Al menos 5 caracteres. Se aplica tras reiniciar.",
+      "set_button": "Establecer contraseña",
+      "remove_button": "Eliminar contraseña",
+      "remove_confirm_title": "¿Eliminar la contraseña del dispositivo?",
+      "remove_confirm_body": "Tras el próximo reinicio, la interfaz web, el explorador de archivos y los recursos Samba dejarán de pedir contraseña. Las contraseñas de los usuarios Linux (lbb, pi) no se eliminan.",
+      "applied_note": "Se aplica de inmediato, no con el botón Guardar de la página, porque modifica cuentas del sistema.",
+      "set_success": "Contraseña establecida. Los cambios se aplicarán tras reiniciar.",
+      "remove_success": "Contraseña eliminada. Los cambios se aplicarán tras reiniciar.",
+      "apply_error": "No se pudo aplicar la contraseña."
     }
   },
   "integrations": {
@@ -658,18 +802,9 @@
       "test_bluesky": "Probar Conexión",
       "test_matrix": "Probar Conexión"
     },
-    "social_general": "General",
-    "social_publish_date": "Publish date format",
-    "social_publish_date_help": "strftime format string (e.g. %Y-%m-%d)",
-    "social_publish_filename": "Include filename in post",
     "cloud_services": {
       "no_services": "No hay servicios en la nube configurados. Por favor configure rclone primero."
     },
-    "cloud_target_dir": "Target base directory",
-    "cloud_sync_method": "Sync method",
-    "cloud_sync_rclone": "rclone",
-    "cloud_sync_rsync": "rsync",
-    "cloud_files_stay": "Files stay in place",
     "vpn": {
       "title": "VPN",
       "file_uploaded": "Archivo de configuración VPN subido",
@@ -681,6 +816,26 @@
       "cloud": "Cloud",
       "social": "Social",
       "mail": "Mail"
+    },
+    "rclone_login_default": "Acceso: usuario 'lbb', contraseña 'lbb'.",
+    "rclone_login_device_password": "Acceso: usuario 'lbb', contraseña la definida en Preferencias › Seguridad.",
+    "matrix_token": {
+      "open_button": "Obtener token…",
+      "title": "Obtener token de Matrix",
+      "description": "Inicie sesión con su cuenta de Matrix para generar un token de acceso para el bot. La contraseña no se guardará.",
+      "username_label": "Usuario de Matrix (p. ej. @bot:example.org)",
+      "password_label": "Contraseña",
+      "fetch_button": "Obtener token",
+      "enter_username_first": "Introduzca primero el usuario de Matrix.",
+      "enter_password_first": "Introduzca primero la contraseña.",
+      "fetching": "Obteniendo token …",
+      "success": "Token obtenido correctamente para",
+      "error_invalid_credentials": "Error de inicio de sesión. Compruebe usuario y contraseña.",
+      "error_missing_parameters": "Faltan datos. Rellene todos los campos.",
+      "error_bad_api_response": "Respuesta inesperada del servidor Matrix.",
+      "error_unreachable": "No se pudo conectar con el servidor Matrix.",
+      "error_no_token": "Inicio de sesión correcto, pero no se devolvió ningún token.",
+      "error_exception": "Error al obtener el token."
     }
   },
   "mock_controls": {
