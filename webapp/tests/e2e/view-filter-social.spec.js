@@ -88,10 +88,11 @@ test.describe('View page – social publish marking', () => {
     await openSingle(page, 0);
     const panel = page.getByTestId('social-publish-panel');
     await expect(panel).toContainText('Queued images are posted by the next backup run.');
-    // Mock lib_socialmedia.py reports telegram;matrix as configured.
+    // Mock lib_socialmedia.py reports telegram;matrix;mastodon as configured.
     await expect(page.getByTestId('social-toggle-telegram')).toBeVisible();
     await expect(page.getByTestId('social-toggle-matrix')).toBeVisible();
-    await expect(page.getByTestId('social-toggle-mastodon')).toHaveCount(0);
+    await expect(page.getByTestId('social-toggle-mastodon')).toBeVisible();
+    await expect(page.getByTestId('social-toggle-bluesky')).toHaveCount(0);
 
     const chip = page.getByTestId('social-toggle-matrix');
     const before = await chip.getAttribute('data-state');

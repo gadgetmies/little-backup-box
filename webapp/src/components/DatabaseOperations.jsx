@@ -31,7 +31,7 @@ function DatabaseOperations() {
   const callGenerateThumbnails = useCallback(async () => {
     const f = formRef.current;
     return api.post('/backup/function', {
-      function: 'generate_thumbnails',
+      function: 'thumbnails',
       target: f.target,
       presetSource: f.presetSource,
       presetTarget: f.presetTarget,
@@ -42,7 +42,7 @@ function DatabaseOperations() {
   const callSyncDatabase = useCallback(async () => {
     const f = formRef.current;
     return api.post('/backup/function', {
-      function: 'sync',
+      function: 'database',
       target: f.target,
       presetSource: f.presetSource,
       presetTarget: f.presetTarget,
@@ -53,7 +53,7 @@ function DatabaseOperations() {
   const callUpdateExif = useCallback(async () => {
     const f = formRef.current;
     return api.post('/backup/function', {
-      function: 'update_exif',
+      function: 'exif',
       target: f.target,
       presetSource: f.presetSource,
       presetTarget: f.presetTarget,
