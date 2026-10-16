@@ -203,7 +203,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Audience**: photographers triaging a shoot.
 - **UI location**: `/view` → "Single view" overlay → rating widget
 - **Backend**: `POST /api/view/rating`
-- **Prerequisites**: media database available; optionally `conf_write_rating_to_exif` to also write the rating to EXIF.
+- **Prerequisites**: media database available; optionally `conf_VIEW_WRITE_RATING_EXIF` to also write the rating to EXIF.
 - **Related**: Comment on an image; Delete rejected images; Toggle "write rating to EXIF" (Configure backup defaults).
 
 ### Comment on an image
@@ -282,11 +282,11 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Import device settings
 
-- **Purpose**: upload a previously-exported config file and apply it.
+- **Purpose**: upload a previously-exported settings archive and apply it; the UI lists every file that was restored.
 - **Audience**: users restoring or migrating a device.
 - **UI location**: `/maintenance` → "Settings" tab → "Upload settings" action
-- **Backend**: `POST /api/setup/upload-settings`
-- **Prerequisites**: a previously-exported settings file.
+- **Backend**: `POST /api/setup/upload-settings` — follows `scripts/setup.php` `upload_settings()`: validates the zip, restores `config.cfg`, the rclone config, the private buttons config, VPN configs (`chmod 700`) and `bg-images/*`, runs `dos2unix` on each restored file, migrates the config with `scripts/lib_setup.py`, re-applies the device password (`lib_password.py`) and the hotspot password (`lib_comitup.py --config`) from the restored config, and cleans the temp directory.
+- **Prerequisites**: a previously-exported settings archive (`.zip`).
 - **Related**: Export device settings.
 
 ### Update LibRaw camera-format library
@@ -396,10 +396,10 @@ These settings affect every future backup; they are not per-run options.
 
 ### Set the camera-folder mask
 
-- **Purpose**: define the folder pattern used to locate photos on connected cameras (default `DCIM`).
+- **Purpose**: define, per camera model (and optionally serial), which folders are backed up — one `MODEL[_SERIAL]:folder` entry per line (default `*:DCIM`).
 - **Audience**: users with non-standard camera folder layouts.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Camera folder mask"
-- **Backend**: `POST /api/config/save` (writes `conf_camera_folder_mask`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Camera folders"
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_CAMERA_FOLDER_MASK`, lines joined with `;` as `scripts/setup.php` does)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -407,8 +407,8 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: refuse to start a backup if the target has less than the chosen amount of free space.
 - **Audience**: users protecting against accidental over-fill.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Target free-space minimum"
-- **Backend**: `POST /api/config/save` (writes `conf_target_size_minimum`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Safety limits" → "Stop when target has less than" (PHP presets: ignore, 100 MB, 512 MB, 1 GB, 512 GB, 1 TB)
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_TARGET_SIZE_MIN` in bytes)
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -416,17 +416,17 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: auto-shutdown the device after the chosen number of minutes of inactivity.
 - **Audience**: battery-powered users.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Idle power-off"
-- **Backend**: `POST /api/config/save` (writes `conf_idle_power_off`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Safety limits" → "Power off when idle for" (never, 2, 5, 10, 15, 20, 30 minutes)
+- **Backend**: `POST /api/config/save` (writes `conf_POWER_OFF_IDLE_TIME`)
 - **Prerequisites**: none.
 - **Related**: Power off after backup (option in Run a backup).
 
-### Set default backup mode per source/target pair
+### Set the automatic backup at startup
 
-- **Purpose**: pick the default copy/move mode for every (source, target) combination, so the Backup page pre-fills correctly.
-- **Audience**: users with mixed workflows across media types.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Default mode" subsection (matrix)
-- **Backend**: `POST /api/config/save` (writes `conf_default_backup_*` keys)
+- **Purpose**: choose the backup that runs automatically when a source is plugged in (source → target pair, or none), whether it moves instead of copies, and an optional second backup chained after it.
+- **Audience**: users who run the box headless and want it to back up on its own.
+- **UI location**: `/preferences` → "Backup defaults" tab → "Automatic backup at startup"
+- **Backend**: `POST /api/config/save` (writes `conf_BACKUP_DEFAULT_SOURCE`, `conf_BACKUP_DEFAULT_TARGET`, `conf_BACKUP_DEFAULT_MOVE_FILES`, `conf_BACKUP_DEFAULT_SOURCE2`, `conf_BACKUP_DEFAULT_TARGET2`, `conf_BACKUP_DEFAULT2_MOVE_FILES`); options mirror `scripts/setup.php` and `get_secondary_backup_selector()` in `scripts/sub-common.php`, built from `GET /api/backup/services` (NVMe, cloud remotes, rsync).
 - **Prerequisites**: none.
 - **Related**: Configure and start a backup.
 
@@ -434,10 +434,19 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: persist gallery star-ratings into image EXIF metadata, not just the local DB.
 - **Audience**: users who want ratings to travel with the file.
-- **UI location**: `/preferences` → "Backup defaults" tab → "Write rating to EXIF"
-- **Backend**: `POST /api/config/save` (writes `conf_write_rating_to_exif`)
+- **UI location**: `/preferences` → "Backup defaults" tab → "Library" → "Write star ratings into the image files (EXIF)"
+- **Backend**: `POST /api/config/save` (writes `conf_VIEW_WRITE_RATING_EXIF`)
 - **Prerequisites**: none.
 - **Related**: Rate an image.
+
+### Toggle HEIC conversion for the viewer
+
+- **Purpose**: convert HEIC images so they can be shown in the gallery.
+- **Audience**: users with phones or cameras that shoot HEIC.
+- **UI location**: `/preferences` → "Backup defaults" tab → "Library" → "Convert HEIC images for the viewer"
+- **Backend**: `POST /api/config/save` (writes `conf_VIEW_CONVERT_HEIC`)
+- **Prerequisites**: none.
+- **Related**: Browse the media gallery.
 
 ## Configure connectivity
 
@@ -446,9 +455,18 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: set the regulatory domain so WiFi behaves correctly for the user's location.
 - **Audience**: users setting up a new device or moving regions.
 - **UI location**: `/network` → "WiFi" card → country selector
-- **Backend**: `POST /api/config/save`; `scripts/setup.sh`
+- **Backend**: `POST /api/config/save` (writes `conf_WIFI_COUNTRY`; when it differs from `raspi-config nonint get_wifi_country`, runs `sudo raspi-config nonint do_wifi_country <cc>` like `scripts/setup.php`)
 - **Prerequisites**: WiFi adapter present.
-- **Related**: View WiFi interface info.
+- **Related**: View WiFi interface info; Set the hotspot password.
+
+### Set the hotspot password
+
+- **Purpose**: choose the password of the access point the box opens when it has no known WiFi — a fixed password (8–63 printable ASCII characters, empty = open) or a new random one on every start.
+- **Audience**: users who reach the box through its own hotspot.
+- **UI location**: `/network` → "WiFi" tab → "Hotspot password" (saved with the page Save bar)
+- **Backend**: `POST /api/security/wifi-password` (writes `conf_WIFI_PASSWORD_TYPE`, `conf_WIFI_PASSWORD` base64-encoded; for a fixed password runs `sudo python3 scripts/lib_comitup.py --config '<pwd>'`)
+- **Prerequisites**: comitup installed. The random password is only shown on a display of at least 64 × 64 pixels.
+- **Related**: Set the device password; Reset WiFi to access-point mode.
 
 ### View WiFi interface info
 
@@ -528,8 +546,8 @@ These settings affect every future backup; they are not per-run options.
 
 - **Purpose**: create, edit, or remove rclone remotes (Google Drive, Dropbox, S3, etc.) used as backup destinations.
 - **Audience**: users with off-site cloud backup.
-- **UI location**: `/integrations` → "Cloud" tab
-- **Backend**: `GET /api/cloud/remotes`, `POST /api/cloud/*`; `rclone` CLI under the hood
+- **UI location**: `/integrations` → "Cloud" tab (target folder, sync method and "files stay in place" per remote, plus the rclone GUI login hint)
+- **Backend**: `GET /api/cloud/remotes`, `POST /api/cloud/*`, `POST /api/config/save` (writes the `|;|`-packed `conf_BACKUP_CLOUDS_TARGET_BASEDIR`, `conf_BACKUP_SYNC_METHOD_CLOUDS`, `conf_BACKUP_CLOUDS_TARGET_FILES_STAY_IN_PLACE`); `rclone` CLI under the hood
 - **Prerequisites**: cloud provider credentials.
 - **Related**: Open the rclone GUI (external sidebar link); Configure secondary backup destination.
 
@@ -547,9 +565,18 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: link social-media accounts (Instagram, Twitter, etc.) and configure default captions, hashtags, and publishing options.
 - **Audience**: users publishing photos.
 - **UI location**: `/integrations` → "Social" tab
-- **Backend**: `webapp/server/routes/social.js`; `scripts/social_*.py`
+- **Backend**: `webapp/server/routes/social.js`; `scripts/social_*.py`; `POST /api/config/save` (writes `conf_SOCIAL_*`, including `conf_SOCIAL_PUBLISH_DATE` / `conf_SOCIAL_PUBLISH_FILENAME`)
 - **Prerequisites**: account credentials (OAuth tokens, API keys).
-- **Related**: Publish an image to social media.
+- **Related**: Publish an image to social media; Fetch a Matrix access token.
+
+### Fetch a Matrix access token
+
+- **Purpose**: log in with the bot's Matrix user to obtain an access token instead of copying it by hand; the password is not stored.
+- **Audience**: users setting up Matrix publishing.
+- **UI location**: `/integrations` → "Social" tab → "Matrix" → "Fetch token…" dialog
+- **Backend**: `POST /api/social/matrix/token` (password login against `<homeserver>/_matrix/client/v3/login`, like `scripts/matrix_get_token.php`); fills `conf_SOCIAL_MATRIX_TOKEN` (and the homeserver when empty).
+- **Prerequisites**: a Matrix account for the bot.
+- **Related**: Configure social media accounts and publish defaults.
 
 ## Configure device hardware
 
@@ -576,7 +603,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: set the temperature threshold and GPIO pin used for PWM fan control.
 - **Audience**: users with a PWM-controlled fan.
 - **UI location**: `/hardware` → "Fan" tab
-- **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_GPIO_PIN`)
+- **Backend**: `POST /api/config/save` (`conf_FAN_PWM_TEMP_C`, `conf_FAN_PWM_GPIO` — GPIO 14/15/18/23/24 or `-` for off, as in `scripts/setup.php`); `scripts/set_hardware.sh` applies it after every save
 - **Prerequisites**: PWM fan connected.
 - **Related**: View system information.
 
@@ -683,10 +710,10 @@ These settings affect every future backup; they are not per-run options.
 
 ### Set log level
 
-- **Purpose**: tune logging verbosity (ERROR / WARNING / INFO / DEBUG).
+- **Purpose**: tune logging verbosity (1 minimum / 2 medium / 3 maximum).
 - **Audience**: developers debugging.
 - **UI location**: `/system` → "Logs" tab → "Log level" control
-- **Backend**: `POST /api/config/save` (writes `conf_log_level`)
+- **Backend**: `POST /api/config/save` (writes `conf_LOGLEVEL`)
 - **Prerequisites**: none.
 - **Related**: View live logs.
 
@@ -695,7 +722,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: enable/disable shipping logs to an external server.
 - **Audience**: deployments collecting logs centrally.
 - **UI location**: `/system` → "Logs" tab → "Log sync" control
-- **Backend**: `POST /api/config/save` (writes `conf_log_sync`)
+- **Backend**: `POST /api/config/save` (writes `conf_LOG_SYNC`)
 - **Prerequisites**: external log target configured at the OS level.
 - **Related**: Set log level.
 
@@ -704,7 +731,7 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: retain the on-display image artefacts so a developer can inspect what the front display rendered.
 - **Audience**: display-firmware developers.
 - **UI location**: `/system` → "Logs" tab → "Keep display images" control
-- **Backend**: `POST /api/config/save` (writes `conf_display_images_keep`)
+- **Backend**: `POST /api/config/save` (writes `conf_DIPLAY_IMAGES_KEEP` — PHP spelling)
 - **Prerequisites**: device has a front display.
 - **Related**: Configure the physical display.
 
@@ -733,27 +760,36 @@ These settings affect every future backup; they are not per-run options.
 - **Purpose**: configure the device's system timezone so timestamps in logs and EXIF are correct.
 - **Audience**: any user; mandatory after first install.
 - **UI location**: `/preferences` → "Locale" tab → "Timezone"
-- **Backend**: `POST /api/config/save` (writes `conf_timezone`)
+- **Backend**: `POST /api/config/save` (writes `conf_TIME_ZONE`; when it changed, runs `sudo raspi-config nonint do_change_timezone <tz>` like `scripts/setup.php`)
 - **Prerequisites**: none.
 - **Related**: Set UI language.
 
 ### Set background image
 
-- **Purpose**: pick an on-disk image to use as the UI background.
+- **Purpose**: pick an image from `<media>/<background images dir>` (e.g. `/media/backgroundimages`) as the UI background.
 - **Audience**: users personalising the UI.
 - **UI location**: `/preferences` → "Display" tab → "Background image"
-- **Backend**: `POST /api/config/save` (writes `conf_background_image`)
-- **Prerequisites**: an image file accessible to the device.
+- **Backend**: `GET /api/config/background-images` (same `find … file --mime-type` listing as `scripts/setup.php`), `GET /api/config/background-image?file=…` (serves the image), `POST /api/config/save` (writes `conf_BACKGROUND_IMAGE`)
+- **Prerequisites**: image files in the background images directory (the installer ships some under `lbb/`).
 - **Related**: Set UI theme.
 
 ### Toggle popup messages
 
-- **Purpose**: turn UI toast/popup notifications on or off.
+- **Purpose**: turn informational popups (e.g. "settings saved") on or off; errors are always shown. Mirrors `scripts/sub-popup.php`.
 - **Audience**: users who find toasts noisy.
-- **UI location**: `/preferences` → "Display" tab → "Popup messages"
-- **Backend**: `POST /api/config/save` (writes `conf_popup_messages`)
+- **UI location**: `/preferences` → "Display" tab → "Show popup messages"
+- **Backend**: `POST /api/config/save` (writes `conf_POPUP_MESSAGES`); honoured client-side by the `usePopupMessages()` hook
 - **Prerequisites**: none.
 - **Related**: Enable email notifications for backup (the silent alternative).
+
+### Set the device password
+
+- **Purpose**: set or remove the password protecting the web UI, file browser, rclone GUI, ssh and Samba shares (user `lbb`); takes effect after a reboot.
+- **Audience**: anyone who exposes the box on a shared network.
+- **UI location**: `/preferences` → "Security" tab → "Device password" (own Set / Remove buttons, not the page Save bar)
+- **Backend**: `POST /api/security/password`, `POST /api/security/password/remove` — run `sudo python3 scripts/lib_password.py '<pwd>'` (or without argument to remove) and store `conf_PASSWORD` base64-encoded like `scripts/setup.php`. `GET /api/config` only exposes `password_set`, never the password.
+- **Prerequisites**: none. Minimum 5 characters.
+- **Related**: Set the hotspot password.
 
 ### Enable virtual keyboard
 

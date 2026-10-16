@@ -1,11 +1,21 @@
 import express from 'express';
-import { readFileSync, writeFileSync, existsSync, renameSync, createReadStream, unlinkSync } from 'fs';
-import { parse, stringify } from 'ini';
+import { readFileSync, writeFileSync, existsSync, renameSync, createReadStream, unlinkSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { parse } from 'ini';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execCommand } from '../utils/execCommand.js';
 import { getTempDir, getIdletimeLockfile } from '../utils/paths.js';
 import multer from 'multer';
+import { applyConfigSave, phpLanguageString, shellQuote } from './config.js';
+import {
+  decodePassword,
+  runLibPassword,
+  runLibComitupConfig,
+  validateWifiPassword,
+  DEVICE_PASSWORD_MIN_LENGTH,
+} from './security.js';
+import { parseConfigText, reloadConfig } from '../utils/configLoader.js';
+import { shouldUseMocks } from '../utils/systemDetector.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,31 +65,14 @@ router.get('/wifi-countries', async (req, res) => {
 });
 
 router.post('/save', async (req, res) => {
+  // Same save path (and side effects) as POST /api/config/save.
   try {
-    const configPath = path.join(req.WORKING_DIR, 'config.cfg');
-    const currentConfig = parse(readFileSync(configPath, 'utf-8'));
-    
-    Object.keys(req.body).forEach((key) => {
-      if (key.startsWith('conf_')) {
-        currentConfig[key] = req.body[key];
-      }
-    });
-    
-    if (req.body.conf_TIME_ZONE && req.body.conf_TIME_ZONE !== currentConfig.conf_TIME_ZONE) {
-      await execCommand(`sudo raspi-config nonint do_change_timezone ${req.body.conf_TIME_ZONE}`, { logger: req.logger });
-    }
-    
-    if (req.body.conf_WIFI_COUNTRY && req.body.conf_WIFI_COUNTRY !== currentConfig.conf_WIFI_COUNTRY) {
-      await execCommand(`sudo raspi-config nonint do_wifi_country ${req.body.conf_WIFI_COUNTRY}`, { logger: req.logger });
-    }
-    
-    writeFileSync(configPath, stringify(currentConfig), 'utf-8');
-    
+    await applyConfigSave(req, req.body);
     req.logger.info('Setup config saved');
     res.json({ success: true });
   } catch (error) {
     req.logger.error('Failed to save setup config', { error: error.message });
-    res.status(500).json({ error: 'Failed to save setup config' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Failed to save setup config' });
   }
 });
 
@@ -295,28 +288,174 @@ router.get('/download-settings', async (req, res) => {
   }
 });
 
+const ZIP_MIME_TYPES = ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed'];
+const VPN_TYPES = ['OpenVPN', 'WireGuard'];
+
+function isZipUpload(file) {
+  // setup.php:461-475 accepts the upload only with a .zip extension and a zip
+  // mime type. Browsers are inconsistent about the mime type of zip files, so
+  // a file starting with the zip magic number "PK\x03\x04" is accepted too.
+  if (!file || !file.originalname || !file.originalname.toLowerCase().endsWith('.zip')) return false;
+  if (ZIP_MIME_TYPES.includes(file.mimetype)) return true;
+  try {
+    const header = readFileSync(file.path).subarray(0, 4);
+    return header.length === 4 && header[0] === 0x50 && header[1] === 0x4b && header[2] === 0x03 && header[3] === 0x04;
+  } catch {
+    return false;
+  }
+}
+
+async function showDisplayMessage(req, lines) {
+  const args = lines.map((line) => shellQuote(line)).join(' ');
+  await execCommand(`sudo python3 ${req.WORKING_DIR}/lib_display.py ${args} > /dev/null 2>&1 &`, { logger: req.logger });
+}
+
+async function showUploadErrorOnDisplay(req) {
+  await showDisplayMessage(req, [
+    await phpLanguageString(req, 'config_display_message_settings_upload_error_1', 'Settings'),
+    await phpLanguageString(req, 'config_display_message_settings_upload_error_2', 'import'),
+    await phpLanguageString(req, 'config_display_message_settings_upload_error_3', 'failed.'),
+  ]);
+}
+
+// Restore a settings archive, following scripts/setup.php upload_settings()
+// (lines 456-596): config.cfg, rclone config, private buttons config, VPN
+// configs and background images are moved into place and converted with
+// dos2unix, lib_setup.py migrates the config to the current version, and the
+// device and hotspot passwords from the restored config are applied again.
 router.post('/upload-settings', upload.single('settings'), async (req, res) => {
+  const cleanupUpload = () => {
+    if (req.file?.path && existsSync(req.file.path)) {
+      try { unlinkSync(req.file.path); } catch { /* ignore */ }
+    }
+  };
+
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'no_file' });
     }
-    
-    const targetDir = getTempDir(req.WORKING_DIR, req.constants);
-    const targetPath = path.join(targetDir, 'uploaded-settings.zip');
-    
-    renameSync(req.file.path, targetPath);
-    
-    await execCommand(`cd ${targetDir} && unzip -o uploaded-settings.zip`, { logger: req.logger });
-    
-    if (existsSync(path.join(targetDir, 'config.cfg'))) {
-      await execCommand(`sudo dos2unix "${req.WORKING_DIR}/config.cfg"`, { logger: req.logger });
-      await execCommand(`sudo cp "${targetDir}/config.cfg" "${req.WORKING_DIR}/config.cfg"`, { logger: req.logger });
+
+    if (!isZipUpload(req.file)) {
+      cleanupUpload();
+      await showUploadErrorOnDisplay(req);
+      return res.status(400).json({ error: 'not_zip' });
     }
-    
-    res.json({ success: true, message: 'Settings uploaded' });
+
+    if (shouldUseMocks()) {
+      // Nothing is extracted or moved in mock mode; report a typical archive.
+      cleanupUpload();
+      await execCommand(`sudo python3 ${req.WORKING_DIR}/lib_setup.py`, { logger: req.logger });
+      return res.json({
+        success: true,
+        files: ['config.cfg', req.constants.const_RCLONE_CONFIG_FILE, req.constants.const_BUTTONS_PRIVATE_CONFIG_FILE, 'lbb/paris.jpg'],
+        password: 'removed',
+        wifiPasswordApplied: false,
+      });
+    }
+
+    const { constants } = req;
+    const targetDir = path.join(getTempDir(req.WORKING_DIR, constants), 'unzip');
+    const targetZip = path.join(targetDir, 'settings.zip');
+
+    await execCommand(`sudo rm -rf ${shellQuote(targetDir)}`, { logger: req.logger });
+    mkdirSync(targetDir, { recursive: true });
+    renameSync(req.file.path, targetZip);
+
+    const unzipResult = await execCommand(`unzip -o ${shellQuote(targetZip)} -d ${shellQuote(targetDir)}`, { logger: req.logger });
+    if (!unzipResult.success) {
+      await execCommand(`sudo rm -rf ${shellQuote(targetDir)}`, { logger: req.logger });
+      await showUploadErrorOnDisplay(req);
+      return res.status(400).json({ error: 'upload_problem' });
+    }
+    unlinkSync(targetZip);
+
+    const restored = [];
+    const moveIntoPlace = async (fileName, destination) => {
+      const source = path.join(targetDir, fileName);
+      if (!existsSync(source)) return;
+      const moved = await execCommand(`sudo mv -f ${shellQuote(source)} ${shellQuote(destination)}`, { logger: req.logger });
+      if (moved.success) {
+        restored.push(fileName);
+        // dos2unix runs on the restored copy, after it has been moved into place.
+        await execCommand(`sudo dos2unix ${shellQuote(destination)}`, { logger: req.logger });
+      }
+    };
+
+    // Remember whether the old config had a hotspot password (setup.php:557).
+    const wifiPasswordWasSet = Object.prototype.hasOwnProperty.call(
+      parseConfigText(existsSync(path.join(req.WORKING_DIR, 'config.cfg')) ? readFileSync(path.join(req.WORKING_DIR, 'config.cfg'), 'utf-8') : ''),
+      'conf_WIFI_PASSWORD',
+    );
+
+    await moveIntoPlace('config.cfg', path.join(req.WORKING_DIR, 'config.cfg'));
+    await moveIntoPlace(constants.const_RCLONE_CONFIG_FILE, path.join(constants.const_MEDIA_DIR, constants.const_RCLONE_CONFIG_FILE));
+    await moveIntoPlace(constants.const_BUTTONS_PRIVATE_CONFIG_FILE, path.join(constants.const_MEDIA_DIR, constants.const_BUTTONS_PRIVATE_CONFIG_FILE));
+
+    for (const vpnType of VPN_TYPES) {
+      const vpnDir = constants[`const_VPN_DIR_${vpnType}`];
+      const vpnFile = constants[`const_VPN_FILENAME_${vpnType}`];
+      if (!vpnDir || !vpnFile || !existsSync(path.join(targetDir, vpnFile))) continue;
+      const destination = path.join(vpnDir, vpnFile);
+      await execCommand(`sudo mkdir -p ${shellQuote(vpnDir)}`, { logger: req.logger });
+      await execCommand(`sudo rm -f ${shellQuote(destination)}`, { logger: req.logger });
+      await moveIntoPlace(vpnFile, destination);
+      // secure VPN config files
+      await execCommand(`sudo chmod 700 ${shellQuote(destination)}`, { logger: req.logger });
+    }
+
+    const bgSource = path.join(targetDir, 'bg-images');
+    if (existsSync(bgSource) && statSync(bgSource).isDirectory()) {
+      const bgTarget = path.join(constants.const_MEDIA_DIR, constants.const_BACKGROUND_IMAGES_DIR);
+      await execCommand(`sudo mkdir -p ${shellQuote(bgTarget)}`, { logger: req.logger });
+      await execCommand(`sudo chown www-data:www-data ${shellQuote(bgTarget)} -R`, { logger: req.logger });
+      for (const entry of readdirSync(bgSource)) {
+        const entryPath = path.join(bgSource, entry);
+        if (!statSync(entryPath).isFile()) continue;
+        const moved = await execCommand(`sudo mv -f ${shellQuote(entryPath)} ${shellQuote(path.join(bgTarget, entry))}`, { logger: req.logger });
+        if (moved.success) restored.push(entry);
+      }
+      await execCommand(`sudo chown www-data:www-data ${shellQuote(bgTarget)} -R`, { logger: req.logger });
+    }
+
+    // rewrite config to the current version
+    await execCommand(`sudo python3 ${req.WORKING_DIR}/lib_setup.py`, { logger: req.logger });
+
+    await showDisplayMessage(req, [
+      `:${await phpLanguageString(req, 'config_display_message_settings_uploaded_1', 'Settings')}`,
+      `:${await phpLanguageString(req, 'config_display_message_settings_uploaded_2', 'imported.')}`,
+    ]);
+
+    const config = reloadConfig(req.WORKING_DIR);
+    req.config = config;
+
+    // Device password from the restored config (setup.php:567-574).
+    const devicePassword = decodePassword(config.conf_PASSWORD);
+    let passwordState = 'removed';
+    if (devicePassword.length >= DEVICE_PASSWORD_MIN_LENGTH) {
+      await runLibPassword(req, devicePassword);
+      passwordState = 'set';
+    } else {
+      await runLibPassword(req, '');
+    }
+
+    // Hotspot password from the restored config (setup.php:576-589). An old
+    // archive without conf_WIFI_PASSWORD falls back to the device password.
+    const wifiValue = wifiPasswordWasSet ? config.conf_WIFI_PASSWORD : config.conf_PASSWORD;
+    const wifiPassword = decodePassword(wifiValue);
+    let wifiPasswordApplied = false;
+    if ((config.conf_WIFI_PASSWORD_TYPE || 'static') === 'static' && (!wifiPassword || !validateWifiPassword(wifiPassword))) {
+      await runLibComitupConfig(req, wifiPassword);
+      wifiPasswordApplied = Boolean(wifiPassword);
+    }
+
+    await execCommand(`sudo rm -rf ${shellQuote(targetDir)}`, { logger: req.logger });
+
+    req.logger.info(`Settings restored: ${restored.join(', ')}`);
+    res.json({ success: true, files: restored, password: passwordState, wifiPasswordApplied });
   } catch (error) {
+    cleanupUpload();
     req.logger.error('Failed to upload settings', { error: error.message });
-    res.status(500).json({ error: 'Failed to upload settings' });
+    res.status(500).json({ error: 'upload_problem' });
   }
 });
 

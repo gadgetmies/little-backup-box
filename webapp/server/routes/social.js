@@ -1,7 +1,4 @@
 import express from 'express';
-import { readFileSync } from 'fs';
-import { parse } from 'ini';
-import path from 'path';
 import { execCommand } from '../utils/execCommand.js';
 import axios from 'axios';
 import { shouldUseMocks } from '../utils/systemDetector.js';
@@ -40,13 +37,12 @@ router.post('/publish', async (req, res) => {
 
 router.get('/config', async (req, res) => {
   try {
-    const configPath = path.join(req.WORKING_DIR, 'config.cfg');
-    const config = parse(readFileSync(configPath, 'utf-8'));
-    
+    const config = req.config;
+
     res.json({
       config: {
-        conf_SOCIAL_PUBLISH_DATE: config.conf_SOCIAL_PUBLISH_DATE || '0',
-        conf_SOCIAL_PUBLISH_FILENAME: config.conf_SOCIAL_PUBLISH_FILENAME || '0',
+        conf_SOCIAL_PUBLISH_DATE: config.conf_SOCIAL_PUBLISH_DATE || 'true',
+        conf_SOCIAL_PUBLISH_FILENAME: config.conf_SOCIAL_PUBLISH_FILENAME || 'false',
         conf_SOCIAL_TELEGRAM_TOKEN: config.conf_SOCIAL_TELEGRAM_TOKEN || '',
         conf_SOCIAL_TELEGRAM_CHAT_ID: config.conf_SOCIAL_TELEGRAM_CHAT_ID || '',
         conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER: config.conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER || '',
@@ -243,6 +239,65 @@ router.post('/telegram/chat-id', async (req, res) => {
   } catch (error) {
     req.logger.error('Failed to get Telegram chat ID', { error: error.message });
     res.status(500).json({ ok: false, error: 'Failed to get Telegram chat ID' });
+  }
+});
+
+// Fetch a Matrix access token with a password login, like
+// scripts/matrix_get_token.php (used by sub-matrix-token.php). The password is
+// only forwarded to the homeserver and never stored or logged.
+router.post('/matrix/token', async (req, res) => {
+  const homeserver = typeof req.body?.homeserver === 'string' ? req.body.homeserver.trim() : '';
+  const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
+  if (!homeserver || !username || !password) {
+    return res.status(400).json({ ok: false, error: 'missing_parameters' });
+  }
+
+  let baseUrl;
+  try {
+    const url = new URL(homeserver.replace(/\/+$/, ''));
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('protocol');
+    baseUrl = url.toString().replace(/\/+$/, '');
+  } catch {
+    return res.status(400).json({ ok: false, error: 'missing_parameters' });
+  }
+
+  if (shouldUseMocks()) {
+    const localpart = username.replace(/^@/, '').split(':')[0] || 'bot';
+    const host = new URL(baseUrl).hostname;
+    return res.json({
+      ok: true,
+      token: `syt_${Buffer.from(localpart).toString('base64').replace(/=+$/, '')}_mockAccessToken0123456789`,
+      user_id: username.startsWith('@') ? username : `@${localpart}:${host}`,
+    });
+  }
+
+  try {
+    const response = await axios.post(
+      `${baseUrl}/_matrix/client/v3/login`,
+      {
+        type: 'm.login.password',
+        identifier: { type: 'm.id.user', user: username },
+        password,
+      },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 15000, validateStatus: () => true },
+    );
+
+    if (response.status === 401 || response.status === 403) {
+      return res.json({ ok: false, error: 'invalid_credentials', status: response.status });
+    }
+    if (response.status !== 200 || typeof response.data !== 'object' || response.data === null) {
+      return res.json({ ok: false, error: 'bad_api_response', status: response.status });
+    }
+    const token = response.data.access_token;
+    if (!token) {
+      return res.json({ ok: false, error: 'no_token' });
+    }
+    return res.json({ ok: true, token, user_id: response.data.user_id || null });
+  } catch (error) {
+    req.logger.warn('Matrix login failed', { error: error.message });
+    return res.json({ ok: false, error: 'matrix_unreachable' });
   }
 });
 

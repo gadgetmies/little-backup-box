@@ -31,6 +31,7 @@ sda         64G   50G    10G    17%   /media/usb_target
 sdb        128G   100G   20G    17%   /media/usb_source
 nvme0n1    256G   200G   40G    17%   /media/nvme_target`,
   cloudServices: ['google-drive', 'dropbox', 'onedrive'],
+  backgroundImages: ['lbb/andromeda.jpg', 'lbb/paris.jpg', 'lbb/river-fog.jpg', 'lbb/river.jpg'],
   // lib_socialmedia.py prints these ';'-joined (see lib_socialmedia.py:300).
   socialServices: ['telegram', 'matrix', 'mastodon'],
   telegramChats: [
@@ -62,9 +63,11 @@ nvme0n1    256G   200G   40G    17%   /media/nvme_target`,
 };
 
 export function mockCommand(command, options = {}) {
-  const { logger } = options;
+  const { logger, logCommand = true } = options;
   
-  if (logger) {
+  // logCommand: false keeps secrets (passwords passed to lib_password.py /
+  // lib_comitup.py) out of the log, as execCommand does for real commands.
+  if (logger && logCommand) {
     logger.info(`[MOCK] Executing: ${command}`);
   }
   
@@ -302,6 +305,17 @@ Canon EOS Rebel T7i              usb:001,005`,
     };
   }
   
+  // Background images listing (setup.php:873-885 find | file --mime-type).
+  if (command.includes('file --mime-type')) {
+    const dirMatch = command.match(/find '([^']+)'/);
+    const dir = dirMatch ? dirMatch[1] : '/media/backgroundimages';
+    return {
+      success: true,
+      stdout: mockData.backgroundImages.map((image) => `${dir}/${image}`).join('\n'),
+      stderr: '',
+    };
+  }
+
   if (command.includes('rclone config show')) {
     const services = mockData.cloudServices.map(s => `[${s}]`).join('\n');
     return {

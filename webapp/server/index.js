@@ -19,7 +19,8 @@ import socialRoutes from './routes/social.js';
 import cloudRoutes from './routes/cloud.js';
 import vpnRoutes from './routes/vpn.js';
 import networkRoutes from './routes/network.js';
-import { loadConfig, loadConstants } from './utils/configLoader.js';
+import securityRoutes from './routes/security.js';
+import { initConfigStore, getConfig, loadConstants } from './utils/configLoader.js';
 import { isLinux, shouldUseMocks } from './utils/systemDetector.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,12 +44,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const WORKING_DIR = path.resolve(__dirname, '../..', 'scripts');
-const config = loadConfig(WORKING_DIR);
+initConfigStore(WORKING_DIR);
 const constants = loadConstants(WORKING_DIR);
 
 app.use((req, res, next) => {
   req.WORKING_DIR = WORKING_DIR;
-  req.config = config;
+  // Always the current config.cfg contents: the store is refreshed on every save.
+  req.config = getConfig();
   req.constants = constants;
   req.logger = logger;
   next();
@@ -70,6 +72,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/cloud', cloudRoutes);
 app.use('/api/vpn', vpnRoutes);
 app.use('/api/network', networkRoutes);
+app.use('/api/security', securityRoutes);
 
 const isDev = process.env.NODE_ENV !== 'production';
 

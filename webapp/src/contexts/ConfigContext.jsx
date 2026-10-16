@@ -14,6 +14,8 @@ export function useConfig() {
 export function ConfigProvider({ children }) {
   const [config, setConfig] = useState(null);
   const [constants, setConstants] = useState(null);
+  // Whether a device password is set. The password itself is never sent to the client.
+  const [passwordSet, setPasswordSet] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function ConfigProvider({ children }) {
       const response = await api.get('/config');
       setConfig(response.data.config);
       setConstants(response.data.constants);
+      setPasswordSet(Boolean(response.data.password_set));
     } catch (error) {
       console.error('Failed to load config:', error);
     } finally {
@@ -46,6 +49,7 @@ export function ConfigProvider({ children }) {
     config,
     constants,
     loading,
+    passwordSet,
     updateConfig,
     reloadConfig: loadConfig,
   };

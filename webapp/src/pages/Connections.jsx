@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
-  Typography,
   Select,
   MenuItem,
   FormControl,
@@ -21,13 +20,8 @@ import {
   Tabs,
   Tab,
   Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EmailIcon from '@mui/icons-material/Email';
-import SaveIcon from '@mui/icons-material/Save';
 import ServerIcon from '@mui/icons-material/Dns';
 import PortIcon from '@mui/icons-material/Numbers';
 import LockIcon from '@mui/icons-material/Lock';
@@ -35,6 +29,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConfig } from '../contexts/ConfigContext';
+import usePopupMessages from '../hooks/usePopupMessages';
 import { useDrawer } from '../contexts/DrawerContext';
 import { drawerWidth, drawerCollapsedWidth } from '../components/Menu';
 import api from '../utils/api';
@@ -42,6 +37,7 @@ import SocialMediaConfig from '../components/SocialMediaConfig';
 import CloudConfig from '../components/CloudConfig';
 import SectionHeader from '../components/SectionHeader';
 import PageSaveBar from '../components/PageSaveBar';
+import { isConfigTrue, toConfigBool } from '../utils/configValue';
 
 function TabPanel({ children, value, index, ...other }) {
   const needsBottomPadding = value === index && (index === 0 || index === 1 || index === 2 || index === 3);
@@ -61,6 +57,7 @@ function TabPanel({ children, value, index, ...other }) {
 function Connections() {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
+  const { notifyInfo } = usePopupMessages();
   const { desktopOpen } = useDrawer();
   const currentDrawerWidth = desktopOpen ? drawerWidth : drawerCollapsedWidth;
   const [mailFormData, setMailFormData] = useState({});
@@ -81,19 +78,12 @@ function Connections() {
   const [rsyncIsSaved, setRsyncIsSaved] = useState(true);
   const [socialMediaState, setSocialMediaState] = useState({ isSaved: true, save: null });
   const [cloudConfigState, setCloudConfigState] = useState({ isSaved: true, save: null });
-  const [socialGeneralFormData, setSocialGeneralFormData] = useState({});
-  const socialGeneralLastSaved = useRef(null);
-  const [socialGeneralIsSaved, setSocialGeneralIsSaved] = useState(true);
-  const [cloudRemotes, setCloudRemotes] = useState([]);
-  const [cloudRemoteFormData, setCloudRemoteFormData] = useState({});
-  const cloudRemoteLastSaved = useRef(null);
-  const [cloudRemoteIsSaved, setCloudRemoteIsSaved] = useState(true);
 
   useEffect(() => {
     if (config) {
       const mailConfig = {
-        conf_MAIL_IP: config.conf_MAIL_IP || '0',
-        conf_MAIL_HTML: config.conf_MAIL_HTML || '0',
+        conf_MAIL_IP: toConfigBool(isConfigTrue(config.conf_MAIL_IP)),
+        conf_MAIL_HTML: toConfigBool(isConfigTrue(config.conf_MAIL_HTML)),
         conf_SMTP_SERVER: config.conf_SMTP_SERVER || '',
         conf_SMTP_PORT: config.conf_SMTP_PORT || '',
         conf_MAIL_SECURITY: config.conf_MAIL_SECURITY || 'STARTTLS',
@@ -130,12 +120,6 @@ function Connections() {
       rsyncLastSavedConfig.current = JSON.stringify(rsyncConfig);
       setRsyncIsSaved(true);
 
-      const socialGeneralConfig = {
-        conf_social_publish_date: config.conf_social_publish_date || '',
-        conf_social_publish_filename: config.conf_social_publish_filename || 'false',
-      };
-      setSocialGeneralFormData(socialGeneralConfig);
-      socialGeneralLastSaved.current = JSON.stringify(socialGeneralConfig);
     }
   }, [config]);
 
@@ -168,8 +152,8 @@ function Connections() {
       throw new Error('Password validation failed');
     }
     const mailConfigToSave = {
-      conf_MAIL_IP: mailFormData.conf_MAIL_IP || '0',
-      conf_MAIL_HTML: mailFormData.conf_MAIL_HTML || '0',
+      conf_MAIL_IP: toConfigBool(isConfigTrue(mailFormData.conf_MAIL_IP)),
+      conf_MAIL_HTML: toConfigBool(isConfigTrue(mailFormData.conf_MAIL_HTML)),
       conf_SMTP_SERVER: mailFormData.conf_SMTP_SERVER || '',
       conf_SMTP_PORT: mailFormData.conf_SMTP_PORT || '',
       conf_MAIL_SECURITY: mailFormData.conf_MAIL_SECURITY || 'STARTTLS',
@@ -202,30 +186,9 @@ function Connections() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rsyncFormData, updateConfig]);
 
-  const handleSaveSocialGeneral = useCallback(async () => {
-    await updateConfig(socialGeneralFormData);
-    socialGeneralLastSaved.current = JSON.stringify(socialGeneralFormData);
-    setSocialGeneralIsSaved(true);
-  }, [socialGeneralFormData, updateConfig]);
-
-  const handleSaveCloudRemote = useCallback(async () => {
-    const configToSave = {};
-    Object.entries(cloudRemoteFormData).forEach(([name, values]) => {
-      const key = name.toLowerCase().replace(/\s+/g, '_');
-      configToSave[`conf_cloud_${key}_target_dir`] = values.target_dir || '';
-      configToSave[`conf_cloud_${key}_sync_method`] = values.sync_method || 'rclone';
-      configToSave[`conf_cloud_${key}_files_stay`] = values.files_stay || 'false';
-    });
-    await updateConfig(configToSave);
-    cloudRemoteLastSaved.current = JSON.stringify(cloudRemoteFormData);
-    setCloudRemoteIsSaved(true);
-  }, [cloudRemoteFormData, updateConfig]);
-
   const isAnyDirty =
     !mailIsSaved ||
     !rsyncIsSaved ||
-    !socialGeneralIsSaved ||
-    !cloudRemoteIsSaved ||
     !cloudConfigState.isSaved ||
     !socialMediaState.isSaved;
 
@@ -234,8 +197,6 @@ function Connections() {
     const tasks = [];
     if (!mailIsSaved) tasks.push(['Mail', handleSaveMail]);
     if (!rsyncIsSaved) tasks.push(['Rsync', handleSaveRsync]);
-    if (!socialGeneralIsSaved) tasks.push(['Social', handleSaveSocialGeneral]);
-    if (!cloudRemoteIsSaved) tasks.push(['Cloud remotes', handleSaveCloudRemote]);
     if (!cloudConfigState.isSaved && cloudConfigState.save) tasks.push(['Cloud', cloudConfigState.save]);
     if (!socialMediaState.isSaved && socialMediaState.save) tasks.push(['Social media', socialMediaState.save]);
     const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
@@ -243,53 +204,12 @@ function Connections() {
       .map((r, i) => (r.status === 'rejected' ? `${tasks[i][0]}: ${r.reason?.message || 'error'}` : null))
       .filter(Boolean);
     if (failures.length === 0 && tasks.length > 0) {
-      setMessage(t('config.message_settings_saved') || 'Settings saved');
+      notifyInfo(setMessage, t('config.message_settings_saved'));
     } else if (failures.length > 0) {
       setMessage(`${t('config.save_partial_error') || 'Some settings failed to save'}: ${failures.join('; ')}`);
     }
     setIsSaving(false);
   };
-
-  // Track social-general dirty state (no autosave)
-  useEffect(() => {
-    if (Object.keys(socialGeneralFormData).length === 0) return;
-    const formDataString = JSON.stringify(socialGeneralFormData);
-    setSocialGeneralIsSaved(socialGeneralLastSaved.current === formDataString);
-  }, [socialGeneralFormData]);
-
-  // Load cloud remotes on mount; seed last-saved snapshot from current config so the page is clean on load
-  useEffect(() => {
-    const loadCloudRemotes = async () => {
-      try {
-        const response = await api.get('/cloud/remotes');
-        const remotes = response.data.remotes || [];
-        setCloudRemotes(remotes);
-        if (config) {
-          const formData = {};
-          remotes.forEach((name) => {
-            const key = name.toLowerCase().replace(/\s+/g, '_');
-            formData[name] = {
-              target_dir: config[`conf_cloud_${key}_target_dir`] || '',
-              sync_method: config[`conf_cloud_${key}_sync_method`] || 'rclone',
-              files_stay: config[`conf_cloud_${key}_files_stay`] || 'false',
-            };
-          });
-          setCloudRemoteFormData(formData);
-          cloudRemoteLastSaved.current = JSON.stringify(formData);
-        }
-      } catch (error) {
-        console.error('Failed to load cloud remotes:', error);
-      }
-    };
-    loadCloudRemotes();
-  }, [config]);
-
-  // Track cloud-remote dirty state (no autosave)
-  useEffect(() => {
-    if (Object.keys(cloudRemoteFormData).length === 0) return;
-    const formDataString = JSON.stringify(cloudRemoteFormData);
-    setCloudRemoteIsSaved(cloudRemoteLastSaved.current === formDataString);
-  }, [cloudRemoteFormData]);
 
   const validatePassword = (password) => {
     if (!password) {
@@ -425,8 +345,8 @@ function Connections() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={mailFormData.conf_MAIL_IP === '1'}
-                          onChange={(e) => setMailFormData({ ...mailFormData, conf_MAIL_IP: e.target.checked ? '1' : '0' })}
+                          checked={isConfigTrue(mailFormData.conf_MAIL_IP)}
+                          onChange={(e) => setMailFormData({ ...mailFormData, conf_MAIL_IP: toConfigBool(e.target.checked) })}
                         />
                       }
                       label={t('config.mail.notify_ip_label') || 'If possible, send the current links of this Little Backup Box via email?'}
@@ -434,8 +354,8 @@ function Connections() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={mailFormData.conf_MAIL_HTML === '1'}
-                          onChange={(e) => setMailFormData({ ...mailFormData, conf_MAIL_HTML: e.target.checked ? '1' : '0' })}
+                          checked={isConfigTrue(mailFormData.conf_MAIL_HTML)}
+                          onChange={(e) => setMailFormData({ ...mailFormData, conf_MAIL_HTML: toConfigBool(e.target.checked) })}
                         />
                       }
                       label={t('config.mail.html_label') || 'Format emails in HTML?'}
@@ -597,101 +517,11 @@ function Connections() {
       </TabPanel>
 
       <TabPanel value={currentTab} index={1}>
-              <SectionHeader level={2} title={t('integrations.social_general')} sx={{ mb: 2 }} />
-              <Stack spacing={2} sx={{ mb: 3 }}>
-                <TextField
-                  label={t('integrations.social_publish_date')}
-                  helperText={t('integrations.social_publish_date_help')}
-                  value={socialGeneralFormData.conf_social_publish_date || ''}
-                  onChange={(e) =>
-                    setSocialGeneralFormData({
-                      ...socialGeneralFormData,
-                      conf_social_publish_date: e.target.value,
-                    })
-                  }
-                  sx={{ maxWidth: 400 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={socialGeneralFormData.conf_social_publish_filename === 'true'}
-                      onChange={(e) =>
-                        setSocialGeneralFormData({
-                          ...socialGeneralFormData,
-                          conf_social_publish_filename: e.target.checked ? 'true' : 'false',
-                        })
-                      }
-                    />
-                  }
-                  label={t('integrations.social_publish_filename')}
-                />
-              </Stack>
-              <Divider sx={{ mb: 3 }} />
               <SocialMediaConfig onSavedStateChange={handleSocialMediaState} onMessage={setMessage} />
       </TabPanel>
 
       {/* Cloud panel — was index 2, now 0; absorbs the rsync panel */}
       <TabPanel value={currentTab} index={0}>
-              {cloudRemotes.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  {cloudRemotes.map((remoteName) => (
-                    <Accordion key={remoteName}>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography>{remoteName}</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Stack spacing={2}>
-                          <TextField
-                            label={t('integrations.cloud_target_dir')}
-                            value={cloudRemoteFormData[remoteName]?.target_dir || ''}
-                            onChange={(e) =>
-                              setCloudRemoteFormData((prev) => ({
-                                ...prev,
-                                [remoteName]: { ...prev[remoteName], target_dir: e.target.value },
-                              }))
-                            }
-                            sx={{ maxWidth: 500 }}
-                          />
-                          <FormControl sx={{ maxWidth: 300 }}>
-                            <InputLabel>{t('integrations.cloud_sync_method')}</InputLabel>
-                            <Select
-                              value={cloudRemoteFormData[remoteName]?.sync_method || 'rclone'}
-                              onChange={(e) =>
-                                setCloudRemoteFormData((prev) => ({
-                                  ...prev,
-                                  [remoteName]: { ...prev[remoteName], sync_method: e.target.value },
-                                }))
-                              }
-                              label={t('integrations.cloud_sync_method')}
-                            >
-                              <MenuItem value="rclone">{t('integrations.cloud_sync_rclone')}</MenuItem>
-                              <MenuItem value="rsync">{t('integrations.cloud_sync_rsync')}</MenuItem>
-                            </Select>
-                          </FormControl>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={cloudRemoteFormData[remoteName]?.files_stay === 'true'}
-                                onChange={(e) =>
-                                  setCloudRemoteFormData((prev) => ({
-                                    ...prev,
-                                    [remoteName]: {
-                                      ...prev[remoteName],
-                                      files_stay: e.target.checked ? 'true' : 'false',
-                                    },
-                                  }))
-                                }
-                              />
-                            }
-                            label={t('integrations.cloud_files_stay')}
-                          />
-                        </Stack>
-                      </AccordionDetails>
-                    </Accordion>
-                  ))}
-                  <Divider sx={{ mt: 3, mb: 3 }} />
-                </Box>
-              )}
               <CloudConfig onSavedStateChange={handleCloudConfigState} onMessage={setMessage} />
 
               <Divider sx={{ my: 4 }} />
