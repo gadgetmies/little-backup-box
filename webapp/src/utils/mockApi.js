@@ -7,17 +7,22 @@ const mockData = {
   services: {
     sourceServices: {
       usb: ['anyusb', 'usb', 'camera'],
-      internal: ['internal', 'nvme'],
+      internal: ['internal', 'nvme', 'ftp'],
       cloud: ['cloud_rsync', 'cloud:google-drive', 'cloud:dropbox'],
     },
     targetServices: {
       internal: ['internal', 'nvme'],
       usb: ['usb'],
       cloud: ['cloud_rsync', 'cloud:google-drive', 'cloud:dropbox'],
-      social: ['social:telegram', 'social:matrix'],
+      social: ['social:telegram', 'social:matrix', 'social:mastodon'],
     },
     nvmeAvailable: true,
   },
+  telegramChats: [
+    { id: -1001234567890, type: 'channel', name: 'LBB Photo Channel' },
+    { id: -987654321, type: 'group', name: 'Family Photos' },
+    { id: 123456789, type: 'private', name: 'Jane Doe' },
+  ],
   partitions: [
     { lum: 'sda1', identifier: 'USB-DRIVE-001' },
     { lum: 'sda2', identifier: 'USB-DRIVE-002' },
@@ -42,6 +47,9 @@ const mockData = {
     conf_TIME_ZONE: 'UTC',
     conf_WIFI_COUNTRY: 'US',
     conf_SOCIAL_TELEGRAM_TOKEN: 'mock-telegram-token',
+    conf_SOCIAL_TELEGRAM_CHAT_ID: '-1001234567890',
+    conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER: 'LBB Photo Channel (channel)',
+    conf_SOCIAL_MATRIX_ROOM_IDENTIFIER: '#lbb-backups:matrix.org',
     conf_SOCIAL_MASTODON_TOKEN: 'mock-mastodon-token',
     conf_SOCIAL_MASTODON_BASE_URL: 'https://mastodon.social',
   },
@@ -232,6 +240,17 @@ function resolveDisplayStatus() {
   return { status, severity };
 }
 
+function parseRequestBody(config) {
+  if (typeof config.data === 'string') {
+    try {
+      return JSON.parse(config.data);
+    } catch {
+      return {};
+    }
+  }
+  return config.data || {};
+}
+
 function generateBackupId() {
   return Date.now();
 }
@@ -263,25 +282,10 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/backup/start' && method === 'post') {
-      const backupConfig = config.data;
-      const existingBackup = runningBackups.find(
-        b => b.sourceDevice === backupConfig.sourceDevice &&
-        b.targetDevice === backupConfig.targetDevice &&
-        (b.presetSource || '') === (backupConfig.presetSource || '') &&
-        (b.presetTarget || '') === (backupConfig.presetTarget || '')
-      );
-      
-      if (existingBackup) {
-        return Promise.reject({
-          response: {
-            status: 409,
-            data: {
-              error: 'A backup with this configuration is already running',
-              alreadyRunning: true,
-            },
-          },
-        });
-      }
+      const backupConfig = parseRequestBody(config);
+      // Like PHP (index.php:488) and the Node route, every start runs
+      // stop_backup.sh first, so only one backup runs at a time.
+      runningBackups = [];
       
       const newBackup = {
         pid: generateBackupId(),
@@ -304,7 +308,7 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/backup/stop' && method === 'post') {
-      const { pid } = config.data || {};
+      const { pid } = parseRequestBody(config);
       
       if (pid) {
         const index = runningBackups.findIndex(b => b.pid === pid);
@@ -326,6 +330,18 @@ export function createMockApiInterceptor() {
     }
     
     if (url === '/backup/function' && method === 'post') {
+      // Same validation as server/routes/backup.js: backup.py only accepts
+      // --SourceName thumbnails|database|exif|rename (index.php:494-541).
+      const { function: func, target } = parseRequestBody(config);
+      const [functionType, combinedTarget] = String(func || '').split(/_(.*)/s);
+      if (
+        !['thumbnails', 'database', 'exif', 'rename'].includes(functionType) ||
+        !['usb', 'internal', 'nvme'].includes(target || combinedTarget)
+      ) {
+        return Promise.reject({
+          response: { status: 400, data: { error: `Unknown backup function: ${func}` } },
+        });
+      }
       const failureMode = mockSettings.failureMode;
       if (failureMode === 'disk_full') {
         return Promise.reject({
@@ -633,6 +649,10 @@ export function createMockApiInterceptor() {
           socialPublished: buildCounts(7),
         },
       };
+    }
+
+    if (url === '/social/telegram/chat-id' && method === 'post') {
+      return { data: { ok: true, chats: mockData.telegramChats } };
     }
 
     if (url === '/social/publish' && method === 'post') {

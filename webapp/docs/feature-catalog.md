@@ -17,21 +17,30 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 
 ### Configure and start a backup
 
-- **Purpose**: pick a source and target, optionally tweak file-handling and post-run options, and kick off a backup.
+- **Purpose**: pick a source and target, optionally tweak file-handling and post-run options, and kick off a backup. Sources: any USB, USB, internal, NVMe, camera, FTP, rsync server, each rclone cloud remote. Targets: USB, internal, NVMe, rsync server, each cloud remote, and configured social media (Telegram, Matrix, Mastodon, Bluesky). Disallowed source/target pairs are shown disabled with a reason (mirrors `HideDisallowedButtons` in `scripts/index.php`). Starting a backup first runs `stop_backup.sh`, like PHP, so only one backup runs at a time.
 - **Audience**: every user; this is the device's primary job.
 - **UI location**: `/` → "Run a backup" section
-- **Backend**: `GET /api/backup/services`, `GET /api/backup/partitions`, `POST /api/backup/start`; `scripts/backup.py`
+- **Backend**: `GET /api/backup/services`, `GET /api/backup/partitions`, `POST /api/backup/start`; `scripts/stop_backup.sh`, `scripts/backup.py`
 - **Prerequisites**: at least one source device and one valid target available.
-- **Related**: Stop a running backup; Configure secondary backup destination; Save backup options as defaults.
+- **Related**: Stop a running backup; Configure secondary backup destination; Save backup options as defaults; Preset source/target partitions; Choose the Telegram chat for one run.
 
 ### Stop a running backup
 
 - **Purpose**: halt one in-progress backup process.
 - **Audience**: any user who started a backup that needs to be cancelled.
 - **UI location**: `/` → "Running backups" section (per-row stop button)
-- **Backend**: `POST /api/backup/stop`; `scripts/backup.py`
+- **Backend**: `POST /api/backup/stop` with `pid` (`kill <pid>`; when no `backup.py` remains, `scripts/stop_backup.sh` runs for cleanup)
 - **Prerequisites**: at least one backup is currently running.
-- **Related**: Monitor running backups.
+- **Related**: Monitor running backups; Stop all backups.
+
+### Stop all backups
+
+- **Purpose**: stop every running backup and reset the box (PWR LED, display queue, FTP root), like the PHP "Stop backup" button.
+- **Audience**: any user who needs to halt the box's backup activity.
+- **UI location**: `/` → "Running backups" section header → "Stop all backups"
+- **Backend**: `POST /api/backup/stop` without `pid`; `scripts/stop_backup.sh`
+- **Prerequisites**: none.
+- **Related**: Stop a running backup.
 
 ### Monitor running backups
 
@@ -69,6 +78,15 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Prerequisites**: none.
 - **Related**: Monitor running backups.
 
+### Read backup help
+
+- **Purpose**: short help on backup sources and targets, linking to the project wiki (PHP `L::main_help_txt`).
+- **Audience**: new users.
+- **UI location**: `/` → "Help" section (collapsible)
+- **Backend**: none (translated text in `public/lang`).
+- **Prerequisites**: none.
+- **Related**: Configure and start a backup.
+
 ### Save current backup options as defaults
 
 - **Purpose**: persist the currently-selected file-handling, comparison, secondary-destination, and notification options as the device's defaults.
@@ -86,6 +104,24 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Backend**: `POST /api/backup/start` (consumes secondary fields); `scripts/backup.py`
 - **Prerequisites**: rsync server configured (Connections → Cloud → rsync subsection) or at least one cloud remote configured (Connections → Cloud).
 - **Related**: Configure rclone cloud remotes; Configure rsync server target.
+
+### Preset source/target partitions
+
+- **Purpose**: pin a backup to a specific partition instead of the automatic choice (`--device-identifier-preset-source/-target`).
+- **Audience**: users with several USB drives attached.
+- **UI location**: `/` → "Options" accordion → "Primary backup" → "Set source partition" / "Set target partition"
+- **Backend**: `GET /api/backup/partitions` (`lib_storage.py --Action get_available_partitions`); `POST /api/backup/start`
+- **Prerequisites**: the source preset only applies to the USB storage source (as in PHP); source and target presets must differ.
+- **Related**: Configure and start a backup.
+
+### Choose the Telegram chat for one run
+
+- **Purpose**: send this backup to a different Telegram chat than the configured one (`backup.py --telegram-chat-id`).
+- **Audience**: users whose bot is in several chats.
+- **UI location**: `/` → "Options" accordion → "Primary backup" → "Telegram chat for this run" (only when the target is Telegram)
+- **Backend**: `POST /api/social/telegram/chat-id` (chat list), `POST /api/backup/start` (`telegramChatId`)
+- **Prerequisites**: Telegram configured under Connections → Social.
+- **Related**: Configure and start a backup.
 
 ## Browse and triage media
 
@@ -204,7 +240,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: walk a target storage and create (or recreate) thumbnails for indexed media.
 - **Audience**: users who imported media outside the normal backup flow, or whose thumbnails are stale.
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'generate_thumbnails'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'thumbnails'` → `backup.py --SourceName thumbnails`); `scripts/backup.py`
 - **Prerequisites**: target storage selected; media database initialised on that target.
 - **Related**: Sync the media database; Update EXIF in stored media.
 
@@ -213,7 +249,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: re-scan a target storage and reconcile the media database with what's actually on disk.
 - **Audience**: users whose database has drifted from disk content (manual deletions, file moves).
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'sync'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'database'` → `backup.py --SourceName database --force-sync-database True`); `scripts/backup.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Generate or refresh thumbnails.
 
@@ -222,7 +258,7 @@ Update this file in the same PR that adds, moves, or removes a user-facing featu
 - **Purpose**: rewrite EXIF metadata on stored files using current settings.
 - **Audience**: users whose backup ran before EXIF settings changed, or who toggled "write rating to EXIF" later.
 - **UI location**: `/maintenance` → "Database" tab
-- **Backend**: `POST /api/backup/function` (`function: 'update_exif'`); `scripts/lib_database.py`
+- **Backend**: `POST /api/backup/function` (`function: 'exif'` → `backup.py --SourceName exif`); `scripts/backup.py`
 - **Prerequisites**: target storage selected.
 - **Related**: Toggle "write rating to EXIF" (Configure backup defaults).
 

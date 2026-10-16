@@ -46,13 +46,14 @@ The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
 | 1 | Run a backup | `PageSection.plain` | Configure and start a backup |
-| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination |
-| 3 | Running backups | `PageSection.plain` (only renders when backups are running) | Stop a running backup; Monitor running backups |
+| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination; Preset source/target partitions; Choose the Telegram chat for one run |
+| 3 | Running backups | `PageSection.plain` (always rendered; empty state when nothing runs) | Stop a running backup; Stop all backups; Monitor running backups |
 | 4 | Previous runs | `PageSection.plain` (only renders when history exists) | View backup history; Re-run a previous backup |
 | 5 | Backup logs | `PageSection.accordion` (`lbb-accordion-backup-logs`, default collapsed) | Stream backup logs |
+| 6 | Help | `PageSection.accordion` (`lbb-accordion-backup-help`, default collapsed) | Read backup help |
 
 Cross-references on this page:
-- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
+- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". Source and Target are grouped selects (Local / Network / Social media); combinations the PHP UI forbids are shown disabled with the reason. The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
 
 ### `/view` — Library
 
