@@ -306,9 +306,10 @@ Canon EOS Rebel T7i              usb:001,005`,
   }
   
   if (command.includes('lib_socialmedia.py --action get_social_services_configured')) {
+    // lib_socialmedia.py prints the services ';'-separated (sub-socialmedia.php).
     return {
       success: true,
-      stdout: mockData.socialServices.join('\n'),
+      stdout: mockData.socialServices.join(';'),
       stderr: '',
     };
   }
