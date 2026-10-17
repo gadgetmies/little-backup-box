@@ -1,3 +1,5 @@
+> **Superseded.** This analysis predates PR #144 and is largely stale. See [`webapp/docs/php-parity-audit.md`](../docs/php-parity-audit.md) for the current, code-verified gap list.
+
 # Missing Functionality — Webapp vs PHP Implementation
 
 This document is a top-level index of features present in the PHP implementation
