@@ -4,20 +4,20 @@ A fresh, code-level comparison of the legacy PHP UI (`scripts/*.php`) with the R
 
 Method: every user-visible control, option, info row, and side effect in `index.php`, `view.php`, `setup.php`, `tools.php`, `sysinfo.php`, `cmd.php`, and the `sub-*.php` includes was traced to the script or command it calls. Each one was then checked against the webapp's UI **and** its backend route. A control with no working backend counts as a gap.
 
-Each gap is closed by one of four PRs:
+All gaps are closed together on `feature/php-parity`. The "Area" column below groups them by the part of the app they touch:
 
-| PR | Branch | Scope |
-| --- | --- | --- |
-| **A** | `feature/parity-settings` | Config save path, config keys, Preferences, Security, hotspot password, settings restore |
-| **B** | `feature/parity-backup` | Backup page, Maintenance database operations |
-| **C** | `feature/parity-library` | Library (gallery + single view) |
-| **D** | `feature/parity-commands` | Protected commands, Storage / System / Menu / logs |
+| Area | Scope |
+| --- | --- |
+| **A** | Config save path, config keys, Preferences, Security, hotspot password, settings restore |
+| **B** | Backup page, Maintenance database operations |
+| **C** | Library (gallery + single view) |
+| **D** | Protected commands, Storage / System / Menu / logs |
 
 ## 1. Broken today: controls exist but don't reach the scripts
 
 These are the most urgent, because the UI looks complete but nothing happens on the device.
 
-| Gap | PHP reference | PR |
+| Gap | PHP reference | Area |
 | --- | --- | --- |
 | Saved config is never reloaded. `GET /api/config` returns startup values until restart | `setup.php` reloads after `write_config` | A |
 | `ini.stringify` escapes `;` and drops quotes. This corrupts the cloud keys packed with `\|;\|`, the camera folder mask, and any value that `set_hardware.sh` sources | `setup.php:322-420` | A |
@@ -42,7 +42,7 @@ These are the most urgent, because the UI looks complete but nothing happens on 
 
 ## 2. Missing functionality
 
-| Feature | PHP reference | Webapp home | PR |
+| Feature | PHP reference | Webapp home | Area |
 | --- | --- | --- | --- |
 | Cloud (rclone) and rsync as backup **source** | `index.php:74-95` | `/` Run a backup | B |
 | Cloud, rsync, and social media as backup **target**, including the Telegram chat / Matrix room shown under the target | `index.php:97-101, 212-253` | `/` Run a backup | B |
