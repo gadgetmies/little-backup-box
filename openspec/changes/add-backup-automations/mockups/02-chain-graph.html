@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automations – chain graph</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3z"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+  <symbol id="wifi" viewBox="0 0 24 24"><path d="M5 12.6a10 10 0 0 1 14 0M8.5 16.1a5 5 0 0 1 7 0M12 20h.01M1.4 9a15 15 0 0 1 21.2 0"/></symbol>
+</svg>
+<div class="shell">
+  <nav class="nav" aria-label="Main">
+    <a href="#">Backup</a>
+    <a href="#" class="on">Automations</a>
+    <a href="#">Gallery</a>
+    <a href="#">Storage</a>
+  </nav>
+  <div class="main">
+    <header class="appbar"><h1>Automations</h1></header>
+    <main class="content">
+      <div class="row">
+        <a class="btn small" href="#"><svg class="i s"><use href="#back"/></svg>All automations</a>
+        <h2>Card offload</h2>
+        <label class="row small" style="gap:8px">Enabled <span class="switch" aria-hidden="true"></span></label>
+        <span class="chip ok"><svg class="i s"><use href="#check"/></svg>Check: no problems found</span>
+        <span class="spacer"></span>
+        <button class="btn outlined" type="button"><svg class="i"><use href="#play"/></svg>Simulate</button>
+        <button class="btn outlined" type="button">Run now</button>
+        <button class="btn contained" type="button">Save</button>
+      </div>
+
+      <div class="canvas" style="height: 520px">
+        <svg class="wires" viewBox="0 0 992 520" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M260 260 L 320 260"/>
+          <path class="ok" d="M556 245 C 620 245, 620 112, 680 112"/>
+          <path class="ok" d="M556 275 C 620 275, 620 377, 680 377"/>
+          <path class="err" d="M438 350 L 438 440"/>
+          <path d="M916 377 L 950 377"/>
+        </svg>
+
+        <div class="node trigger" style="left: 24px; top: 210px; height: 100px">
+          <span class="kind"><svg class="i s"><use href="#bolt"/></svg>Trigger</span>
+          <span class="title">SD card inserted</span>
+          <span class="meta">Any card reader or USB card. Same as the “any USB” source today.</span>
+        </div>
+
+        <div class="node sel" style="left: 320px; top: 170px; height: 180px">
+          <span class="kind"><svg class="i s"><use href="#copy"/></svg>Backup</span>
+          <span class="title">SD card → USB SSD</span>
+          <span class="meta">Copy · compare by checksum · rename off</span>
+          <div class="bells">
+            <span class="bell"><svg class="i s"><use href="#bell"/></svg>start</span>
+            <span class="bell"><svg class="i s"><use href="#bell"/></svg>25 %</span>
+            <span class="bell"><svg class="i s"><use href="#bell"/></svg>finish</span>
+            <span class="bell err"><svg class="i s"><use href="#bell"/></svg>error</span>
+          </div>
+          <span class="meta">Telegram · Box display</span>
+        </div>
+
+        <span class="edge-label ok" style="left: 574px; top: 158px">✓ on success</span>
+        <span class="edge-label ok" style="left: 574px; top: 332px">✓ on success</span>
+        <span class="edge-label err" style="left: 448px; top: 384px">✗ on failure</span>
+
+        <div class="node" style="left: 680px; top: 50px; height: 125px">
+          <span class="kind"><svg class="i s"><use href="#image"/></svg>Previews</span>
+          <span class="title">Generate previews</span>
+          <span class="meta">On USB SSD, for the files this run copied</span>
+          <div class="bells"><span class="bell err"><svg class="i s"><use href="#bell"/></svg>error</span></div>
+        </div>
+
+        <div class="node" style="left: 680px; top: 300px; height: 155px">
+          <span class="kind"><svg class="i s"><use href="#cloud"/></svg>Upload</span>
+          <span class="title">Upload previews → Dropbox</span>
+          <span class="meta">2048 px JPG of the files this run copied</span>
+          <span class="meta"><svg class="i s"><use href="#wifi"/></svg> Only when online · waits up to 30 min</span>
+          <div class="bells"><span class="bell"><svg class="i s"><use href="#bell"/></svg>finish</span><span class="bell err"><svg class="i s"><use href="#bell"/></svg>error</span></div>
+        </div>
+
+        <button class="addnext" type="button" aria-label="Add a job after Upload" style="left: 950px; top: 363px">+</button>
+        <button class="addnext" type="button" aria-label="Add a job when the backup fails" style="left: 424px; top: 440px">+</button>
+        <span class="small muted" style="position:absolute; left: 462px; top: 444px">Add a job on failure</span>
+      </div>
+
+      <div class="legend">
+        <span><i style="border-color: var(--ok)"></i>runs after success</span>
+        <span><i style="border-color: var(--err); border-top-style: dashed"></i>runs after failure</span>
+        <span><i style="border-color: #9aa5b1"></i>trigger</span>
+        <span><span class="bell"><svg class="i s"><use href="#bell"/></svg>event</span> you get a message on this event</span>
+        <span>Jobs side by side run at the same time.</span>
+      </div>
+
+      <p class="caption">Chain graph. Left to right: what starts the chain, then each job, with the condition on every arrow. Bells on a job show which events message the user and where. Click a job to edit it (next mockup); “+” adds a follow-up. Layout is automatic, so the graph always reads the same way.</p>
+    </main>
+  </div>
+</div>
+</body>
+</html>

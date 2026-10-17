@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automations – simulate</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3z"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+</svg>
+<div class="shell">
+  <nav class="nav" aria-label="Main">
+    <a href="#">Backup</a>
+    <a href="#" class="on">Automations</a>
+    <a href="#">Gallery</a>
+  </nav>
+  <div class="main" style="background: rgba(0,0,0,.35)">
+    <header class="appbar"><h1>Automations</h1></header>
+    <div style="display:flex; justify-content:center; padding: 28px 24px">
+      <section role="dialog" aria-label="Simulate Card offload" class="card" style="width: 980px; box-shadow: 0 11px 15px rgba(0,0,0,.2); display:flex; flex-direction:column">
+        <header class="row" style="padding: 18px 24px 10px">
+          <svg class="i"><use href="#play"/></svg><h2 style="font-size:20px">Simulate “Card offload”</h2>
+          <span class="spacer"></span>
+          <button class="btn small" type="button" aria-label="Close"><svg class="i"><use href="#x"/></svg></button>
+        </header>
+        <div class="row" style="padding: 0 24px 14px; gap: 16px">
+          <div class="field" style="width: 280px"><label>Pretend this happens</label><div class="select">An SD card is inserted</div></div>
+          <div class="field" style="width: 260px"><label>Example size</label><div class="select">1 284 files · 31 GB</div></div>
+          <div class="field" style="width: 260px"><label>Show what happens if</label><div class="select">everything succeeds</div></div>
+        </div>
+        <div style="display:grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; border-top: 1px solid var(--divider)">
+          <div style="padding: 18px 24px; border-right: 1px solid var(--divider)">
+            <h3 style="margin-bottom: 14px">What will happen</h3>
+            <div class="steps">
+              <div class="step">
+                <div class="rail"><span class="dot trig"><svg class="i s"><use href="#bolt"/></svg></span><span class="line"></span></div>
+                <div class="body"><b>An SD card is inserted.</b><span class="muted small">Any card reader or USB card counts.</span></div>
+              </div>
+              <div class="step">
+                <div class="rail"><span class="dot">1</span><span class="line"></span></div>
+                <div class="body">
+                  <span><b>Back up the card to the USB SSD.</b> Files are copied (the card is left untouched) and compared by checksum. Skipped if the SSD has less than 10 GB free.</span>
+                  <span class="muted small">About 6 min for 31 GB at typical card-reader speed.</span>
+                </div>
+              </div>
+              <div class="step">
+                <div class="rail"><span class="dot">2</span><span class="line"></span></div>
+                <div class="body">
+                  <span><b>When step 1 succeeds, two jobs run at the same time:</b></span>
+                  <div class="branch">
+                    <span><svg class="i s"><use href="#image"/></svg> <b>2a</b> Generate previews on the USB SSD for the 1 284 files just copied.</span>
+                    <span><svg class="i s"><use href="#cloud"/></svg> <b>2b</b> Upload 2048 px previews of those files to Dropbox. Waits up to 30 min for internet; fails after that.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="step">
+                <div class="rail"><span class="dot wait">✓</span></div>
+                <div class="body"><b>Done.</b><span class="muted small">Nothing runs if step 1 fails — there is no “on failure” step. You still get the failure message.</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 18px 24px; display:flex; flex-direction:column; gap: 10px">
+            <h3>Messages you'll get</h3>
+            <div class="msg"><span class="ch">Telegram</span><span>Card offload started: SD card → USB SSD</span></div>
+            <div class="msg"><span class="ch">Telegram · Display</span><span>Backing up… 25 % · 50 % · 75 %</span></div>
+            <div class="msg"><span class="ch">Telegram</span><span>Backup finished: 1 284 files, 31 GB in 6 min</span></div>
+            <div class="msg"><span class="ch">Telegram</span><span>Previews uploaded to Dropbox: 1 284 files</span></div>
+            <h3 style="margin-top: 8px">If something fails</h3>
+            <div class="msg" style="background: var(--err-soft)"><span class="ch" style="color: var(--err)">Telegram · Display</span><span>Card offload failed at step 1: target disk full. Steps 2a and 2b skipped.</span></div>
+            <div class="alert info" style="margin-top: 6px"><svg class="i"><use href="#info"/></svg><span>A successful run sends 6 Telegram messages: start, 3 progress updates, finish and upload done. Previews (2a) only message on errors.</span></div>
+          </div>
+        </div>
+        <footer class="row" style="padding: 12px 24px; border-top: 1px solid var(--divider)">
+          <span class="small muted">Nothing is copied, uploaded or sent while simulating.</span>
+          <span class="spacer"></span>
+          <button class="btn" type="button">Close</button>
+          <button class="btn outlined" type="button">Edit chain</button>
+        </footer>
+      </section>
+    </div>
+  </div>
+</div>
+</body>
+</html>

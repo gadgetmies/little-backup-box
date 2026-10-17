@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automations – overview</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="power" viewBox="0 0 24 24"><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 2v10"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3z"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</svg>
+<div class="shell">
+  <nav class="nav" aria-label="Main">
+    <a href="#">Backup</a>
+    <a href="#" class="on">Automations <span class="new">new</span></a>
+    <a href="#">Gallery</a>
+    <a href="#">Storage</a>
+    <a href="#">Maintenance</a>
+    <a href="#">Connections</a>
+  </nav>
+  <div class="main">
+    <header class="appbar"><h1>Automations</h1></header>
+    <main class="content" style="max-width: 1040px">
+      <div class="row">
+        <p class="muted" style="margin:0; flex:1; min-width: 300px">Automations run backups and follow-up jobs by themselves — when a card is inserted, on a schedule, or after another job — and message you about what happened.</p>
+        <button class="btn contained" type="button"><svg class="i"><use href="#plus"/></svg>New automation</button>
+      </div>
+
+      <div class="alert warn" role="status"><svg class="i"><use href="#warn"/></svg>
+        <div><b>1 setting needs attention.</b> “Nightly cloud sync” sends errors by e-mail, but no mail server is set up. <a href="#">Set up mail</a> · <a href="#">Change notification</a></div>
+      </div>
+
+      <!-- Chain 1 -->
+      <section class="card" style="padding: 16px 20px; display:flex; flex-direction:column; gap: 12px">
+        <div class="row">
+          <h2 style="font-size:18px">Card offload</h2>
+          <span class="chip ok">✓ Last run today 14:02 · 2 min 31 s</span>
+          <span class="spacer"></span>
+          <label class="row small" style="gap:8px">Enabled <span class="switch" aria-hidden="true"></span></label>
+          <button class="btn outlined small" type="button"><svg class="i s"><use href="#play"/></svg>Simulate</button>
+          <button class="btn small" type="button">Edit</button>
+        </div>
+        <div class="row" style="gap: 8px; align-items: stretch">
+          <span class="chip" style="background:#f6f2fc; border-color:#b39ddb; color:#4527a0"><svg class="i s"><use href="#bolt"/></svg>SD card inserted</span>
+          <svg class="i faint"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#copy"/></svg>Back up SD card → USB SSD</span>
+          <svg class="i" style="color: var(--ok)"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#image"/></svg>Generate previews</span>
+          <span class="faint small" style="align-self:center">and</span>
+          <span class="chip"><svg class="i s"><use href="#cloud"/></svg>Upload previews → Dropbox</span>
+        </div>
+        <div class="row small muted" style="gap: 16px">
+          <span><svg class="i s"><use href="#bell"/></svg> Telegram: start · every 25 % · finish · errors</span>
+          <span><svg class="i s"><use href="#bell"/></svg> Box display: errors</span>
+        </div>
+      </section>
+
+      <!-- Chain 2 -->
+      <section class="card" style="padding: 16px 20px; display:flex; flex-direction:column; gap: 12px">
+        <div class="row">
+          <h2 style="font-size:18px">Nightly cloud sync</h2>
+          <span class="chip err">✗ Failed last night 02:00 — Dropbox: storage quota exceeded</span>
+          <span class="spacer"></span>
+          <label class="row small" style="gap:8px">Enabled <span class="switch" aria-hidden="true"></span></label>
+          <button class="btn outlined small" type="button"><svg class="i s"><use href="#play"/></svg>Simulate</button>
+          <button class="btn small" type="button">Edit</button>
+        </div>
+        <div class="row" style="gap: 8px">
+          <span class="chip" style="background:#f6f2fc; border-color:#b39ddb; color:#4527a0"><svg class="i s"><use href="#clock"/></svg>Every day at 02:00</span>
+          <svg class="i faint"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#cloud"/></svg>Sync USB SSD → Dropbox</span>
+          <svg class="i" style="color: var(--ok)"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#power"/></svg>Power off</span>
+        </div>
+        <div class="row small" style="gap: 16px">
+          <span class="chip warn"><svg class="i s"><use href="#warn"/></svg>Mail: errors — mail server not set up</span>
+        </div>
+      </section>
+
+      <!-- Chain 3 -->
+      <section class="card" style="padding: 16px 20px; display:flex; flex-direction:column; gap: 12px">
+        <div class="row">
+          <h2 style="font-size:18px">Default backup <span class="muted" style="font-size:13px; font-weight:400">(from your previous Backup defaults)</span></h2>
+          <span class="chip ok">✓ Last run Monday 09:12 · 48 s</span>
+          <span class="spacer"></span>
+          <label class="row small" style="gap:8px">Enabled <span class="switch" aria-hidden="true"></span></label>
+          <button class="btn outlined small" type="button"><svg class="i s"><use href="#play"/></svg>Simulate</button>
+          <button class="btn small" type="button">Edit</button>
+        </div>
+        <div class="row" style="gap: 8px">
+          <span class="chip" style="background:#f6f2fc; border-color:#b39ddb; color:#4527a0"><svg class="i s"><use href="#power"/></svg>Box started</span>
+          <svg class="i faint"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#copy"/></svg>Back up any USB → USB</span>
+          <svg class="i" style="color: var(--ok)"><use href="#arrow"/></svg>
+          <span class="chip"><svg class="i s"><use href="#cloud"/></svg>Then: USB → Dropbox</span>
+        </div>
+      </section>
+
+      <p class="caption">Overview. Each automation is one chain: a trigger, then jobs that run after it. The strip under each title is the whole chain in one line; “Simulate” explains it in words without running anything. Existing “Backup defaults” (boot-time default and secondary backup) are migrated into an equivalent chain, so upgraded boxes keep behaving exactly as before.</p>
+    </main>
+  </div>
+</div>
+</body>
+</html>
