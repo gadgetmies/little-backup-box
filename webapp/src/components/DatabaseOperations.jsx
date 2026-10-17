@@ -86,7 +86,7 @@ function DatabaseOperations() {
       <BackupTargetSelector value={form} onChange={setForm} disabled={anyExecuting} />
 
       <Box>
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
           <Box>
             <Button
               variant="outlined"

@@ -127,7 +127,7 @@ function HotspotPasswordSettings({ onSavedStateChange }) {
         helperText={
           <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
             <span>{errorText || t('network.hotspot.password_help')}</span>
-            <span data-testid="hotspot-password-counter">{`${password.length} / ${MAX_LENGTH}`}</span>
+            <span data-testid="hotspot-password-counter" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{`${password.length} / ${MAX_LENGTH}`}</span>
           </span>
         }
         inputProps={{ maxLength: 128, autoComplete: 'off', spellCheck: false }}

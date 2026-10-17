@@ -15,6 +15,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
 } from '@mui/material';
@@ -187,57 +188,59 @@ function ButtonHardwareConfig({ onSavedStateChange }) {
           <Typography variant="subtitle1" gutterBottom>
             {t('hardware.button_combinations')}
           </Typography>
-          <Table size="small" sx={{ mb: 1 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>{t('hardware.button_combinations')}</TableCell>
-                <TableCell>{t('hardware.button_action')}</TableCell>
-                <TableCell sx={{ width: 48 }} />
-              </TableRow>
-            </TableHead>
-            <TableBody data-testid="combinations-table-body">
-              {combinations.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <TextField
-                      size="small"
-                      value={row.buttons || ''}
-                      onChange={(e) => handleRowChange(index, 'buttons', e.target.value)}
-                      placeholder="e.g. 17,27"
-                      fullWidth
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <FormControl size="small" fullWidth>
-                      <Select
-                        value={row.action || ''}
-                        onChange={(e) => handleRowChange(index, 'action', e.target.value)}
-                        displayEmpty
-                      >
-                        <MenuItem value="">
-                          <em>—</em>
-                        </MenuItem>
-                        {actions.map((a) => (
-                          <MenuItem key={a} value={a}>
-                            {a}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteRow(index)}
-                      aria-label="delete row"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
+          <TableContainer sx={{ overflowX: 'auto', mb: 1 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('hardware.button_combinations')}</TableCell>
+                  <TableCell>{t('hardware.button_action')}</TableCell>
+                  <TableCell sx={{ width: 48 }} />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody data-testid="combinations-table-body">
+                {combinations.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={row.buttons || ''}
+                        onChange={(e) => handleRowChange(index, 'buttons', e.target.value)}
+                        placeholder="e.g. 17,27"
+                        fullWidth
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <FormControl size="small" fullWidth>
+                        <Select
+                          value={row.action || ''}
+                          onChange={(e) => handleRowChange(index, 'action', e.target.value)}
+                          displayEmpty
+                        >
+                          <MenuItem value="">
+                            <em>—</em>
+                          </MenuItem>
+                          {actions.map((a) => (
+                            <MenuItem key={a} value={a}>
+                              {a}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteRow(index)}
+                        aria-label="delete row"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <Button variant="outlined" size="small" onClick={handleAddRow}>
             {t('hardware.button_add_combination')}
           </Button>

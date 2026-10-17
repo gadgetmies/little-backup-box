@@ -193,8 +193,8 @@ function CloudConfig({ onSavedStateChange, onMessage }) {
               <Typography variant="h2">
                 {t('config.cloud.sync_parameter_header') || 'Sync Parameters'}
               </Typography>
-              <TableContainer component={Paper}>
-                <Table>
+              <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell></TableCell>

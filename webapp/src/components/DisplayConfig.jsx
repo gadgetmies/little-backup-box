@@ -197,6 +197,8 @@ function DisplayConfig({ onSavedStateChange }) {
                   { value: 128, label: '128' },
                   { value: 255, label: '255' },
                 ]}
+                // Keep the thumb and end-mark labels inside the column on phones.
+                sx={{ mx: 1.5, width: 'calc(100% - 24px)' }}
               />
             </Box>
 

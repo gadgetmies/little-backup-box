@@ -834,7 +834,7 @@ function Backup() {
                         </Box>
                       }
                       secondary={
-                        <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+                        <Stack direction="row" spacing={0.5} useFlexGap sx={{ mt: 0.5, flexWrap: 'wrap' }}>
                           {backup.presetSource && (
                             <Chip label={`Source: ${backup.presetSource}`} size="small" variant="outlined" />
                           )}
@@ -950,7 +950,7 @@ function Backup() {
                       </Box>
                     }
                     secondary={
-                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                      <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: 'wrap' }}>
                         {backup.presetSource && (
                           <Chip label={`Source: ${backup.presetSource}`} size="small" variant="outlined" />
                         )}

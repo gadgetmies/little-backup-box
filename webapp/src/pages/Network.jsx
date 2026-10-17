@@ -619,7 +619,7 @@ function Network() {
                     <Typography variant="body1" sx={{ mb: 1, fontFamily: 'monospace' }}>
                       {ip}
                     </Typography>
-                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
                       <Link href={`https://${ip}`} target="_blank" rel="noopener noreferrer">
                         https://{ip}
                       </Link>

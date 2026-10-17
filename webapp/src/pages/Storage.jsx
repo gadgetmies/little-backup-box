@@ -16,6 +16,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableRow,
   TableHead,
   Tabs,
@@ -517,8 +518,8 @@ function Storage() {
               </Typography>
               <Box sx={{ mt: 2 }}>
                 {diskSpace.headers.length > 0 ? (
-                <Paper elevation={0} sx={{ overflowX: 'auto' }}>
-                  <Table size="small">
+                <TableContainer data-testid="scrollable-table" sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <Table size="small" sx={{ '& th, & td': { whiteSpace: 'nowrap' } }}>
                     <TableHead>
                       <TableRow>
                         {diskSpace.headers.map((header, index) => (
@@ -540,7 +541,7 @@ function Storage() {
                       ))}
                     </TableBody>
                   </Table>
-                </Paper>
+                </TableContainer>
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   {t('sysinfo.loading')}
@@ -557,8 +558,8 @@ function Storage() {
               </Typography>
               <Box sx={{ mt: 2 }}>
                 {devices.headers.length > 0 ? (
-                <Paper elevation={0} sx={{ overflowX: 'auto' }}>
-                  <Table size="small">
+                <TableContainer data-testid="scrollable-table" sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <Table size="small" sx={{ '& th, & td': { whiteSpace: 'nowrap' } }}>
                     <TableHead>
                       <TableRow>
                         {devices.headers.map((header, index) => (
@@ -580,7 +581,7 @@ function Storage() {
                       ))}
                     </TableBody>
                   </Table>
-                </Paper>
+                </TableContainer>
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   {t('sysinfo.loading')}
@@ -609,24 +610,34 @@ function Storage() {
                         )}
                       </Typography>
                       {device.states && device.states.length > 0 ? (
-                        <Box component="pre" sx={{ 
-                          fontFamily: 'monospace', 
-                          fontSize: '0.75rem',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                          m: 0,
-                          p: 1,
-                          bgcolor: 'background.default',
-                          borderRadius: 1,
-                        }}>
-                          {device.states.map((state, stateIndex) => {
-                            const paddedValue = String(state.value || '').padEnd(35);
-                            return (
-                              <Box key={stateIndex} component="span" sx={{ display: 'block' }}>
-                                {paddedValue}{state.measured}
+                        <Box
+                          component="dl"
+                          data-testid="device-state-grid"
+                          sx={{
+                            // Key/value grid instead of space-padded <pre>: on phones the
+                            // padding wrapped mid-line and scrambled the two columns.
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(0, 1fr) auto',
+                            columnGap: 2,
+                            rowGap: 0.5,
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem',
+                            m: 0,
+                            p: 1,
+                            bgcolor: 'background.default',
+                            borderRadius: 1,
+                            '& dt, & dd': { m: 0, overflowWrap: 'anywhere' },
+                            '& dd': { textAlign: 'right' },
+                          }}
+                        >
+                          {device.states.map((state, stateIndex) => (
+                            <React.Fragment key={stateIndex}>
+                              <Box component="dt" sx={state.measured ? undefined : { gridColumn: '1 / -1' }}>
+                                {state.value}
                               </Box>
-                            );
-                          })}
+                              {state.measured ? <Box component="dd">{state.measured}</Box> : null}
+                            </React.Fragment>
+                          ))}
                         </Box>
                       ) : (
                         <Typography variant="body2" color="text.secondary">

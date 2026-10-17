@@ -14,7 +14,12 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
  *   size     {'small'|'normal'} Controls icon size
  */
 function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }) {
-  const iconFontSize = size === 'small' ? 'small' : 'medium';
+  const small = size === 'small';
+  const iconFontSize = small ? 'small' : 'medium';
+  // Grid cards are ~120px wide on a 320px phone: let the small widget's icons
+  // shrink (down to 16px) and, as a last resort, wrap instead of being clipped.
+  const iconSx = small ? { fontSize: 'clamp(16px, 5vw, 20px)' } : undefined;
+  const buttonSx = small ? { padding: '1px' } : { padding: '4px', minWidth: 44, minHeight: 44 };
 
   const handleReject = () => {
     if (disabled || !onChange) return;
@@ -36,7 +41,9 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 0.25,
+        flexWrap: 'wrap',
+        maxWidth: '100%',
+        gap: small ? 0 : 0.25,
         opacity: disabled ? 0.4 : 1,
         pointerEvents: disabled ? 'none' : 'auto',
       }}
@@ -51,11 +58,10 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
         aria-label="reject"
         sx={{
           color: value === -1 ? 'error.main' : 'action.active',
-          padding: size === 'small' ? '2px' : '4px',
-          ...(size === 'small' ? {} : { minWidth: 44, minHeight: 44 }),
+          ...buttonSx,
         }}
       >
-        <CloseIcon fontSize={iconFontSize} />
+        <CloseIcon fontSize={iconFontSize} sx={iconSx} />
       </IconButton>
 
       {/* Star buttons 1-5 */}
@@ -68,14 +74,13 @@ function RatingWidget({ value = 0, onChange, disabled = false, size = 'normal' }
           aria-label={`rate ${star} star${star !== 1 ? 's' : ''}`}
           sx={{
             color: value >= star ? 'warning.main' : 'action.active',
-            padding: size === 'small' ? '2px' : '4px',
-            ...(size === 'small' ? {} : { minWidth: 44, minHeight: 44 }),
+            ...buttonSx,
           }}
         >
           {value >= star ? (
-            <StarIcon fontSize={iconFontSize} />
+            <StarIcon fontSize={iconFontSize} sx={iconSx} />
           ) : (
-            <StarBorderIcon fontSize={iconFontSize} />
+            <StarBorderIcon fontSize={iconFontSize} sx={iconSx} />
           )}
         </IconButton>
       ))}
