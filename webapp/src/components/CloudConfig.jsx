@@ -24,7 +24,7 @@ import api from '../utils/api';
 
 function CloudConfig({ onSavedStateChange, onMessage }) {
   const { t } = useLanguage();
-  const { config, updateConfig, constants } = useConfig();
+  const { config, updateConfig, constants, passwordSet } = useConfig();
   const [cloudServices, setCloudServices] = useState([]);
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -193,8 +193,8 @@ function CloudConfig({ onSavedStateChange, onMessage }) {
               <Typography variant="h2">
                 {t('config.cloud.sync_parameter_header') || 'Sync Parameters'}
               </Typography>
-              <TableContainer component={Paper}>
-                <Table>
+              <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell></TableCell>
@@ -274,6 +274,9 @@ function CloudConfig({ onSavedStateChange, onMessage }) {
 
           <Typography variant="h2">
             {t('config.cloud.rclone.gui.header') || 'rclone GUI'}
+          </Typography>
+          <Typography variant="body2" data-testid="rclone-gui-login-hint">
+            {passwordSet ? t('integrations.rclone_login_device_password') : t('integrations.rclone_login_default')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             {t('config.cloud.rclone.desc') || 'Depending on your cloud service, this configuration may only be valid for a limited time.'}

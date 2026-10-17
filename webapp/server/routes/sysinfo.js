@@ -170,38 +170,40 @@ router.get('/device-states', async (req, res) => {
       .filter(line => line.trim());
     
     const deviceStates = [];
-    
+
+    // sysinfo.php:115-153 — every partition is listed. smartctl's exit status
+    // is a bitmask that is non-zero for many healthy-but-limited devices, so
+    // its output is parsed regardless of the exit code; a device without any
+    // "key: value" lines is shown with '-'.
     for (const partition of partitions) {
-      const [lum, ...identifierParts] = partition.split(': ');
+      const [lum, ...identifierParts] = partition.includes(':') ? partition.split(': ') : [partition];
       const identifier = identifierParts.join(': ');
-      
+
       if (lum) {
         const smartResult = await execCommand(
           `sudo smartctl -a ${lum}`,
           { logger: req.logger }
         );
-        
-        if (smartResult.success) {
-          const lines = smartResult.stdout.split('\n');
-          const states = [];
-          
-          for (const line of lines) {
-            if (line.includes(': ')) {
-              const [value, ...measuredParts] = line.split(':');
-              const measured = measuredParts.join(':').trim();
-              states.push({
-                value: value.trim() + ':',
-                measured,
-              });
-            }
+
+        const lines = String(smartResult.stdout || '').split('\n');
+        const states = [];
+
+        for (const line of lines) {
+          if (line.indexOf(': ') > 0) {
+            const [value, ...measuredParts] = line.split(':');
+            const measured = measuredParts.join(':').trim();
+            states.push({
+              value: value.trim() + ':',
+              measured,
+            });
           }
-          
-          deviceStates.push({
-            lum,
-            identifier,
-            states,
-          });
         }
+
+        deviceStates.push({
+          lum,
+          identifier,
+          states,
+        });
       }
     }
     
@@ -251,19 +253,25 @@ router.get('/cameras', async (req, res) => {
         { logger: req.logger }
       );
       
-      const modelName = summaryResult.success && summaryResult.stdout.trim()
-        ? summaryResult.stdout.trim().replace(/[^a-zA-Z0-9-]/g, '_')
-        : model;
-      
-      const serial = serialResult.success && serialResult.stdout.trim()
-        ? serialResult.stdout.trim().replace(/[^a-zA-Z0-9-_.]/g, '_').replace(/^0+/, '')
+      // sysinfo.php:191-246 — '-' is shown in the UI when a value is missing,
+      // but the folder patterns are always built (model falls back to the
+      // auto-detected name, serial to '').
+      const summaryModel = summaryResult.success && (summaryResult.stdout || '').trim()
+        ? summaryResult.stdout.trim().split('\n')[0].trim().replace(/[^a-zA-Z0-9-]/g, '_')
         : '';
-      
+      const modelName = summaryModel || model;
+
+      const serial = serialResult.success && (serialResult.stdout || '').trim()
+        ? serialResult.stdout.trim().split('\n')[0].replace(/[^a-zA-Z0-9-_.]/g, '_').replace(/^0+/, '')
+        : '';
+
       const storages = storageResult.success
-        ? storageResult.stdout.trim().split('\n').filter(s => s.trim())
+        ? (storageResult.stdout || '').trim().split('\n').map(s => s.trim()).filter(Boolean)
         : [];
-      
+
       cameras.push({
+        detected: `${model} ${port}`,
+        summaryModel,
         model: modelName,
         port,
         serial,

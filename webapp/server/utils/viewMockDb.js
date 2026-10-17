@@ -1,53 +1,28 @@
 // In-memory sqlite EXIF_DATA fixture for mock mode (Mac/Windows dev,
-// USE_MOCKS=true, and the GitHub Pages static build's local server).
+// USE_MOCKS=true, Playwright).
 //
 // We use a real :memory: sqlite database rather than filtering a JS array so
 // the same WHERE-clause builder runs in both real and mock modes — drift
 // between the two would otherwise produce different filtered results in dev
-// vs on-device.
+// vs on-device. The rows themselves come from src/utils/viewMockFixture.js,
+// which the static GitHub Pages mock (src/utils/mockApi.js) uses as well.
 import sqlite3 from 'sqlite3';
-import { SOCIAL_SERVICES, maskFor } from './socialServiceBits.js';
-
-const DIRECTORIES = ['DCIM/100EOS5D', 'DCIM/101EOS5D', 'PRIVATE/M4ROOT/CLIP', 'VIDEO'];
-const FILE_TYPES = ['JPEG', 'TIFF', 'RAW', 'MP4'];
-const FILE_EXTENSIONS = ['JPG', 'TIF', 'CR2', 'MP4'];
-const CAMERAS = ['Canon EOS 5D Mark III', 'Sony A7 IV', 'iPhone 14 Pro'];
-
-function buildFixtureRows(count = 120) {
-  const rows = [];
-  for (let i = 1; i <= count; i++) {
-    const dir = DIRECTORIES[i % DIRECTORIES.length];
-    const ftIdx = i % FILE_TYPES.length;
-    const fileType = FILE_TYPES[ftIdx];
-    const fileExt = FILE_EXTENSIONS[ftIdx];
-    const camera = CAMERAS[i % CAMERAS.length];
-    const month = String((i % 12) + 1).padStart(2, '0');
-    const day = String((i % 28) + 1).padStart(2, '0');
-    const lbbRating = i % 6; // 0..5
-    // Spread social state across services so filters return non-trivial subsets:
-    // every 3rd image is marked-for-publish on a rotating service, every 7th
-    // is already-published on a rotating service.
-    const publishService = i % 3 === 0 ? SOCIAL_SERVICES[i % SOCIAL_SERVICES.length] : null;
-    const publishedService = i % 7 === 0 ? SOCIAL_SERVICES[i % SOCIAL_SERVICES.length] : null;
-    rows.push({
-      ID: i,
-      Directory: dir,
-      File_Name: `IMG_${String(i).padStart(4, '0')}.${fileExt}`,
-      Create_Date: `2024-${month}-${day}`,
-      LbbRating: lbbRating,
-      Rating: String(lbbRating),
-      Camera_Model_Name: camera,
-      File_Type: fileType,
-      File_Type_Extension: fileExt,
-      Comment: '',
-      social_publish: publishService ? maskFor(publishService) : 0,
-      social_published: publishedService ? maskFor(publishedService) : 0,
-    });
-  }
-  return rows;
-}
+import {
+  buildMockViewRows,
+  mockViewColumns,
+  MOCK_INTEGER_COLUMNS,
+} from '../../src/utils/viewMockFixture.js';
 
 let cachedDb = null;
+let cachedRowsById = null;
+
+/** The fixture rows keyed by ID (used to map a row to its mock media file). */
+export function getMockViewRow(id) {
+  if (!cachedRowsById) {
+    cachedRowsById = new Map(buildMockViewRows().map((row) => [Number(row.ID), row]));
+  }
+  return cachedRowsById.get(Number(id)) || null;
+}
 
 export async function getMockViewDb() {
   if (cachedDb) return cachedDb;
@@ -61,42 +36,23 @@ export async function getMockViewDb() {
       });
     });
 
-  await run(`CREATE TABLE EXIF_DATA (
-    ID integer primary key autoincrement,
-    Directory text,
-    File_Name text,
-    Create_Date text,
-    LbbRating integer default 0,
-    Rating text,
-    Camera_Model_Name text,
-    File_Type text,
-    File_Type_Extension text,
-    Comment text,
-    social_publish integer default 0,
-    social_published integer default 0
-  )`);
+  const rows = buildMockViewRows();
+  const columns = mockViewColumns(rows);
+  const columnSql = columns
+    .map((col) => {
+      if (col === 'ID') return 'ID integer primary key autoincrement';
+      if (MOCK_INTEGER_COLUMNS.includes(col)) return `"${col}" integer default 0`;
+      return `"${col}" text`;
+    })
+    .join(', ');
+  await run(`CREATE TABLE EXIF_DATA (${columnSql})`);
 
-  for (const row of buildFixtureRows()) {
+  const placeholders = columns.map(() => '?').join(', ');
+  const quotedCols = columns.map((c) => `"${c}"`).join(', ');
+  for (const row of rows) {
     await run(
-      `INSERT INTO EXIF_DATA
-         (ID, Directory, File_Name, Create_Date, LbbRating, Rating,
-          Camera_Model_Name, File_Type, File_Type_Extension, Comment,
-          social_publish, social_published)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        row.ID,
-        row.Directory,
-        row.File_Name,
-        row.Create_Date,
-        row.LbbRating,
-        row.Rating,
-        row.Camera_Model_Name,
-        row.File_Type,
-        row.File_Type_Extension,
-        row.Comment,
-        row.social_publish,
-        row.social_published,
-      ]
+      `INSERT INTO EXIF_DATA (${quotedCols}) VALUES (${placeholders})`,
+      columns.map((c) => (row[c] === undefined ? null : row[c]))
     );
   }
 

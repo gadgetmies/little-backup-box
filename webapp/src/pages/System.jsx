@@ -25,6 +25,10 @@ import LogConfig from '../components/LogConfig';
 import LogMonitor from '../components/LogMonitor';
 import UpdateManager from '../components/UpdateManager';
 import LibRawUpdater from '../components/LibRawUpdater';
+import SectionHeader from '../components/SectionHeader';
+
+// sysinfo.php:46 reloads the page every 5 s.
+const DEVICE_REFRESH_MS = 5000;
 
 function TabPanel({ children, value, index }) {
   return (
@@ -77,6 +81,16 @@ function System() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAll();
   }, [loadAll]);
+
+  // Auto-refresh the Device tab while it is the visible tab.
+  useEffect(() => {
+    if (TAB_NAMES[currentTab] !== 'device') return undefined;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      loadSystemInfo();
+    }, DEVICE_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [currentTab]);
 
   const handleTabChange = (_event, newValue) => {
     setCurrentTab(newValue);
@@ -178,63 +192,80 @@ function System() {
 
       <TabPanel value={currentTab} index={1}>
         {cameras.length > 0 ? (
-          <Stack spacing={2}>
-            {cameras.map((camera, i) => (
-              <Box key={i} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                  {camera.model}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {camera.port}
-                </Typography>
-                {camera.serial && (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    {t('sysinfo.camera_serial') || 'Serial number'}: {camera.serial}
+          <Stack spacing={2} component="ol" sx={{ m: 0, p: 0, listStyle: 'none' }}>
+            {cameras.map((camera, i) => {
+              const model = camera.model || '';
+              const serial = camera.serial || '';
+              const renderPattern = (label, pattern) => (
+                <Box component="li" sx={{ mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {label}:
                   </Typography>
-                )}
-                {camera.storages && camera.storages.length > 0 && (
-                  <Box sx={{ mt: 1 }}>
-                    {camera.storages.map((storage, storageIndex) => {
-                      const modelPattern = `${camera.model}:!${storage}`;
-                      const specificPattern = camera.serial
-                        ? `${camera.model}_${camera.serial}:!${storage}`
-                        : null;
-                      return (
-                        <Box key={storageIndex} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 'bold', flex: 1, wordBreak: 'break-all' }}>
+                      {pattern}
+                    </Typography>
+                    <Tooltip title={copiedText === pattern ? t('sysinfo.copied') : t('sysinfo.copy')}>
+                      <IconButton
+                        onClick={() => handleCopyToClipboard(pattern)}
+                        aria-label={`${t('sysinfo.copy')}: ${pattern}`}
+                        sx={{ width: 44, height: 44 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              );
+              return (
+                <Box
+                  component="li"
+                  key={i}
+                  data-testid="camera-entry"
+                  sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}
+                >
+                  <SectionHeader
+                    level={3}
+                    title={camera.detected || `${model} ${camera.port || ''}`.trim()}
+                    sx={{ mb: 1, '& h3': { fontFamily: 'monospace', wordBreak: 'break-all' } }}
+                  />
+
+                  <Typography variant="subtitle2">{t('sysinfo.camera_model')}</Typography>
+                  <Typography variant="body2" sx={{ mb: 1, fontFamily: 'monospace' }}>
+                    {camera.summaryModel || (camera.summaryModel === undefined ? model : '') || '-'}
+                  </Typography>
+
+                  <Typography variant="subtitle2">{t('sysinfo.camera_serial')}</Typography>
+                  <Typography variant="body2" sx={{ mb: 1, fontFamily: 'monospace' }}>
+                    {serial || '-'}
+                  </Typography>
+
+                  <Typography variant="subtitle2">{t('sysinfo.camera_storages')}</Typography>
+                  {camera.storages && camera.storages.length > 0 ? (
+                    <Box component="ul" sx={{ pl: 2, my: 0 }}>
+                      {camera.storages.map((storage, storageIndex) => (
+                        <Box component="li" key={storageIndex} sx={{ mt: 1 }}>
                           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                             {storage}
                           </Typography>
-                          <Box sx={{ ml: 1, mt: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace', flex: 1 }}>
-                                {modelPattern}
-                              </Typography>
-                              <Tooltip title={copiedText === modelPattern ? 'Copied!' : 'Copy to clipboard'}>
-                                <IconButton size="small" onClick={() => handleCopyToClipboard(modelPattern)}>
-                                  <ContentCopyIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                            {specificPattern && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                <Typography variant="body2" sx={{ fontFamily: 'monospace', flex: 1 }}>
-                                  {specificPattern}
-                                </Typography>
-                                <Tooltip title={copiedText === specificPattern ? 'Copied!' : 'Copy to clipboard'}>
-                                  <IconButton size="small" onClick={() => handleCopyToClipboard(specificPattern)}>
-                                    <ContentCopyIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            )}
+                          <Typography variant="body2" color="text.secondary">
+                            {t('sysinfo.camera_folder_pattern')}:
+                          </Typography>
+                          <Box component="ul" sx={{ pl: 2, my: 0 }}>
+                            {renderPattern(t('sysinfo.camera_model_folders'), `${model}:!${storage}`)}
+                            {renderPattern(t('sysinfo.camera_specific_folders'), `${model}_${serial}:!${storage}`)}
                           </Box>
                         </Box>
-                      );
-                    })}
-                  </Box>
-                )}
-              </Box>
-            ))}
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      -
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })}
           </Stack>
         ) : (
           <Typography variant="body2" color="text.secondary">
@@ -255,6 +286,7 @@ function System() {
         <Stack spacing={3}>
           <LogConfig />
           <LogMonitor />
+          <LogMonitor file="cmd" title={t('log.cmd_logmonitor')} />
         </Stack>
       </TabPanel>
 

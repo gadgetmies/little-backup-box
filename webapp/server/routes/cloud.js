@@ -1,6 +1,4 @@
 import express from 'express';
-import { readFileSync } from 'fs';
-import { parse } from 'ini';
 import path from 'path';
 import { execCommand } from '../utils/execCommand.js';
 
@@ -8,8 +6,7 @@ const router = express.Router();
 
 router.get('/config', async (req, res) => {
   try {
-    const configPath = path.join(req.WORKING_DIR, 'config.cfg');
-    const config = parse(readFileSync(configPath, 'utf-8'));
+    const config = req.config;
     
     res.json({
       config: {
@@ -80,8 +77,7 @@ router.post('/rclone-gui/restart', async (req, res) => {
 
 router.get('/rclone-gui/info', async (req, res) => {
   try {
-    const configPath = path.join(req.WORKING_DIR, 'config.cfg');
-    const config = parse(readFileSync(configPath, 'utf-8'));
+    const config = req.config;
     
     const password = config.conf_PASSWORD?.trim() || '';
     let passwordNote = '';

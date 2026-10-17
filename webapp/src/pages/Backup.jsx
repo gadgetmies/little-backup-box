@@ -20,8 +20,12 @@ import {
   Chip,
   ListSubheader,
   Snackbar,
+  Tooltip,
+  FormHelperText,
 } from '@mui/material';
 import StopIcon from '@mui/icons-material/Stop';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -51,7 +55,12 @@ function Backup() {
     presetTarget: '',
     secSourceName: 'none',
     secTargetName: 'none',
+    // '' = use the configured chat (conf_SOCIAL_TELEGRAM_CHAT_ID), like PHP's
+    // sub-telegram-chat-id.php default; otherwise passed as --telegram-chat-id.
+    telegramChatId: '',
   });
+  const [telegramChats, setTelegramChats] = useState([]);
+  const [telegramChatsError, setTelegramChatsError] = useState(false);
   const [message, setMessage] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState('success');
@@ -64,7 +73,7 @@ function Backup() {
     conf_BACKUP_UPDATE_EXIF: 'false',
     conf_BACKUP_CHECKSUM: 'false',
     conf_POWER_OFF: 'false',
-    conf_MAIL_NOTIFICATIONS: '0',
+    conf_MAIL_NOTIFICATIONS: 'false',
   });
   const isInitialMount = useRef(true);
   const saveTimeoutRef = useRef(null);
@@ -80,7 +89,7 @@ function Backup() {
     conf_BACKUP_UPDATE_EXIF: 'false',
     conf_BACKUP_CHECKSUM: 'false',
     conf_POWER_OFF: 'false',
-    conf_MAIL_NOTIFICATIONS: '0',
+    conf_MAIL_NOTIFICATIONS: 'false',
   });
   useEffect(() => {
     loadServices();
@@ -99,6 +108,34 @@ function Backup() {
     defaultBackupConfigRef.current = defaultBackupConfig;
   }, [defaultBackupConfig]);
 
+  // Per-run Telegram chat override (PHP index.php:431-439 + sub-telegram-chat-id.php):
+  // list the bot's chats from the same route the Integrations page uses.
+  const isTelegramTarget = formData.targetDevice === 'social:telegram';
+  const telegramToken = config?.conf_SOCIAL_TELEGRAM_TOKEN || '';
+  useEffect(() => {
+    if (!isTelegramTarget) return undefined;
+    let cancelled = false;
+    setTelegramChatsError(false);
+    api.post('/social/telegram/chat-id', { token: telegramToken })
+      .then((response) => {
+        if (cancelled) return;
+        if (response.data?.ok && Array.isArray(response.data.chats)) {
+          setTelegramChats(response.data.chats);
+        } else {
+          setTelegramChats([]);
+          setTelegramChatsError(true);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTelegramChats([]);
+        setTelegramChatsError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTelegramTarget, telegramToken]);
+
   useEffect(() => {
     if (config && !configInitialized.current) {
       const newConfig = {
@@ -108,7 +145,7 @@ function Backup() {
         conf_BACKUP_UPDATE_EXIF: config.conf_BACKUP_UPDATE_EXIF || 'false',
         conf_BACKUP_CHECKSUM: config.conf_BACKUP_CHECKSUM || 'false',
         conf_POWER_OFF: config.conf_POWER_OFF || 'false',
-        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || '0',
+        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || 'false',
       };
       const configString = JSON.stringify(newConfig);
       setDefaultBackupConfig(newConfig);
@@ -133,7 +170,7 @@ function Backup() {
         conf_BACKUP_UPDATE_EXIF: config.conf_BACKUP_UPDATE_EXIF || 'false',
         conf_BACKUP_CHECKSUM: config.conf_BACKUP_CHECKSUM || 'false',
         conf_POWER_OFF: config.conf_POWER_OFF || 'false',
-        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || '0',
+        conf_MAIL_NOTIFICATIONS: config.conf_MAIL_NOTIFICATIONS || 'false',
       };
       const configString = JSON.stringify(newConfig);
       
@@ -277,20 +314,13 @@ function Backup() {
       return;
     }
     
-    if (isDisallowedCombination(formData.sourceDevice, formData.targetDevice)) {
+    if (getDisallowedReason(formData.sourceDevice, formData.targetDevice)) {
       setMessage(t('main.backup_error') || 'Invalid source/target combination');
       return;
     }
     
     try {
-      const backupData = {
-        ...formData,
-        moveFiles: formData.moveFiles === 'move',
-        checksum: formData.checksum === 'checksum',
-        presetSource: formData.presetSource || '',
-        presetTarget: formData.presetTarget || '',
-      };
-      await api.post('/backup/start', backupData);
+      await api.post('/backup/start', buildBackupPayload(formData));
       setToastSeverity('success');
       setToastMessage(t('main.backup.initiated'));
       setTimeout(() => {
@@ -305,6 +335,25 @@ function Backup() {
         setMessage(t('main.backup_error') || 'Backup error');
       }
     }
+  };
+
+  const handleSourceChange = (sourceDevice) => {
+    setFormData((prev) => ({
+      ...prev,
+      sourceDevice,
+      // Drop a target that the new source cannot back up to (PHP HideDisallowedButtons).
+      targetDevice: getDisallowedReason(sourceDevice, prev.targetDevice) ? '' : prev.targetDevice,
+    }));
+  };
+
+  // Source and target partition presets must differ (scripts/js/partition_presets.js).
+  const handlePresetChange = (field, value) => {
+    setFormData((prev) => {
+      const other = field === 'presetSource' ? 'presetTarget' : 'presetSource';
+      const next = { ...prev, [field]: value };
+      if (value && prev[other] === value) next[other] = '';
+      return next;
+    });
   };
 
   const handleStopBackup = async (pid) => {
@@ -328,7 +377,7 @@ function Backup() {
       conf_BACKUP_UPDATE_EXIF: formData.updateExif ? 'true' : 'false',
       conf_BACKUP_CHECKSUM: formData.checksum === 'checksum' ? 'true' : 'false',
       conf_POWER_OFF: formData.powerOff ? 'true' : 'false',
-      conf_MAIL_NOTIFICATIONS: defaultBackupConfig.conf_MAIL_NOTIFICATIONS || '0',
+      conf_MAIL_NOTIFICATIONS: defaultBackupConfig.conf_MAIL_NOTIFICATIONS || 'false',
     };
     
     try {
@@ -389,6 +438,25 @@ function Backup() {
     return 'primary';
   };
 
+  const sourceGroups = groupServices(services.sourceServices, { includeSocial: false });
+  const targetGroups = groupServices(services.targetServices, { includeSocial: true });
+
+  const localOptionsDisabled = Boolean(formData.targetDevice) && !isLocalStorageTarget(formData.targetDevice);
+
+  const configuredTelegramChat =
+    config?.conf_SOCIAL_TELEGRAM_CHAT_IDENTIFIER || config?.conf_SOCIAL_TELEGRAM_CHAT_ID || '';
+  const selectedTelegramChat = telegramChats.find((chat) => String(chat.id) === formData.telegramChatId);
+
+  let targetHelperText = '';
+  if (formData.targetDevice === 'social:telegram') {
+    const chatName = selectedTelegramChat
+      ? `${selectedTelegramChat.name} (${selectedTelegramChat.type})`
+      : configuredTelegramChat;
+    if (chatName) targetHelperText = `${t('main.backup.target_chat')}: ${chatName}`;
+  } else if (formData.targetDevice === 'social:matrix' && config?.conf_SOCIAL_MATRIX_ROOM_IDENTIFIER) {
+    targetHelperText = `${t('main.backup.target_room')}: ${config.conf_SOCIAL_MATRIX_ROOM_IDENTIFIER}`;
+  }
+
   const hasServices = services && services.sourceServices && services.targetServices && 
     Object.keys(services.sourceServices).length > 0 && Object.keys(services.targetServices).length > 0;
   
@@ -416,150 +484,38 @@ function Backup() {
         <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <FormLabel>{t('main.source')}</FormLabel>
+                <FormLabel id="backup-source-label">{t('main.source')}</FormLabel>
                 <Select
+                  labelId="backup-source-label"
+                  data-testid="backup-source-select"
                   value={formData.sourceDevice}
-                  onChange={(e) => setFormData({ ...formData, sourceDevice: e.target.value })}
+                  renderValue={(value) => getServiceLabel(value, t)}
+                  onChange={(e) => handleSourceChange(e.target.value)}
                 >
-                  {Object.entries(services.sourceServices || {}).flatMap(([group, items]) => {
-                    const filteredItems = items.filter(service => 
-                      !service.startsWith('cloud:') && 
-                      service !== 'cloud_rsync' &&
-                      !service.startsWith('social:')
-                    );
-                    if (filteredItems.length === 0) {
-                      return [];
-                    }
-                    return [
-                      <ListSubheader key={`header-${group}`}>
-                        {getGroupLabel(group, t)}
-                      </ListSubheader>,
-                      ...filteredItems.map((service) => (
-                        <MenuItem key={service} value={service}>
-                          {getServiceLabel(service, t)}
-                        </MenuItem>
-                      ))
-                    ];
-                  })}
-                  <ListSubheader>
-                    {t('main.backup.partitions') || 'Partitions'}
-                  </ListSubheader>
-                  <MenuItem value="selected_partition">
-                    {t('main.backup.selected_partition') || 'Selected partition'}
-                  </MenuItem>
+                  {renderServiceOptions(sourceGroups, t)}
                 </Select>
               </FormControl>
-              {formData.sourceDevice === 'selected_partition' && (
-                <FormControl fullWidth sx={{ mt: 2 }}>
-                  <FormLabel>{t('main.backup.preset_source_label')}</FormLabel>
-                  <Select
-                    value={formData.presetSource || ''}
-                    onChange={(e) => setFormData({ ...formData, presetSource: e.target.value })}
-                  >
-                    {partitions.map((p, i) => (
-                      <MenuItem key={i} value={p.identifier || ''}>
-                        {p.lum} {p.identifier ? `(${p.identifier})` : ''}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
             </Grid>
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <FormLabel>{t('main.target')}</FormLabel>
+                <FormLabel id="backup-target-label">{t('main.target')}</FormLabel>
                 <Select
+                  labelId="backup-target-label"
+                  data-testid="backup-target-select"
                   value={formData.targetDevice}
+                  displayEmpty
+                  renderValue={(value) => getServiceLabel(value, t)}
                   onChange={(e) => setFormData({ ...formData, targetDevice: e.target.value })}
                 >
-                  {(() => {
-                    const localStorageItems = [];
-                    const otherItems = [];
-                    
-                    Object.entries(services.targetServices || {}).forEach(([group, items]) => {
-                      const filteredItems = items.filter(service => 
-                        !service.startsWith('cloud:') && 
-                        service !== 'cloud_rsync' &&
-                        !service.startsWith('social:')
-                      );
-                      
-                      filteredItems.forEach((service) => {
-                        if (isLocalStorageTarget(service)) {
-                          localStorageItems.push({ service, group });
-                        } else {
-                          otherItems.push({ service, group });
-                        }
-                      });
-                    });
-                    
-                    const result = [];
-                    
-                    if (localStorageItems.length > 0) {
-                      result.push(
-                        <ListSubheader key="header-local">
-                          {t('main.backup.local_storage') || 'Local Storage'}
-                        </ListSubheader>
-                      );
-                      localStorageItems.forEach(({ service }) => {
-                        const isDisabled = isDisallowedCombination(formData.sourceDevice, service);
-                        result.push(
-                          <MenuItem key={service} value={service} disabled={isDisabled}>
-                            {getServiceLabel(service, t)}
-                          </MenuItem>
-                        );
-                      });
-                      const isPartitionDisabled = isDisallowedCombination(formData.sourceDevice, 'selected_partition');
-                      result.push(
-                        <MenuItem key="selected_partition" value="selected_partition" disabled={isPartitionDisabled}>
-                          {t('main.backup.selected_partition') || 'Selected partition'}
-                        </MenuItem>
-                      );
-                    }
-                    
-                    const groupedOther = {};
-                    otherItems.forEach(({ service, group }) => {
-                      if (!groupedOther[group]) {
-                        groupedOther[group] = [];
-                      }
-                      groupedOther[group].push(service);
-                    });
-                    
-                    Object.entries(groupedOther).forEach(([group, items]) => {
-                      result.push(
-                        <ListSubheader key={`header-${group}`}>
-                          {getGroupLabel(group, t)}
-                        </ListSubheader>
-                      );
-                      items.forEach((service) => {
-                        const isDisabled = isDisallowedCombination(formData.sourceDevice, service);
-                        result.push(
-                          <MenuItem key={service} value={service} disabled={isDisabled}>
-                            {getServiceLabel(service, t)}
-                          </MenuItem>
-                        );
-                      });
-                    });
-                    
-                    return result;
-                  })()}
+                  {renderServiceOptions(targetGroups, t, (service) =>
+                    getDisallowedReason(formData.sourceDevice, service),
+                  )}
                 </Select>
+                {targetHelperText && (
+                  <FormHelperText data-testid="backup-target-helper">{targetHelperText}</FormHelperText>
+                )}
               </FormControl>
-              {formData.targetDevice === 'selected_partition' && (
-                <FormControl fullWidth sx={{ mt: 2 }}>
-                  <FormLabel>{t('main.backup.preset_target_label')}</FormLabel>
-                  <Select
-                    value={formData.presetTarget || ''}
-                    onChange={(e) => setFormData({ ...formData, presetTarget: e.target.value })}
-                  >
-                    {partitions.map((p, i) => (
-                      <MenuItem key={i} value={p.identifier || ''}>
-                        {p.lum} {p.identifier ? `(${p.identifier})` : ''}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
             </Grid>
           </Grid>
 
@@ -606,36 +562,52 @@ function Backup() {
                         </MenuItem>
                       </Select>
                     </FormControl>
-                    {isLocalStorageTarget(formData.targetDevice) && (
-                      <>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={formData.renameFiles}
-                              onChange={(e) => setFormData({ ...formData, renameFiles: e.target.checked })}
-                            />
-                          }
-                          label={t('main.backup.rename_checkbox_label')}
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FormControlLabel
+                        disabled={localOptionsDisabled}
+                        control={
+                          <Checkbox
+                            checked={formData.renameFiles}
+                            onChange={(e) => setFormData({ ...formData, renameFiles: e.target.checked })}
+                          />
+                        }
+                        label={t('main.backup.rename_checkbox_label')}
+                        sx={{ mr: 0, ml: 0 }}
+                      />
+                      <Tooltip title={t('config.backup.rename.warning')} enterTouchDelay={0} leaveTouchDelay={6000}>
+                        <IconButton
+                          aria-label={t('main.backup.rename_warning_info')}
+                          data-testid="rename-warning-info"
+                          sx={{ minWidth: 44, minHeight: 44 }}
+                        >
+                          <InfoOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <FormControlLabel
+                      disabled={localOptionsDisabled}
+                      control={
+                        <Checkbox
+                          checked={formData.generateThumbnails}
+                          onChange={(e) => setFormData({ ...formData, generateThumbnails: e.target.checked })}
                         />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={formData.generateThumbnails}
-                              onChange={(e) => setFormData({ ...formData, generateThumbnails: e.target.checked })}
-                            />
-                          }
-                          label={t('main.backup.generate_thumbnails_checkbox_label')}
+                      }
+                      label={t('main.backup.generate_thumbnails_checkbox_label')}
+                    />
+                    <FormControlLabel
+                      disabled={localOptionsDisabled}
+                      control={
+                        <Checkbox
+                          checked={formData.updateExif}
+                          onChange={(e) => setFormData({ ...formData, updateExif: e.target.checked })}
                         />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={formData.updateExif}
-                              onChange={(e) => setFormData({ ...formData, updateExif: e.target.checked })}
-                            />
-                          }
-                          label={t('main.backup.update_exif_checkbox_label')}
-                        />
-                      </>
+                      }
+                      label={t('main.backup.update_exif_checkbox_label')}
+                    />
+                    {localOptionsDisabled && (
+                      <FormHelperText sx={{ mt: 0 }}>
+                        {t('main.backup.local_options_not_applicable')}
+                      </FormHelperText>
                     )}
                     <FormControl sx={{ maxWidth: 400 }}>
                       <FormLabel>{t('main.backup.comparison_method_label') || 'Comparison method'}</FormLabel>
@@ -652,6 +624,68 @@ function Backup() {
                       </Select>
                     </FormControl>
                   </Stack>
+
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth disabled={formData.sourceDevice !== 'usb'}>
+                        <FormLabel id="preset-source-label">{t('main.backup.preset_source_label')}</FormLabel>
+                        <Select
+                          labelId="preset-source-label"
+                          data-testid="preset-source-select"
+                          value={formData.sourceDevice === 'usb' ? formData.presetSource : ''}
+                          displayEmpty
+                          onChange={(e) => handlePresetChange('presetSource', e.target.value)}
+                        >
+                          {renderPartitionOptions(partitions, t)}
+                        </Select>
+                        {formData.sourceDevice !== 'usb' && (
+                          <FormHelperText>{t('main.backup.preset_source_usb_only')}</FormHelperText>
+                        )}
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth>
+                        <FormLabel id="preset-target-label">{t('main.backup.preset_target_label')}</FormLabel>
+                        <Select
+                          labelId="preset-target-label"
+                          data-testid="preset-target-select"
+                          value={formData.presetTarget}
+                          displayEmpty
+                          onChange={(e) => handlePresetChange('presetTarget', e.target.value)}
+                        >
+                          {renderPartitionOptions(partitions, t)}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    {formData.targetDevice === 'social:telegram' && (
+                      <Grid item xs={12} md={4}>
+                        <FormControl fullWidth>
+                          <FormLabel id="telegram-chat-label">{t('main.backup.telegram_chat_label')}</FormLabel>
+                          <Select
+                            labelId="telegram-chat-label"
+                            data-testid="telegram-chat-select"
+                            value={formData.telegramChatId}
+                            displayEmpty
+                            onChange={(e) => setFormData({ ...formData, telegramChatId: e.target.value })}
+                          >
+                            <MenuItem value="">
+                              {configuredTelegramChat
+                                ? `${configuredTelegramChat} (${t('main.backup.telegram_chat_default')})`
+                                : t('main.backup.telegram_chat_default')}
+                            </MenuItem>
+                            {telegramChats.map((chat) => (
+                              <MenuItem key={chat.id} value={String(chat.id)}>
+                                {`${chat.name} (${chat.type}) — ${chat.id}`}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {telegramChatsError && (
+                            <FormHelperText error>{t('main.backup.telegram_chats_error')}</FormHelperText>
+                          )}
+                        </FormControl>
+                      </Grid>
+                    )}
+                  </Grid>
 
                 </Box>
 
@@ -732,8 +766,8 @@ function Backup() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={defaultBackupConfig.conf_MAIL_NOTIFICATIONS === '1'}
-                          onChange={(e) => setDefaultBackupConfig({ ...defaultBackupConfig, conf_MAIL_NOTIFICATIONS: e.target.checked ? '1' : '0' })}
+                          checked={['1', 'true'].includes(String(defaultBackupConfig.conf_MAIL_NOTIFICATIONS))}
+                          onChange={(e) => setDefaultBackupConfig({ ...defaultBackupConfig, conf_MAIL_NOTIFICATIONS: e.target.checked ? 'true' : 'false' })}
                         />
                       }
                       label={t('config.mail.notify_backup_label') || 'If possible, send backup reports via email?'}
@@ -764,6 +798,17 @@ function Backup() {
               {t('main.backup.start') || 'Start Backup'}
             </Button>
           </Box>
+          {runningBackups.length > 0 && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              align="center"
+              sx={{ mt: 1 }}
+              data-testid="start-stops-running-hint"
+            >
+              {t('main.backup.start_stops_running')}
+            </Typography>
+          )}
 
           {backupHistory.length > 0 && (
             <Box sx={{ mt: 3 }}>
@@ -772,60 +817,13 @@ function Backup() {
                 {backupHistory.map((backup, index) => (
                   <ListItem
                     key={index}
-                    secondaryAction={
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<ReplayIcon />}
-                        onClick={async () => {
-                          const rerunData = {
-                            ...formData,
-                            sourceDevice: backup.sourceDevice,
-                            targetDevice: backup.targetDevice,
-                            moveFiles: backup.moveFiles ? 'move' : 'copy',
-                            renameFiles: backup.renameFiles || false,
-                            generateThumbnails: backup.generateThumbnails || false,
-                            updateExif: backup.updateExif || false,
-                            checksum: backup.checksum ? 'checksum' : 'file_size_timestamp',
-                            powerOff: backup.powerOff || false,
-                            presetSource: backup.presetSource || '',
-                            presetTarget: backup.presetTarget || '',
-                          };
-                          setFormData(rerunData);
-                          
-                          try {
-                            const backupData = {
-                              ...rerunData,
-                              moveFiles: rerunData.moveFiles === 'move',
-                              checksum: rerunData.checksum === 'checksum',
-                              presetSource: rerunData.presetSource || '',
-                              presetTarget: rerunData.presetTarget || '',
-                            };
-                            await api.post('/backup/start', backupData);
-                            setToastSeverity('success');
-                            setToastMessage(t('main.backup.initiated'));
-                            setTimeout(() => {
-                              loadRunningBackups();
-                              loadBackupHistory();
-                            }, 1000);
-                          } catch (error) {
-                            console.error('Failed to start backup:', error);
-                            if (error.response?.status === 409) {
-                              setMessage(t('main.backup_error') || 'A backup with this configuration is already running');
-                            } else {
-                              setMessage(t('main.backup_error') || 'Backup error');
-                            }
-                          }
-                        }}
-                      >
-                        {t('main.backup.rerun') || 'Rerun'}
-                      </Button>
-                    }
+                    sx={{ flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 2, rowGap: 1 }}
                   >
                     <ListItemText
+                      sx={{ flex: '1 1 220px', minWidth: 0, my: 0 }}
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
                             {getServiceLabel(backup.sourceDevice, t)} → {getServiceLabel(backup.targetDevice, t)}
                           </Typography>
                           {backup.timestamp && (
@@ -836,7 +834,7 @@ function Backup() {
                         </Box>
                       }
                       secondary={
-                        <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+                        <Stack direction="row" spacing={0.5} useFlexGap sx={{ mt: 0.5, flexWrap: 'wrap' }}>
                           {backup.presetSource && (
                             <Chip label={`Source: ${backup.presetSource}`} size="small" variant="outlined" />
                           )}
@@ -851,7 +849,50 @@ function Backup() {
                           {backup.powerOff && <Chip label="Power Off" size="small" variant="outlined" color="warning" />}
                         </Stack>
                       }
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
+                    <Button
+                      sx={{ flexShrink: 0, minHeight: 44 }}
+                      variant="outlined"
+                      size="small"
+                      startIcon={<ReplayIcon />}
+                      onClick={async () => {
+                        const rerunData = {
+                          ...formData,
+                          sourceDevice: backup.sourceDevice,
+                          targetDevice: backup.targetDevice,
+                          moveFiles: backup.moveFiles ? 'move' : 'copy',
+                          renameFiles: backup.renameFiles || false,
+                          generateThumbnails: backup.generateThumbnails || false,
+                          updateExif: backup.updateExif || false,
+                          checksum: backup.checksum ? 'checksum' : 'file_size_timestamp',
+                          powerOff: backup.powerOff || false,
+                          presetSource: backup.presetSource || '',
+                          presetTarget: backup.presetTarget || '',
+                          telegramChatId: backup.telegramChatId || '',
+                        };
+                        setFormData(rerunData);
+                        
+                        try {
+                          await api.post('/backup/start', buildBackupPayload(rerunData));
+                          setToastSeverity('success');
+                          setToastMessage(t('main.backup.initiated'));
+                          setTimeout(() => {
+                            loadRunningBackups();
+                            loadBackupHistory();
+                          }, 1000);
+                        } catch (error) {
+                          console.error('Failed to start backup:', error);
+                          if (error.response?.status === 409) {
+                            setMessage(t('main.backup_error') || 'A backup with this configuration is already running');
+                          } else {
+                            setMessage(t('main.backup_error') || 'Backup error');
+                          }
+                        }
+                      }}
+                    >
+                      {t('main.backup.rerun') || 'Rerun'}
+                    </Button>
                   </ListItem>
                 ))}
               </List>
@@ -859,10 +900,31 @@ function Backup() {
           )}
       </Box>
 
-      {runningBackups.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <SectionHeader level={2} title={t('main.backup.running') || 'Running Backups'} sx={{ mb: 2 }} />
-          <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 4 }}>
+        <SectionHeader
+          level={2}
+          title={t('main.backup.running') || 'Running Backups'}
+          sx={{ mb: 2 }}
+          action={
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<WarningAmberIcon />}
+              onClick={() => handleStopBackup()}
+              sx={{ minHeight: 44, maxWidth: '100%', textAlign: 'left' }}
+              data-testid="stop-all-backups"
+            >
+              {t('main.backup.stop_all')}
+            </Button>
+          }
+        />
+        <Box sx={{ mt: 2 }}>
+          {runningBackups.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              {t('main.backup.none_running')}
+            </Typography>
+          )}
+          {runningBackups.length > 0 && (
             <List>
               {runningBackups.map((backup) => (
                 <ListItem
@@ -880,15 +942,15 @@ function Backup() {
                 >
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="body1" sx={{ overflowWrap: 'anywhere' }}>
                           {getServiceLabel(backup.sourceDevice, t)} → {getServiceLabel(backup.targetDevice, t)}
                         </Typography>
                         <Chip label={`PID: ${backup.pid}`} size="small" />
                       </Box>
                     }
                     secondary={
-                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                      <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: 'wrap' }}>
                         {backup.presetSource && (
                           <Chip label={`Source: ${backup.presetSource}`} size="small" variant="outlined" />
                         )}
@@ -908,9 +970,9 @@ function Backup() {
                 </ListItem>
               ))}
             </List>
-          </Box>
+          )}
         </Box>
-      )}
+      </Box>
       <Box sx={{ mt: 4 }}>
         <PageSection
           variant="accordion"
@@ -918,6 +980,23 @@ function Backup() {
           localStorageKey="lbb-accordion-backup-logs"
         >
           <LogMonitor />
+        </PageSection>
+      </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <PageSection
+          variant="accordion"
+          title={t('main.backup.help')}
+          localStorageKey="lbb-accordion-backup-help"
+        >
+          <Typography
+            component="div"
+            variant="body2"
+            data-testid="backup-help-text"
+            sx={{ '& a': { color: 'primary.main' }, '& ul': { pl: 3, mt: 0 } }}
+            // Static, translated help text from public/lang (ported from PHP L::main_help_txt).
+            dangerouslySetInnerHTML={{ __html: t('main.backup.help_txt') }}
+          />
         </PageSection>
       </Box>
 
@@ -939,37 +1018,103 @@ function Backup() {
   );
 }
 
-function getGroupLabel(group, t) {
-  const labels = {
-    usb: t('main.backup.usb_devices') || 'USB Devices',
-    internal: t('main.backup.internal_storage') || 'Internal Storage',
-    cloud: t('box.backup.mode.cloud') || 'Cloud',
-    social: t('box.backup.mode.social') || 'SoMe',
+// Order of the LOCAL group, mirroring the PHP source/target lists (index.php:60-74).
+const LOCAL_SERVICE_ORDER = ['anyusb', 'usb', 'internal', 'nvme', 'camera', 'ftp'];
+
+function getServiceKind(service) {
+  if (service.startsWith('social:')) return 'social';
+  if (service === 'cloud_rsync' || service.startsWith('cloud:')) return 'network';
+  return 'local';
+}
+
+// Regroup the /backup/services lists into LOCAL / NETWORK / SOCIAL MEDIA.
+function groupServices(serviceGroups, { includeSocial }) {
+  const all = [...new Set(Object.values(serviceGroups || {}).flat())];
+  const local = all
+    .filter((service) => getServiceKind(service) === 'local')
+    .sort((a, b) => {
+      const ia = LOCAL_SERVICE_ORDER.indexOf(a);
+      const ib = LOCAL_SERVICE_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  const network = [
+    ...all.filter((service) => service === 'cloud_rsync'),
+    ...all.filter((service) => service.startsWith('cloud:')),
+  ];
+  const social = includeSocial ? all.filter((service) => getServiceKind(service) === 'social') : [];
+  return [
+    { key: 'local', label: 'main.backup.group_local', items: local },
+    { key: 'network', label: 'main.backup.group_network', items: network },
+    { key: 'social', label: 'main.backup.group_social', items: social },
+  ].filter((group) => group.items.length > 0);
+}
+
+// Children for a grouped <Select>. MUI needs a flat array (no fragments).
+function renderServiceOptions(groups, t, getReason = () => null) {
+  return groups.flatMap((group) => [
+    <ListSubheader key={`header-${group.key}`}>{t(group.label)}</ListSubheader>,
+    ...group.items.map((service) => {
+      const reasonKey = getReason(service);
+      return (
+        <MenuItem key={service} value={service} disabled={Boolean(reasonKey)} data-service={service}>
+          <ListItemText
+            primary={getServiceLabel(service, t)}
+            secondary={reasonKey ? t(reasonKey) : null}
+            sx={{ my: 0 }}
+          />
+        </MenuItem>
+      );
+    }),
+  ]);
+}
+
+// Partition preset options, labelled like PHP (index.php:346-352).
+function renderPartitionOptions(partitions, t) {
+  return [
+    <MenuItem key="auto" value="">
+      {t('main.backup.preset_partition_auto')}
+    </MenuItem>,
+    ...partitions
+      .filter((p) => p.identifier)
+      .map((p) => (
+        <MenuItem key={`${p.lum}-${p.identifier}`} value={p.identifier}>
+          {`${p.lum} (${p.identifier.replace(/^-+|-+$/g, '')})`}
+        </MenuItem>
+      )),
+  ];
+}
+
+function buildBackupPayload(data) {
+  const payload = {
+    ...data,
+    moveFiles: data.moveFiles === 'move',
+    checksum: data.checksum === 'checksum',
+    // PHP (index.php:484-486) ignores the source preset unless the source is 'usb'.
+    presetSource: data.sourceDevice === 'usb' ? data.presetSource || '' : '',
+    presetTarget: data.presetTarget || '',
   };
-  
-  return labels[group] || group;
+  if (data.targetDevice !== 'social:telegram' || !data.telegramChatId) {
+    delete payload.telegramChatId;
+  }
+  return payload;
 }
 
 function getServiceLabel(service, t) {
   if (!service) return '';
-  
-  if (service === 'selected_partition') {
-    return t('main.backup.selected_partition') || 'Selected partition';
-  }
-  
+
   const parts = service.split(':');
   const type = parts[0];
   const name = parts[parts.length - 1];
-  
+
   if (type === 'cloud' && parts.length > 1) {
-    return parts.slice(1).join(':');
+    return `${t('box.backup.mode.cloud')} · ${parts.slice(1).join(':')}`;
   }
-  
+
   if (type === 'social' && parts.length > 1) {
     const socialName = parts[1];
     return t(`box.backup.mode.${socialName}`) || socialName;
   }
-  
+
   const labels = {
     anyusb: t('box.backup.mode.anyusb') || 'any USB',
     usb: t('box.backup.mode.usb') || 'USB storage',
@@ -979,26 +1124,26 @@ function getServiceLabel(service, t) {
     cloud_rsync: t('box.backup.mode.cloud_rsync') || 'rsync server',
     ftp: t('box.backup.mode.ftp') || 'LBBs FTP server',
   };
-  
+
   return labels[name] || name;
 }
 
 function isLocalStorageTarget(target) {
   if (!target) return false;
-  const localStorageTargets = ['usb', 'internal', 'nvme', 'selected_partition'];
-  return localStorageTargets.includes(target);
+  return ['usb', 'internal', 'nvme'].includes(target);
 }
 
-function isDisallowedCombination(source, target) {
-  if (target === source && target !== 'usb' && target !== 'selected_partition') return true;
-  if (source === 'anyusb' && target === 'cloud_rsync') return true;
-  if (source === 'camera' && target === 'cloud_rsync') return true;
-  if (source === 'ftp' && target === 'cloud_rsync') return true;
-  if (source === 'anyusb' && target.startsWith('social')) return true;
-  if (source === 'camera' && target.startsWith('social')) return true;
-  if (source.startsWith('cloud') && target.startsWith('social')) return true;
-  if (source === 'ftp' && target.startsWith('social')) return true;
-  return false;
+// Disallowed source/target combinations, mirroring HideDisallowedButtons in
+// scripts/index.php:113-142. Returns the translation key of the reason, or null.
+function getDisallowedReason(source, target) {
+  if (!source || !target) return null;
+  if (target === source && target !== 'usb') return 'main.backup.disallowed_same';
+  const noDirectNetwork = ['anyusb', 'camera', 'ftp'].includes(source);
+  if (noDirectNetwork && target === 'cloud_rsync') return 'main.backup.disallowed_rsync';
+  if ((noDirectNetwork || source.startsWith('cloud')) && target.startsWith('social')) {
+    return 'main.backup.disallowed_social';
+  }
+  return null;
 }
 
 export default Backup;

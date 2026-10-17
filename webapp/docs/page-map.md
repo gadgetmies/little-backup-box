@@ -27,13 +27,16 @@ The route table is allowed to evolve, but every change must update both this fil
 | 9 | `/system` | System | `mainmenue.system` |
 | 10 | `/scrape` | Legacy UI | `mainmenue.scrape` |
 | ext | `/files` | Files (external) | `mainmenue.filebrowser` |
-| ext | `/frame.php?page=rclone_gui` | rclone GUI (external) | `mainmenue.rclone_gui` |
+| ext | `/rclone/` | rclone GUI (external) | `mainmenue.rclone_gui` |
+| ext | `/comitup/` | WiFi portal (comitup) (external; only when comitup is installed, disabled unless its hotspot is active) | `menu.comitup_portal` |
 
 The sidebar order targets typical-user task frequency: things touched every backup session at the top (Backup → Library → Storage), occasional admin in the middle (Maintenance, Connections, Network), set-once configuration after that (Hardware, Preferences), and diagnostics / legacy at the end. Note the route slugs are stable but the displayed page title diverges for `/integrations` (displays "Connections"), and `/hardware` was renamed from `/devices` (no redirect — the old route was new enough that no external links pointed at it).
 
 External links always appear after internal links and never highlight as the active route.
 
-The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout) that is not per-page; see the catalog entries under "Manage device lifecycle".
+The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout) that is not per-page; see the catalog entries under "Manage device lifecycle". It also shows a "branch: <name>" chip when the device is not on `main`, and the device-status popover includes the rendered display image when the display is enabled. The sidebar "System" entry carries an "Update" badge when an update is available.
+
+Protected commands (format, fsck repair, f3, updates, LibRaw, comitup reset) all go through the shared `ProtectedCommandDialog` from the page that owns the feature; see "Run a protected command" in the catalog.
 
 ## Pages
 
@@ -46,13 +49,14 @@ The AppBar also exposes a global power menu (Reboot, Power off, Stop LBB, Logout
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
 | 1 | Run a backup | `PageSection.plain` | Configure and start a backup |
-| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination |
-| 3 | Running backups | `PageSection.plain` (only renders when backups are running) | Stop a running backup; Monitor running backups |
+| 2 | Options | `PageSection.accordion` (`lbb-accordion-backup-options`, default collapsed) | Save current backup options as defaults; Configure secondary (chained) backup destination; Preset source/target partitions; Choose the Telegram chat for one run |
+| 3 | Running backups | `PageSection.plain` (always rendered; empty state when nothing runs) | Stop a running backup; Stop all backups; Monitor running backups |
 | 4 | Previous runs | `PageSection.plain` (only renders when history exists) | View backup history; Re-run a previous backup |
 | 5 | Backup logs | `PageSection.accordion` (`lbb-accordion-backup-logs`, default collapsed) | Stream backup logs |
+| 6 | Help | `PageSection.accordion` (`lbb-accordion-backup-help`, default collapsed) | Read backup help |
 
 Cross-references on this page:
-- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
+- File-handling toggles inside section 1 (copy/move, rename, thumbnails, EXIF, comparison method, power off, email notification) are per-run and live with "Configure and start a backup". Source and Target are grouped selects (Local / Network / Social media); combinations the PHP UI forbids are shown disabled with the reason. The system-wide *defaults* for these live at `/preferences` → "Backup defaults" — see catalog under "Configure backup defaults".
 
 ### `/view` — Library
 
@@ -62,10 +66,10 @@ Cross-references on this page:
 
 | # | Section | Pattern | Features assigned |
 | --- | --- | --- | --- |
-| 1 | Gallery | `PageSection.plain` | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
-| 2 | Single view | overlay (not a `PageSection`; entered from the Gallery) | Open a single image; Navigate between images; Zoom and pan an image; Run a slideshow; Rate an image; Comment on an image; Publish an image to social media |
+| 1 | Gallery | `PageSection.plain` (filters in a `PageSection.accordion`, key `lbb-accordion-view-filter`) | Browse the media gallery; Filter the gallery; Sort and paginate the gallery; Choose backup source to view; Delete rejected images |
+| 2 | Single view | replaces the Gallery (not a `PageSection`; entered from a grid card): header bar, media stage, info panel of `PageSection.card`s (Comment / Publish to social media / File info), plus a full-window overlay | Open a single image; Navigate between images; Zoom and pan an image; View the full-window overlay; Run a slideshow; Download the original file; Rate an image; Comment on an image; Queue an image for social media; Inspect file metadata |
 
-The Single view is a full-window overlay rather than a peer section; this is the one documented exception to the "every section is a `PageSection`" rule and is justified by Plan 04 owning this page.
+The Single view replaces the Gallery rather than being a peer section; this is the one documented exception to the "every section is a `PageSection`" rule (its info panel does use `PageSection.card`s for the h2 sections). The slideshow runs inside the full-window overlay, as in `scripts/view.php` + `js/slideshow.js`.
 
 ### `/maintenance` — Maintenance
 
@@ -94,7 +98,7 @@ This page uses `Tabs` because the three panels are mutually exclusive views of t
 | # | Tab label | Features assigned |
 | --- | --- | --- |
 | 1 | Cloud | Configure rclone cloud remotes; Configure rsync server target |
-| 2 | Social | Configure social media accounts and publish defaults |
+| 2 | Social | Configure social media accounts and publish defaults; Fetch a Matrix access token |
 | 3 | Mail | Configure SMTP and email-notification recipients; Send a test email |
 
 VPN lives on `/network` (it's a connectivity primitive, not a third-party integration). No intro line above the tab strip — the three short tab labels are self-explanatory.
@@ -139,12 +143,12 @@ This page uses `Tabs` for the three configuration domains (WiFi / Network info /
 
 | # | Tab label | Features assigned |
 | --- | --- | --- |
-| 1 | WiFi | Set the WiFi country (regulatory domain); View WiFi interface info |
+| 1 | WiFi | Set the WiFi country (regulatory domain); Set the hotspot password; View WiFi interface info |
 | 2 | Network info | View internet connectivity status; View device IP addresses and access links; View QR codes for device access |
 | 3 | VPN | Configure VPN |
 
 Below the tabs:
-- **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode
+- **WiFi recovery** — `Accordion` (`accordion-network-wifi-reset`, default collapsed) — Reset WiFi to access-point mode; Open the comitup WiFi portal
 
 ### `/system` — System
 
@@ -159,23 +163,24 @@ This page uses `Tabs` for the four functional areas — same rationale as `/stor
 | 1 | Device | View system information |
 | 2 | Cameras | View connected cameras and smartphones; Copy camera storage pattern to clipboard |
 | 3 | Updates | Check for system updates; Install system updates; Update LibRaw camera-format library |
-| 4 | Logs | View live logs; Set log level; Toggle log sync; Keep display images for debugging |
+| 4 | Logs | View live logs (main log + command log); Set log level; Toggle log sync; Keep display images for debugging |
 
 Reboot / Power off / Stop LBB / Logout do not live on this page — they live in the AppBar power menu and are accessible from anywhere. They are catalogued under "Manage device lifecycle" but their UI location is "AppBar → power menu".
 
 ### `/preferences` — Preferences
 
 - **Sidebar position**: 8
-- **Purpose**: personal preferences (UI display, locale, system-wide backup defaults).
+- **Purpose**: personal preferences (UI display, locale, system-wide backup defaults, device password).
 - **Legacy redirects**: none (the legacy `/setup` redirect was removed in commit 6b853f1).
 
-This page uses `Tabs` because the three panels are mutually exclusive views of the same subject (user preferences). Selected tab persists in `localStorage` under `lbb-tabs-preferences` as the symbolic tab name (`'display'`, `'locale'`, `'backup'`). Saves are debounced and apply page-wide regardless of active tab.
+This page uses `Tabs` because the four panels are mutually exclusive views of the same subject (user preferences). Selected tab persists in `localStorage` under `lbb-tabs-preferences` as the symbolic tab name (`'display'`, `'locale'`, `'backup'`, `'security'`). Display / Locale / Backup defaults are saved together with the page Save bar, regardless of active tab. The Security tab's device password acts immediately through its own Set / Remove buttons (it changes system accounts) and is not part of the Save bar.
 
 | # | Tab label | Features assigned |
 | --- | --- | --- |
 | 1 | Display | Set UI theme; Set background image; Toggle popup messages; Enable virtual keyboard |
 | 2 | Locale | Set UI language; Set the device timezone |
-| 3 | Backup defaults | Set the camera-folder mask; Set the target free-space minimum; Set idle power-off threshold; Set default backup mode per source/target pair; Toggle "write rating to EXIF" |
+| 3 | Backup defaults | Set the automatic backup at startup; Toggle "write rating to EXIF"; Toggle HEIC conversion for the viewer; Set the target free-space minimum; Set idle power-off threshold; Set the camera-folder mask |
+| 4 | Security | Set the device password |
 
 "Backup defaults" lives here (rather than on `/`) because they are system-wide policy, not per-run options.
 
@@ -200,6 +205,9 @@ Some features are reachable from more than one entry point but are implemented a
 - **Set UI language** — primary location is `/preferences` → "Locale"; AppBar quick-menu is a shortcut.
 - **Set UI theme** — primary location is `/preferences` → "Display"; AppBar quick-menu is a shortcut.
 - **Reboot the device**, **Power off the device**, **Stop the LBB process**, **Log out** — primary location is the AppBar power menu (always available); not on any page.
+- **See the installed software branch (AppBar)** and **View device status (AppBar)** (incl. the rendered display image) — AppBar only; not on any page.
+- **Open the comitup WiFi portal** — primary location is `/network` → "WiFi recovery"; the sidebar entry is a shortcut.
+- **Run a protected command** — the shared `ProtectedCommandDialog`; it is opened by the owning feature (`/storage` Repair / Format / Verify capacity, `/system` → "Updates", `/network` → "WiFi recovery") and has no page of its own.
 
 ## Verifying the page map
 

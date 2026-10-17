@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automations – phone</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3z"/></symbol>
+</svg>
+<div class="board">
+  <div class="phone" aria-label="Chain on a phone">
+    <header class="appbar"><svg class="i"><use href="#menu"/></svg><h1>Card offload</h1></header>
+    <main class="content">
+      <div class="row" style="gap: 8px"><span class="chip ok">✓ Last run 14:02</span><span class="spacer"></span><span class="switch" aria-hidden="true"></span></div>
+      <div class="row" style="gap: 8px; flex-wrap: nowrap">
+        <button class="btn outlined small" type="button" style="flex:1; justify-content:center"><svg class="i s"><use href="#play"/></svg>Simulate</button>
+        <button class="btn outlined small" type="button" style="flex:1; justify-content:center">Run now</button>
+      </div>
+      <div class="steps" style="margin-top: 4px">
+        <div class="step">
+          <div class="rail"><span class="dot trig"><svg class="i s"><use href="#bolt"/></svg></span><span class="line"></span></div>
+          <div class="body"><span class="small muted">WHEN</span><b>SD card inserted</b></div>
+        </div>
+        <div class="step">
+          <div class="rail"><span class="dot">1</span><span class="line ok"></span></div>
+          <div class="body card" style="padding: 10px 12px; border-color: var(--primary)">
+            <span class="row" style="gap:6px"><svg class="i s"><use href="#copy"/></svg><b>SD card → USB SSD</b></span>
+            <span class="small muted">Copy · checksum · needs 10 GB free</span>
+            <span class="bells row" style="gap:4px"><span class="bell"><svg class="i s"><use href="#bell"/></svg>start</span><span class="bell"><svg class="i s"><use href="#bell"/></svg>25 %</span><span class="bell"><svg class="i s"><use href="#bell"/></svg>finish</span><span class="bell err"><svg class="i s"><use href="#bell"/></svg>error</span></span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="rail"><span class="dot">2</span><span class="line"></span></div>
+          <div class="body">
+            <span class="chip ok" style="align-self:flex-start">✓ then, at the same time</span>
+            <div class="card" style="padding: 10px 12px"><span class="row" style="gap:6px"><svg class="i s"><use href="#image"/></svg><b>Generate previews</b></span><span class="bell err" style="margin-top:6px"><svg class="i s"><use href="#bell"/></svg>error</span></div>
+            <div class="card" style="padding: 10px 12px"><span class="row" style="gap:6px"><svg class="i s"><use href="#cloud"/></svg><b>Upload previews → Dropbox</b></span><span class="small muted">Only when online</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="rail"><span class="dot wait"><svg class="i s"><use href="#plus"/></svg></span></div>
+          <div class="body"><span class="muted">Add next step</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="phone" aria-label="Step editor on a phone" style="background: rgba(0,0,0,.4)">
+    <header class="appbar" style="opacity:.6"><svg class="i"><use href="#menu"/></svg><h1>Card offload</h1></header>
+    <div style="flex:1"></div>
+    <div class="sheet" style="height: 640px">
+      <span class="grab" aria-hidden="true"></span>
+      <div class="row"><svg class="i"><use href="#copy"/></svg><h3 style="flex:1">Backup step</h3><button class="btn contained small" type="button">Done</button></div>
+      <div class="field"><label>From</label><div class="select">Inserted card</div></div>
+      <div class="field"><label>To</label><div class="select">USB SSD</div></div>
+      <span class="check"><span class="box on"></span>Checksum</span>
+      <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted)">Notify me</h3>
+      <div class="card" style="padding: 4px 12px">
+        <div class="row" style="justify-content: space-between; min-height: 44px; border-bottom: 1px solid #f0f0f0"><span>Starts</span><span class="small muted">Telegram</span></div>
+        <div class="row" style="justify-content: space-between; min-height: 44px; border-bottom: 1px solid #f0f0f0"><span>Progress · every 25 %</span><span class="small muted">Telegram, Display</span></div>
+        <div class="row" style="justify-content: space-between; min-height: 44px; border-bottom: 1px solid #f0f0f0"><span>Finishes</span><span class="small muted">Telegram</span></div>
+        <div class="row" style="justify-content: space-between; min-height: 44px"><span style="color: var(--err)">Fails</span><span class="small muted">Telegram, Display</span></div>
+      </div>
+      <span class="small muted">Tap an event to pick channels. On a phone the event × channel grid becomes one row per event.</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <h2>Phone layout</h2>
+    <p>On phones the graph becomes a numbered vertical list: same chain, same arrows (the rail), parallel jobs stacked under one “at the same time” label.</p>
+    <p>Tapping a step opens a bottom sheet with the same fields as the desktop panel. The notification grid collapses to one row per event; tapping a row opens a channel picker.</p>
+    <p>Every control keeps a 44 px touch target; nothing scrolls sideways.</p>
+  </div>
+</div>
+</body>
+</html>

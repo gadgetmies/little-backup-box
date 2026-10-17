@@ -1,6 +1,18 @@
 import express from 'express';
 import { execCommand } from '../utils/execCommand.js';
 import path from 'path';
+import { shouldMock } from '../utils/mockSystem.js';
+import {
+  cleanArgument,
+  displayCommand,
+  getCurrentConfig,
+  isMailConfigured,
+  normalizeDevice,
+  requireDevicePassword,
+  runInBackground,
+  serverT,
+  shellQuote,
+} from '../utils/commandRunner.js';
 
 const router = express.Router();
 
@@ -149,214 +161,158 @@ router.get('/mountable-storages', async (req, res) => {
   }
 });
 
-async function executeCmd(req, cmd, param1, param2) {
-  const { writeFileSync, unlinkSync } = await import('fs');
-  const { getCmdLogFile, getCmdRunnerLockfile } = await import('../utils/paths.js');
-  
-  const devicePath = param1 && param1.startsWith('/dev/') ? param1 : (param1 ? `/dev/${param1}` : '');
-  
-  let commandLine = '';
-  
+// Format options accepted by cmd.php:342-490 → [mkfs command, fsck command].
+const FORMAT_COMMANDS = {
+  FAT32: ['mkfs.vfat -v -I -F32', 'fsck'],
+  exFAT: ['mkfs.exfat', 'fsck'],
+  'NTFS (compression enabled)': ['mkfs.ntfs --enable-compression --force --verbose', 'fsck'],
+  'NTFS (no compression)': ['mkfs.ntfs --force --verbose', 'fsck'],
+  Ext4: ['mkfs.ext4 -v -F', 'fsck'],
+  Ext3: ['mkfs.ext3 -v -F', 'fsck'],
+  'HFS Plus': ['mkfs.hfsplus', 'fsck.hfsplus'],
+  HFS: ['mkfs.hfs', 'fsck.hfs'],
+};
+
+const F3_COMMANDS = {
+  f3probe_non_destructive: ['f3probe --time-ops', 'cmd.box.f3_probe_non_destructive'],
+  f3probe_destructive: ['f3probe --destructive --time-ops', 'cmd.box.f3_probe_destructive'],
+};
+
+// Build the command line exactly like cmd.php exec_command(): steps are joined
+// with ';' so the FINISHED line and the display stop message always run, and
+// every display line is a single ':<text>' argument (lib_display.py:161).
+async function buildCommandLine(req, config, cmd, device, param2) {
+  const WD = req.WORKING_DIR;
+  const tr = (key) => serverT(config, key);
+  const devicePath = shellQuote(`/dev/${device}`);
+  const p2 = cleanArgument(param2, [' ']);
+  const steps = [];
+
   switch (cmd) {
-    case 'fsck':
-      const fsckDetectCommand = `sudo lsblk -p -P -o PATH,MOUNTPOINT,UUID,FSTYPE | grep ${devicePath}`;
-      const fsckDetectResult = await execCommand(fsckDetectCommand, { logger: req.logger });
-      
-      let deviceFstype = '';
-      if (fsckDetectResult.success && fsckDetectResult.stdout) {
-        const fstypeMatch = fsckDetectResult.stdout.match(/FSTYPE="([^"]+)"/);
-        if (fstypeMatch) {
-          deviceFstype = fstypeMatch[1];
-        }
+    case 'fsck': {
+      // cmd.php:316-318 — detect the filesystem type of the partition.
+      const detect = await execCommand(
+        `sudo lsblk -p -P -o PATH,MOUNTPOINT,UUID,FSTYPE | grep ${shellQuote(`/dev/${device}`)}`,
+        { logger: req.logger },
+      );
+      const match = (detect.stdout || '').match(/FSTYPE="([^"]*)"/);
+      const fstype = cleanArgument(match ? match[1] : '');
+      if (!fstype && !shouldMock()) {
+        const err = new Error('Could not detect filesystem type');
+        err.status = 400;
+        throw err;
       }
-      
-      if (!deviceFstype) {
-        throw new Error('Could not detect filesystem type');
-      }
-      
-      let mainCommand = '';
+      const fsckBin = `fsck.${fstype || 'ext4'}`;
+      let main;
       if (param2 === 'repair') {
-        if (deviceFstype === 'exfat') {
-          mainCommand = `fsck.${deviceFstype} -p ${devicePath}`;
-        } else {
-          mainCommand = `fsck.${deviceFstype} -f -p ${devicePath}`;
-        }
+        main = fstype === 'exfat' ? `${fsckBin} -p ${devicePath}` : `${fsckBin} -f -p ${devicePath}`;
       } else {
-        mainCommand = `fsck.${deviceFstype} ${devicePath}`;
+        main = `${fsckBin} ${devicePath}`;
       }
-      
-      commandLine = `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Start' ':' 'file system' ':' '${param2}' && `;
-      commandLine += `echo 'sudo ${mainCommand}' && `;
-      commandLine += `echo '' && `;
-      commandLine += `sudo ${mainCommand} && `;
-      commandLine += `echo '' && `;
-      commandLine += `echo 'FINISHED.' && `;
-      commandLine += `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Finished file' ':' 'system' ':' '${param2}'`;
+      steps.push(displayCommand(WD, [tr('cmd.box.fsck_start1'), tr('cmd.box.fsck_start2'), p2]));
+      steps.push(`echo ${shellQuote(`sudo ${main}`)}`, "echo ''", `sudo ${main}`, "echo ''", "echo 'FINISHED.'");
+      steps.push(displayCommand(WD, [tr('cmd.box.fsck_stop1'), tr('cmd.box.fsck_stop2'), p2]));
       break;
-      
-    case 'format':
-      let mainFormatCommand = '';
-      let fsckCommand = 'fsck';
-      
-      if (param2 === 'FAT32') {
-        mainFormatCommand = `mkfs.vfat -v -I -F32 ${devicePath}`;
-      } else if (param2 === 'exFAT') {
-        mainFormatCommand = `mkfs.exfat ${devicePath}`;
-      } else if (param2 === 'NTFS (compression enabled)') {
-        mainFormatCommand = `mkfs.ntfs --enable-compression --force --verbose ${devicePath}`;
-      } else if (param2 === 'NTFS (no compression)') {
-        mainFormatCommand = `mkfs.ntfs --force --verbose ${devicePath}`;
-      } else if (param2 === 'Ext4') {
-        mainFormatCommand = `mkfs.ext4 -v -F ${devicePath}`;
-      } else if (param2 === 'Ext3') {
-        mainFormatCommand = `mkfs.ext3 -v -F ${devicePath}`;
-      } else if (param2 === 'HFS Plus') {
-        mainFormatCommand = `mkfs.hfsplus ${devicePath}`;
-        fsckCommand = 'fsck.hfsplus';
-      } else if (param2 === 'HFS') {
-        mainFormatCommand = `mkfs.hfs ${devicePath}`;
-        fsckCommand = 'fsck.hfs';
-      } else {
-        throw new Error('Invalid format type');
+    }
+
+    case 'format': {
+      const entry = FORMAT_COMMANDS[param2];
+      if (!entry) {
+        const err = new Error('Invalid format type');
+        err.status = 400;
+        throw err;
       }
-      
-      commandLine = `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Formatting' ':' '${param1}: ${param2}' ':' 'started...' && `;
-      commandLine += `echo 'sudo ${mainFormatCommand}' && `;
-      commandLine += `echo '' && `;
-      commandLine += `sudo ${mainFormatCommand} && `;
-      commandLine += `echo '' && `;
-      commandLine += `sudo fdisk -l ${devicePath} && `;
-      commandLine += `echo '' && `;
-      commandLine += `lsblk -f ${devicePath} && `;
-      commandLine += `echo '' && `;
-      commandLine += `sudo ${fsckCommand} ${devicePath} && `;
-      commandLine += `echo '' && `;
-      commandLine += `echo 'FINISHED.' && `;
-      commandLine += `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Formatting' ':' '${param1}: ${param2}' ':' 'completed'`;
+      const [mkfs, fsckBin] = entry;
+      const main = `${mkfs} ${devicePath}`;
+      const label = `${device}: ${p2}`;
+      steps.push(displayCommand(WD, [tr('cmd.box.format_start1'), label, tr('cmd.box.format_start2')]));
+      steps.push(
+        `echo ${shellQuote(`sudo ${main}`)}`, "echo ''",
+        `sudo ${main}`, "echo ''",
+        `sudo fdisk -l ${devicePath}`, "echo ''",
+        `lsblk -f ${devicePath}`, "echo ''",
+        `sudo ${fsckBin} ${devicePath}`, "echo ''",
+        "echo 'FINISHED.'",
+      );
+      steps.push(displayCommand(WD, [tr('cmd.box.format_stop1'), label, tr('cmd.box.format_stop2')]));
       break;
-      
-    case 'f3':
-      let mainF3Command = '';
-      let description = '';
-      
-      if (param2 === 'f3probe_non_destructive') {
-        mainF3Command = `f3probe --time-ops ${devicePath}`;
-        description = 'non destructive';
-      } else if (param2 === 'f3probe_destructive') {
-        mainF3Command = `f3probe --destructive --time-ops ${devicePath}`;
-        description = 'destructive';
-      } else {
-        throw new Error('Invalid f3 action');
+    }
+
+    case 'f3': {
+      const entry = F3_COMMANDS[param2];
+      if (!entry) {
+        const err = new Error('Invalid f3 action');
+        err.status = 400;
+        throw err;
       }
-      
-      commandLine = `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Examination' ':' '${param1}: ${description}' ':' 'started...' && `;
-      commandLine += `echo 'sudo ${mainF3Command}' && `;
-      commandLine += `echo '' && `;
-      commandLine += `sudo ${mainF3Command} && `;
-      commandLine += `echo '' && `;
-      commandLine += `echo 'FINISHED.' && `;
-      commandLine += `sudo python3 ${req.WORKING_DIR}/lib_display.py ':' 'Examination' ':' '${param1}: ${description}' ':' 'completed'`;
+      const [probe, descKey] = entry;
+      const main = `${probe} ${devicePath}`;
+      const label = `${device}: ${tr(descKey)}`;
+      steps.push(displayCommand(WD, [tr('cmd.box.f3_probe_start1'), label, tr('cmd.box.f3_probe_start2')]));
+      steps.push(`echo ${shellQuote(`sudo ${main}`)}`, "echo ''", `sudo ${main}`, "echo ''", "echo 'FINISHED.'");
+      steps.push(displayCommand(WD, [tr('cmd.box.f3_probe_stop1'), label, tr('cmd.box.f3_probe_stop2')]));
       break;
-      
-    default:
-      throw new Error('Unknown command');
+    }
+
+    default: {
+      const err = new Error('Unknown command');
+      err.status = 400;
+      throw err;
+    }
   }
-  
-  const lockfile = getCmdRunnerLockfile(req.WORKING_DIR, req.constants);
-  const logfile = getCmdLogFile(req.WORKING_DIR, req.constants);
-  
-  writeFileSync(lockfile, commandLine, 'utf-8');
-  
-  const fullCommand = `sh -c "${commandLine}" > ${logfile} 2>&1 & echo $!`;
-  await execCommand(fullCommand, { logger: req.logger });
-  
-  unlinkSync(lockfile);
+
+  return steps.join(';');
 }
 
-router.post('/fsck/check', async (req, res) => {
-  try {
-    const { partition } = req.body;
-    
-    if (!partition || partition === '-') {
-      return res.status(400).json({ error: 'Invalid partition' });
-    }
-    
-    const devicePath = partition.startsWith('/dev/') ? partition : `/dev/${partition}`;
-    
-    await execCommand(`python3 ${req.WORKING_DIR}/lib_log.py 'message' "fsck ${partition} check" "1"`, { logger: req.logger });
-    await executeCmd(req, 'fsck', devicePath, 'check');
-    
-    req.logger.info(`fsck check: ${partition}`);
-    res.json({ success: true });
-  } catch (error) {
-    req.logger.error('Failed to execute fsck check', { error: error.message });
-    res.status(500).json({ error: 'Failed to execute fsck check' });
-  }
-});
+// Shared handler for the cmd.php commands exposed on the Storage page.
+function storageCommandHandler(cmd, { deviceField, param2Of }) {
+  return async (req, res) => {
+    try {
+      const device = normalizeDevice(req.body?.[deviceField]);
+      const param2 = param2Of(req.body || {});
+      if (!device || !param2 || param2 === '-') {
+        return res.status(400).json({ error: 'Invalid parameters' });
+      }
 
-router.post('/fsck/repair', async (req, res) => {
-  try {
-    const { partition } = req.body;
-    
-    if (!partition || partition === '-') {
-      return res.status(400).json({ error: 'Invalid partition' });
-    }
-    
-    const devicePath = partition.startsWith('/dev/') ? partition : `/dev/${partition}`;
-    
-    await execCommand(`python3 ${req.WORKING_DIR}/lib_log.py 'message' "fsck ${partition} repair" "1"`, { logger: req.logger });
-    await executeCmd(req, 'fsck', devicePath, 'repair');
-    
-    req.logger.info(`fsck repair: ${partition}`);
-    res.json({ success: true });
-  } catch (error) {
-    req.logger.error('Failed to execute fsck repair', { error: error.message });
-    res.status(500).json({ error: 'Failed to execute fsck repair' });
-  }
-});
+      const config = req.currentConfig || getCurrentConfig(req);
+      const commandLine = await buildCommandLine(req, config, cmd, device, param2);
+      const mail = req.body?.mailResult === true && isMailConfigured(config);
 
-router.post('/format', async (req, res) => {
-  try {
-    const { partition, fstype } = req.body;
-    
-    if (!partition || !fstype || partition === '-' || fstype === '-') {
-      return res.status(400).json({ error: 'Invalid parameters' });
-    }
-    
-    const devicePath = partition.startsWith('/dev/') ? partition : `/dev/${partition}`;
-    
-    await execCommand(`python3 ${req.WORKING_DIR}/lib_log.py 'message' "format ${partition} ${fstype}" "1"`, { logger: req.logger });
-    await executeCmd(req, 'format', devicePath, fstype);
-    
-    req.logger.info(`format: ${partition} ${fstype}`);
-    res.json({ success: true });
-  } catch (error) {
-    req.logger.error('Failed to execute format', { error: error.message });
-    res.status(500).json({ error: 'Failed to execute format' });
-  }
-});
+      // tools.php:286-317 logs the request to the main log before redirecting.
+      await execCommand(
+        `python3 ${req.WORKING_DIR}/lib_log.py 'message' ${shellQuote(`${cmd} ${device} ${param2}`)} '1'`,
+        { logger: req.logger },
+      );
+      runInBackground(req, { cmd, param1: device, param2, commandLine, mail });
 
-router.post('/f3', async (req, res) => {
-  try {
-    const { device, action } = req.body;
-    
-    if (!device || !action || device === '-' || action === '-') {
-      return res.status(400).json({ error: 'Invalid parameters' });
+      req.logger.info(`${cmd}: ${device} ${param2}`);
+      res.json({ success: true, started: true });
+    } catch (error) {
+      if (error.code === 'command_running') {
+        return res.status(409).json({ error: error.message, code: error.code });
+      }
+      req.logger.error(`Failed to execute ${cmd}`, { error: error.message });
+      res.status(error.status || 500).json({ error: error.message || `Failed to execute ${cmd}` });
     }
-    
-    const devicePath = device.startsWith('/dev/') ? device : `/dev/${device}`;
-    
-    await execCommand(`python3 ${req.WORKING_DIR}/lib_log.py 'message' "f3 ${device} ${action}" "1"`, { logger: req.logger });
-    await executeCmd(req, 'f3', devicePath, action);
-    
-    req.logger.info(`f3: ${device} ${action}`);
-    res.json({ success: true });
-  } catch (error) {
-    req.logger.error('Failed to execute f3', { error: error.message });
-    res.status(500).json({ error: 'Failed to execute f3' });
-  }
-});
+  };
+}
+
+// cmd.php:123-129 — check is unprotected, repair needs the device password.
+router.post('/fsck/check', storageCommandHandler('fsck', { deviceField: 'partition', param2Of: () => 'check' }));
+router.post(
+  '/fsck/repair',
+  requireDevicePassword,
+  storageCommandHandler('fsck', { deviceField: 'partition', param2Of: () => 'repair' }),
+);
+router.post(
+  '/format',
+  requireDevicePassword,
+  storageCommandHandler('format', { deviceField: 'partition', param2Of: (b) => b.fstype }),
+);
+router.post(
+  '/f3',
+  requireDevicePassword,
+  storageCommandHandler('f3', { deviceField: 'device', param2Of: (b) => b.action }),
+);
 
 export default router;
-
-
