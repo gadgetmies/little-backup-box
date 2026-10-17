@@ -817,54 +817,13 @@ function Backup() {
                 {backupHistory.map((backup, index) => (
                   <ListItem
                     key={index}
-                    secondaryAction={
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<ReplayIcon />}
-                        onClick={async () => {
-                          const rerunData = {
-                            ...formData,
-                            sourceDevice: backup.sourceDevice,
-                            targetDevice: backup.targetDevice,
-                            moveFiles: backup.moveFiles ? 'move' : 'copy',
-                            renameFiles: backup.renameFiles || false,
-                            generateThumbnails: backup.generateThumbnails || false,
-                            updateExif: backup.updateExif || false,
-                            checksum: backup.checksum ? 'checksum' : 'file_size_timestamp',
-                            powerOff: backup.powerOff || false,
-                            presetSource: backup.presetSource || '',
-                            presetTarget: backup.presetTarget || '',
-                            telegramChatId: backup.telegramChatId || '',
-                          };
-                          setFormData(rerunData);
-                          
-                          try {
-                            await api.post('/backup/start', buildBackupPayload(rerunData));
-                            setToastSeverity('success');
-                            setToastMessage(t('main.backup.initiated'));
-                            setTimeout(() => {
-                              loadRunningBackups();
-                              loadBackupHistory();
-                            }, 1000);
-                          } catch (error) {
-                            console.error('Failed to start backup:', error);
-                            if (error.response?.status === 409) {
-                              setMessage(t('main.backup_error') || 'A backup with this configuration is already running');
-                            } else {
-                              setMessage(t('main.backup_error') || 'Backup error');
-                            }
-                          }
-                        }}
-                      >
-                        {t('main.backup.rerun') || 'Rerun'}
-                      </Button>
-                    }
+                    sx={{ flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 2, rowGap: 1 }}
                   >
                     <ListItemText
+                      sx={{ flex: '1 1 220px', minWidth: 0, my: 0 }}
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
                             {getServiceLabel(backup.sourceDevice, t)} → {getServiceLabel(backup.targetDevice, t)}
                           </Typography>
                           {backup.timestamp && (
@@ -890,7 +849,50 @@ function Backup() {
                           {backup.powerOff && <Chip label="Power Off" size="small" variant="outlined" color="warning" />}
                         </Stack>
                       }
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
+                    <Button
+                      sx={{ flexShrink: 0, minHeight: 44 }}
+                      variant="outlined"
+                      size="small"
+                      startIcon={<ReplayIcon />}
+                      onClick={async () => {
+                        const rerunData = {
+                          ...formData,
+                          sourceDevice: backup.sourceDevice,
+                          targetDevice: backup.targetDevice,
+                          moveFiles: backup.moveFiles ? 'move' : 'copy',
+                          renameFiles: backup.renameFiles || false,
+                          generateThumbnails: backup.generateThumbnails || false,
+                          updateExif: backup.updateExif || false,
+                          checksum: backup.checksum ? 'checksum' : 'file_size_timestamp',
+                          powerOff: backup.powerOff || false,
+                          presetSource: backup.presetSource || '',
+                          presetTarget: backup.presetTarget || '',
+                          telegramChatId: backup.telegramChatId || '',
+                        };
+                        setFormData(rerunData);
+                        
+                        try {
+                          await api.post('/backup/start', buildBackupPayload(rerunData));
+                          setToastSeverity('success');
+                          setToastMessage(t('main.backup.initiated'));
+                          setTimeout(() => {
+                            loadRunningBackups();
+                            loadBackupHistory();
+                          }, 1000);
+                        } catch (error) {
+                          console.error('Failed to start backup:', error);
+                          if (error.response?.status === 409) {
+                            setMessage(t('main.backup_error') || 'A backup with this configuration is already running');
+                          } else {
+                            setMessage(t('main.backup_error') || 'Backup error');
+                          }
+                        }
+                      }}
+                    >
+                      {t('main.backup.rerun') || 'Rerun'}
+                    </Button>
                   </ListItem>
                 ))}
               </List>
@@ -909,7 +911,7 @@ function Backup() {
               color="error"
               startIcon={<WarningAmberIcon />}
               onClick={() => handleStopBackup()}
-              sx={{ minHeight: 44, whiteSpace: 'nowrap', flexShrink: 0 }}
+              sx={{ minHeight: 44, maxWidth: '100%', textAlign: 'left' }}
               data-testid="stop-all-backups"
             >
               {t('main.backup.stop_all')}
@@ -940,8 +942,8 @@ function Backup() {
                 >
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="body1" sx={{ overflowWrap: 'anywhere' }}>
                           {getServiceLabel(backup.sourceDevice, t)} → {getServiceLabel(backup.targetDevice, t)}
                         </Typography>
                         <Chip label={`PID: ${backup.pid}`} size="small" />

@@ -10,6 +10,9 @@ function SectionHeader({ level = 2, title, icon, action, sx }) {
       sx={{
         display: 'flex',
         alignItems: 'center',
+        // Long (e.g. Finnish) titles next to an action must not widen the page:
+        // the action wraps below the title on narrow screens.
+        flexWrap: 'wrap',
         gap: 1,
         ...sx,
       }}
@@ -19,10 +22,14 @@ function SectionHeader({ level = 2, title, icon, action, sx }) {
           {icon}
         </Box>
       ) : null}
-      <Typography variant={variant} component={component} sx={{ flexGrow: 1 }}>
+      <Typography
+        variant={variant}
+        component={component}
+        sx={{ flexGrow: 1, minWidth: 0, overflowWrap: 'anywhere' }}
+      >
         {title}
       </Typography>
-      {action ? <Box sx={{ display: 'flex', alignItems: 'center' }}>{action}</Box> : null}
+      {action ? <Box sx={{ display: 'flex', alignItems: 'center', maxWidth: '100%' }}>{action}</Box> : null}
     </Box>
   );
 }

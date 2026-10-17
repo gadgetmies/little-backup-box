@@ -40,6 +40,10 @@ function Layout({ children }) {
         component="main"
         sx={{
           flexGrow: 1,
+          // Without this the flex item grows to its content's min-content width,
+          // so scrollable tab strips and long translated labels widen the page
+          // on phones instead of scrolling/wrapping.
+          minWidth: 0,
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           display: 'flex',
           flexDirection: 'column',
